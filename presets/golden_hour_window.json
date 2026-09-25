@@ -1,0 +1,29 @@
+{
+  "name": "Golden Hour Window",
+  "description": "Warm 3000K lateral low-angle sunlight beam, cool 6500K ambient sky fill from the opposite side, soft wrap.",
+  "ambient_intensity": 0.04,
+  "key": {
+    "enabled": true,
+    "azimuth": -60.0,
+    "elevation": 15.0,
+    "intensity": 1.30,
+    "kelvin": 3000,
+    "modifier": "Octabox (Soft)"
+  },
+  "fill": {
+    "enabled": true,
+    "azimuth": 45.0,
+    "elevation": 20.0,
+    "intensity": 0.35,
+    "kelvin": 6500,
+    "modifier": "Octabox (Soft)"
+  },
+  "rim": {
+    "enabled": true,
+    "azimuth": -135.0,
+    "elevation": 25.0,
+    "intensity": 0.90,
+    "kelvin": 3200,
+    "modifier": "Stripbox"
+  }
+}

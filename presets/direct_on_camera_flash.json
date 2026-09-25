@@ -1,0 +1,29 @@
+{
+  "name": "Direct On-Camera Flash",
+  "description": "Raw direct flash fired from the lens axis, hard snapshot micro-shadows, high specular pop, dark falloff background.",
+  "ambient_intensity": 0.02,
+  "key": {
+    "enabled": true,
+    "azimuth": 0.0,
+    "elevation": 5.0,
+    "intensity": 1.40,
+    "kelvin": 5500,
+    "modifier": "Direct On-Camera Flash"
+  },
+  "fill": {
+    "enabled": false,
+    "azimuth": -30.0,
+    "elevation": 0.0,
+    "intensity": 0.0,
+    "kelvin": 5500,
+    "modifier": "Octabox (Soft)"
+  },
+  "rim": {
+    "enabled": false,
+    "azimuth": 180.0,
+    "elevation": 30.0,
+    "intensity": 0.0,
+    "kelvin": 5500,
+    "modifier": "Stripbox"
+  }
+}
