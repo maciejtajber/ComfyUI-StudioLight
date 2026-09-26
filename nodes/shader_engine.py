@@ -264,8 +264,10 @@ def render_studio_lighting(
             asset_file = "product_perfume_normal.png"
         elif "Industrial" in effective_framing or "Chair" in effective_framing:
             asset_file = "product_chair_normal.png"
+        elif "Automotive" in effective_framing or "Car" in effective_framing:
+            asset_file = "product_car_normal.png"
         else:
-            # Volumetric Cyc or Automotive Cove (rendered procedurally)
+            # Volumetric Cyc (rendered procedurally)
             asset_file = None
 
         if asset_file:

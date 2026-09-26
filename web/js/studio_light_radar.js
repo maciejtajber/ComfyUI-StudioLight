@@ -50,353 +50,385 @@ fetch("/studiolight/presets")
     })
     .catch(() => {});
 
+const RADAR_HEIGHT = 185;
+
+function getWidget(node, name) {
+    return node.widgets?.find((w) => w.name === name);
+}
+
+function applyPresetValues(node, currentVal) {
+    if (!currentVal || currentVal === "Custom" || !PRESET_MAP[currentVal]) return;
+    node._isApplyingPreset = true;
+    const p = PRESET_MAP[currentVal];
+    for (const [k, v] of Object.entries(p)) {
+        const targetWidget = getWidget(node, k);
+        if (targetWidget) {
+            targetWidget.value = v;
+            if (targetWidget.inputEl) targetWidget.inputEl.value = v;
+            if (targetWidget.element) targetWidget.element.value = v;
+            if (targetWidget.callback) {
+                try {
+                    targetWidget.callback.call(targetWidget, v);
+                } catch (e) {}
+            }
+        }
+    }
+    node._isApplyingPreset = false;
+    node.setDirtyCanvas(true, true);
+    app.canvas?.setDirty(true, true);
+}
+
+function setPresetToCustom(node) {
+    if (!node || node._isApplyingPreset) return;
+    const pw = getWidget(node, "preset");
+    if (pw && pw.value !== "Custom") {
+        pw.value = "Custom";
+        if (pw.inputEl) pw.inputEl.value = "Custom";
+        if (pw.element) pw.element.value = "Custom";
+        node.setDirtyCanvas(true, true);
+        app.canvas?.setDirty(true, true);
+    }
+}
+
+function updateLightAngle(node, dx, dy, widgetName) {
+    const w = getWidget(node, widgetName);
+    if (!w) return;
+    // Camera at bottom (0°): dy > 0 is bottom (0°), dx > 0 is right (+90°), dy < 0 is top (+/-180°)
+    let deg = Math.atan2(dx, dy) * (180 / Math.PI);
+    deg = Math.round(deg);
+    w.value = deg;
+    if (w.inputEl) w.inputEl.value = deg;
+    if (w.element) w.element.value = deg;
+    if (w.callback) {
+        try {
+            w.callback.call(w, w.value);
+        } catch (e) {}
+    }
+    setPresetToCustom(node);
+    node.setDirtyCanvas(true, true);
+    app.canvas?.setDirty(true, true);
+}
+
+function drawRadar(node, ctx, yOffset, customHeight, customWidth) {
+    if (node.flags?.collapsed) return;
+
+    const width = customWidth || node.size[0] || 380;
+    const radarY = typeof yOffset === "number" ? yOffset + 4 : (node.size[1] - RADAR_HEIGHT - 10);
+    const boxHeight = customHeight ? customHeight - 8 : RADAR_HEIGHT - 8;
+    const cx = width / 2;
+    const cy = radarY + boxHeight / 2 + 4;
+    const radius = Math.min(width, boxHeight) / 2 - 20;
+
+    // Cache metrics on node for mouse picking
+    node._radarMetrics = { cx, cy, radius, radarY, boxHeight, width };
+
+    ctx.save();
+
+    // 1. Pod container background
+    ctx.fillStyle = "#111116";
+    ctx.strokeStyle = "#383846";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.rect(12, radarY, width - 24, boxHeight);
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Pod Title Header
+    ctx.fillStyle = "#9a9aa8";
+    ctx.font = "bold 9px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("3-POINT STUDIO RADAR (DRAG LIGHTS TO AIM)", cx, radarY + 14);
+
+    // 3. Circular radar concentric rings
+    ctx.strokeStyle = "#252530";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 4. Crosshairs
+    ctx.strokeStyle = "#202028";
+    ctx.beginPath();
+    ctx.moveTo(cx - radius, cy);
+    ctx.lineTo(cx + radius, cy);
+    ctx.moveTo(cx, cy - radius);
+    ctx.lineTo(cx, cy + radius);
+    ctx.stroke();
+
+    // 5. Diagonal guidelines (+/- 45°, +/- 135°)
+    ctx.strokeStyle = "#1a1a22";
+    for (const angle of [45, 135, -45, -135]) {
+        const rad = angle * (Math.PI / 180);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + radius * Math.sin(rad), cy + radius * Math.cos(rad));
+        ctx.stroke();
+    }
+
+    // 6. Camera marker at bottom (0°) - Operator perspective behind camera
+    ctx.fillStyle = "#3e3e50";
+    ctx.strokeStyle = "#5a5a70";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.rect(cx - 40, cy + radius + 2, 80, 14);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 8px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("▼ CAMERA (0°)", cx, cy + radius + 12);
+
+    // 7. Center subject point
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 8. Helper to render ray, handle, and degree badge
+    function drawLightHandle(azimuth, color, label, enabled) {
+        if (!enabled) return;
+
+        // 0° is bottom (camera), +45° is camera-right (screen right), +/-180° is top (backlight)
+        const rad = azimuth * (Math.PI / 180);
+        const lx = cx + radius * Math.sin(rad);
+        const ly = cy + radius * Math.cos(rad);
+
+        // Ray line from center to light
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(lx, ly);
+        ctx.stroke();
+
+        // Glowing outer handle ring
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(lx, ly, 7.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        // Inner white dot
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(lx, ly, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Text label badge
+        ctx.fillStyle = color;
+        ctx.font = "bold 9px sans-serif";
+        const isRight = Math.sin(rad) >= 0;
+        ctx.textAlign = isRight ? "left" : "right";
+        ctx.fillText(`${label} ${Math.round(azimuth)}°`, lx + (isRight ? 11 : -11), ly + 3);
+    }
+
+    const kAz = getWidget(node, "key_azimuth")?.value ?? 45;
+    const kEn = getWidget(node, "key_enabled")?.value ?? true;
+
+    const fAz = getWidget(node, "fill_azimuth")?.value ?? -30;
+    const fEn = getWidget(node, "fill_enabled")?.value ?? true;
+
+    const rAz = getWidget(node, "rim_azimuth")?.value ?? 160;
+    const rEn = getWidget(node, "rim_enabled")?.value ?? true;
+
+    // Draw active lights with distinct high-contrast neon palettes
+    drawLightHandle(kAz, "#ffaa00", "KEY", kEn);
+    drawLightHandle(fAz, "#00d4ff", "FILL", fEn);
+    drawLightHandle(rAz, "#ff2a85", "RIM", rEn);
+
+    // Elevation readout in bottom corner
+    const kEl = getWidget(node, "key_elevation")?.value ?? 35;
+    const fEl = getWidget(node, "fill_elevation")?.value ?? 15;
+    const rEl = getWidget(node, "rim_elevation")?.value ?? 45;
+    ctx.fillStyle = "#707084";
+    ctx.font = "8px monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(`EL: K:${Math.round(kEl)}° F:${Math.round(fEl)}° R:${Math.round(rEl)}°`, 18, radarY + boxHeight - 5);
+
+    ctx.restore();
+}
+
+function handleRadarMouse(event, localPos, node) {
+    if (node.flags?.collapsed || !node._radarMetrics) return false;
+
+    const { cx, cy, radius, radarY, boxHeight } = node._radarMetrics;
+    const mx = localPos[0];
+    const my = localPos[1];
+    const dist = Math.hypot(mx - cx, my - cy);
+
+    const type = event.type || "";
+
+    if (type === "pointerdown" || type === "mousedown") {
+        if (dist <= radius + 22 && my >= radarY && my <= radarY + boxHeight) {
+            const lights = [
+                { id: "key", widget: "key_azimuth" },
+                { id: "fill", widget: "fill_azimuth" },
+                { id: "rim", widget: "rim_azimuth" },
+            ];
+
+            for (const l of lights) {
+                const w = getWidget(node, l.widget);
+                if (!w) continue;
+                const az = (w.value) * (Math.PI / 180);
+                const lx = cx + radius * Math.sin(az);
+                const ly = cy + radius * Math.cos(az);
+                if (Math.hypot(mx - lx, my - ly) <= 22) {
+                    node._draggingLight = l.widget;
+                    updateLightAngle(node, mx - cx, my - cy, node._draggingLight);
+                    return true;
+                }
+            }
+
+            // Clicked inside radar ring -> aim closest or default Key
+            node._draggingLight = "key_azimuth";
+            updateLightAngle(node, mx - cx, my - cy, node._draggingLight);
+            return true;
+        }
+    } else if (type === "pointermove" || type === "mousemove") {
+        if (node._draggingLight) {
+            updateLightAngle(node, mx - cx, my - cy, node._draggingLight);
+            return true;
+        }
+    } else if (type === "pointerup" || type === "mouseup") {
+        if (node._draggingLight) {
+            node._draggingLight = null;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function setupRadarWidget(node) {
+    if (!node || node._studio_widget_installed) return;
+    node._studio_widget_installed = true;
+
+    // Hook preset widget callback
+    const presetWidget = getWidget(node, "preset");
+    if (presetWidget && !presetWidget._studio_hooked) {
+        presetWidget._studio_hooked = true;
+        const origPresetCb = presetWidget.callback;
+        presetWidget.callback = function (val) {
+            if (origPresetCb) origPresetCb.apply(this, arguments);
+            const currentVal = typeof val === "string" ? val : this.value;
+            applyPresetValues(node, currentVal);
+        };
+    }
+
+    // Add dedicated custom widget to node.widgets if not already present
+    if (!node.widgets?.some((w) => w.name === "studio_radar")) {
+        const radarWidget = {
+            name: "studio_radar",
+            type: "custom",
+            value: "",
+            options: { serialize: false },
+            draw(ctx, targetNode, widget_width, y, widget_height) {
+                drawRadar(targetNode, ctx, y, widget_height, widget_width);
+            },
+            mouse(event, pos, targetNode) {
+                return handleRadarMouse(event, pos, targetNode);
+            },
+            computeSize(width) {
+                return [width || 380, RADAR_HEIGHT];
+            }
+        };
+
+        if (typeof node.addCustomWidget === "function") {
+            node.addCustomWidget(radarWidget);
+        } else {
+            node.widgets = node.widgets || [];
+            node.widgets.push(radarWidget);
+        }
+    }
+
+    // Ensure node computeSize accounts for radar widget
+    const origComputeSize = node.computeSize?.bind(node);
+    node.computeSize = function () {
+        const s = origComputeSize ? origComputeSize.apply(this, arguments) : [380, 880];
+        s[0] = Math.max(s[0] || 0, 380);
+        s[1] = Math.max(s[1] || 0, 880);
+        return s;
+    };
+
+    // Ensure node size fits
+    if (node.size) {
+        node.size[0] = Math.max(node.size[0], 380);
+        node.size[1] = Math.max(node.size[1], 880);
+    }
+}
+
 app.registerExtension({
     name: "ComfyUI.StudioLight.Radar",
 
-    beforeRegisterNodeDef(nodeType, nodeData, appRef) {
-        if (nodeData.name === "StudioLightRig") {
-            const origOnNodeCreated = nodeType.prototype.onNodeCreated;
-            nodeType.prototype.onNodeCreated = function () {
-                const r = origOnNodeCreated ? origOnNodeCreated.apply(this, arguments) : undefined;
-                app.extensions?.find(e => e.name === "ComfyUI.StudioLight.Radar")?.setupStudioLightNode(this);
-                return r;
-            };
-
-            const origOnConfigure = nodeType.prototype.onConfigure;
-            nodeType.prototype.onConfigure = function () {
-                const r = origOnConfigure ? origOnConfigure.apply(this, arguments) : undefined;
-                app.extensions?.find(e => e.name === "ComfyUI.StudioLight.Radar")?.setupStudioLightNode(this);
-                return r;
-            };
-        }
-    },
-
-    async nodeCreated(node) {
-        this.setupStudioLightNode(node);
-    },
-    async loadedGraphNode(node) {
-        this.setupStudioLightNode(node);
-    },
-
-    setupStudioLightNode(node) {
-        const nodeType = node.type || node.constructor?.type || node.comfyClass;
-        if (nodeType !== "StudioLightRig") {
+    beforeRegisterNodeDef(nodeType, nodeData) {
+        if (nodeData.name !== "StudioLightRig" && nodeType.comfyClass !== "StudioLightRig") {
             return;
         }
 
-        let isApplyingPreset = false;
+        // Prototype configure hook
+        const origConfigure = nodeType.prototype.onConfigure;
+        nodeType.prototype.onConfigure = function () {
+            if (origConfigure) origConfigure.apply(this, arguments);
+            setupRadarWidget(this);
+        };
 
-        function getWidget(name) {
-            return node.widgets?.find((w) => w.name === name);
+        // Prototype onDrawForeground fallback
+        const origDrawFg = nodeType.prototype.onDrawForeground;
+        nodeType.prototype.onDrawForeground = function (ctx) {
+            if (origDrawFg) origDrawFg.apply(this, arguments);
+            setupRadarWidget(this);
+            // If the custom widget didn't draw, draw directly as fallback
+            if (!this.widgets?.some((w) => w.name === "studio_radar")) {
+                drawRadar(this, ctx);
+            }
+        };
+
+        // Prototype mouse handlers as robust fallback
+        const origMouseDown = nodeType.prototype.onMouseDown;
+        nodeType.prototype.onMouseDown = function (e, localPos) {
+            if (handleRadarMouse(e, localPos, this)) return true;
+            return origMouseDown ? origMouseDown.apply(this, arguments) : false;
+        };
+
+        const origMouseMove = nodeType.prototype.onMouseMove;
+        nodeType.prototype.onMouseMove = function (e, localPos) {
+            if (handleRadarMouse(e, localPos, this)) return true;
+            return origMouseMove ? origMouseMove.apply(this, arguments) : false;
+        };
+
+        const origMouseUp = nodeType.prototype.onMouseUp;
+        nodeType.prototype.onMouseUp = function (e, localPos) {
+            if (handleRadarMouse(e, localPos, this)) return true;
+            return origMouseUp ? origMouseUp.apply(this, arguments) : false;
+        };
+
+        // onWidgetChanged: If ANY widget is adjusted, immediately flip preset to "Custom"
+        const origWidgetChanged = nodeType.prototype.onWidgetChanged;
+        nodeType.prototype.onWidgetChanged = function (name, value, old_value, widget) {
+            if (origWidgetChanged) origWidgetChanged.apply(this, arguments);
+            if (name !== "preset" && name !== "framing" && name !== "studio_radar") {
+                setPresetToCustom(this);
+            }
+        };
+    },
+
+    nodeCreated(node) {
+        if (node.type === "StudioLightRig" || node.comfyClass === "StudioLightRig") {
+            setupRadarWidget(node);
         }
+    },
 
-        function applyPresetValues(currentVal) {
-            if (!currentVal || currentVal === "Custom" || !PRESET_MAP[currentVal]) return;
-            isApplyingPreset = true;
-            const p = PRESET_MAP[currentVal];
-            for (const [k, v] of Object.entries(p)) {
-                const targetWidget = getWidget(k);
-                if (targetWidget) {
-                    targetWidget.value = v;
-                    if (targetWidget.inputEl) targetWidget.inputEl.value = v;
-                    if (targetWidget.element) targetWidget.element.value = v;
-                    if (targetWidget.callback) {
-                        try {
-                            targetWidget.callback.call(targetWidget, v);
-                        } catch (e) {}
-                    }
-                }
-            }
-            isApplyingPreset = false;
-            node.setDirtyCanvas(true, true);
-            app.canvas?.setDirty(true, true);
+    loadedGraphNode(node) {
+        if (node.type === "StudioLightRig" || node.comfyClass === "StudioLightRig") {
+            setupRadarWidget(node);
         }
-
-        // 1. Hook Preset Dropdown: When selected, update all sliders visually
-        const presetWidget = getWidget("preset");
-        if (presetWidget && !presetWidget._studio_hooked) {
-            presetWidget._studio_hooked = true;
-            const originalPresetCallback = presetWidget.callback;
-            presetWidget.callback = function (val) {
-                if (originalPresetCallback) originalPresetCallback.apply(this, arguments);
-                const currentVal = typeof val === "string" ? val : this.value;
-                applyPresetValues(currentVal);
-            };
-        }
-
-        // 2. If user adjusts any light slider manually, switch preset dropdown to "Custom"
-        const origOnWidgetChanged = node.onWidgetChanged;
-        node.onWidgetChanged = function (name, value, old_value, widget) {
-            if (origOnWidgetChanged) origOnWidgetChanged.apply(this, arguments);
-            if (!isApplyingPreset && name !== "preset" && name !== "framing" && presetWidget && presetWidget.value !== "Custom") {
-                presetWidget.value = "Custom";
-                if (presetWidget.inputEl) presetWidget.inputEl.value = "Custom";
-                node.setDirtyCanvas(true, true);
-                app.canvas?.setDirty(true, true);
-            }
-        };
-
-        const monitoredSliders = [
-            "ambient_intensity",
-            "key_enabled", "key_azimuth", "key_elevation", "key_intensity", "key_kelvin", "key_modifier",
-            "fill_enabled", "fill_azimuth", "fill_elevation", "fill_intensity", "fill_kelvin", "fill_modifier",
-            "rim_enabled", "rim_azimuth", "rim_elevation", "rim_intensity", "rim_kelvin", "rim_modifier"
-        ];
-
-        for (const name of monitoredSliders) {
-            const w = getWidget(name);
-            if (w && !w._studio_hooked) {
-                w._studio_hooked = true;
-                const originalCb = w.callback;
-                w.callback = function (val) {
-                    if (originalCb) originalCb.apply(this, arguments);
-                    if (!isApplyingPreset && presetWidget && presetWidget.value !== "Custom") {
-                        presetWidget.value = "Custom";
-                        if (presetWidget.inputEl) presetWidget.inputEl.value = "Custom";
-                    }
-                    node.setDirtyCanvas(true, true);
-                    app.canvas?.setDirty(true, true);
-                };
-            }
-        }
-
-        // 3. Interactive Visual Studio Radar (Rendered in dedicated bottom console area)
-        const RADAR_HEIGHT = 160;
-        let draggingLight = null;
-
-        // Ensure node height accounts for the bottom radar console
-        const originalComputeSize = node.computeSize?.bind(node);
-        node.computeSize = function () {
-            const s = originalComputeSize ? originalComputeSize() : [380, 720];
-            s[0] = Math.max(s[0], 380);
-            s[1] = Math.max(s[1], 880);
-            return s;
-        };
-        node.size[0] = Math.max(node.size[0], 380);
-        node.size[1] = Math.max(node.size[1], 880);
-
-        // Mouse click and drag to aim lights on the radar
-        const originalOnMouseDown = node.onMouseDown?.bind(node);
-        node.onMouseDown = function (e, localPos) {
-            if (node.flags?.collapsed) return originalOnMouseDown ? originalOnMouseDown(e, localPos) : false;
-
-            const width = node.size[0];
-            const radarY = node.size[1] - RADAR_HEIGHT - 12;
-            const cx = width / 2;
-            const cy = radarY + RADAR_HEIGHT / 2;
-            const radius = Math.min(width, RADAR_HEIGHT) / 2 - 20;
-
-            const mx = localPos[0];
-            const my = localPos[1];
-            const dist = Math.hypot(mx - cx, my - cy);
-
-            if (dist <= radius + 15 && my >= radarY && my <= radarY + RADAR_HEIGHT) {
-                // Determine which light head was clicked
-                const lights = [
-                    { id: "key", widget: "key_azimuth" },
-                    { id: "fill", widget: "fill_azimuth" },
-                    { id: "rim", widget: "rim_azimuth" },
-                ];
-
-                for (const l of lights) {
-                    const w = getWidget(l.widget);
-                    if (!w) continue;
-                    // Camera at bottom (0°): screen x = cx + r*sin(az), screen y = cy + r*cos(az)
-                    const az = (w.value) * (Math.PI / 180);
-                    const lx = cx + radius * Math.sin(az);
-                    const ly = cy + radius * Math.cos(az);
-                    if (Math.hypot(mx - lx, my - ly) <= 18) {
-                        draggingLight = l.widget;
-                        return true;
-                    }
-                }
-
-                // If clicked inside radar circle, target Key by default
-                draggingLight = "key_azimuth";
-                updateLightAngle(mx - cx, my - cy, draggingLight);
-                return true;
-            }
-
-            if (originalOnMouseDown) {
-                return originalOnMouseDown(e, localPos);
-            }
-            return false;
-        };
-
-        const originalOnMouseMove = node.onMouseMove?.bind(node);
-        node.onMouseMove = function (e, localPos) {
-            if (draggingLight) {
-                const width = node.size[0];
-                const radarY = node.size[1] - RADAR_HEIGHT - 12;
-                const cx = width / 2;
-                const cy = radarY + RADAR_HEIGHT / 2;
-                updateLightAngle(localPos[0] - cx, localPos[1] - cy, draggingLight);
-                return true;
-            }
-            if (originalOnMouseMove) {
-                return originalOnMouseMove(e, localPos);
-            }
-            return false;
-        };
-
-        const originalOnMouseUp = node.onMouseUp?.bind(node);
-        node.onMouseUp = function (e, localPos) {
-            if (draggingLight) {
-                draggingLight = null;
-                return true;
-            }
-            if (originalOnMouseUp) {
-                return originalOnMouseUp(e, localPos);
-            }
-            return false;
-        };
-
-        function updateLightAngle(dx, dy, widgetName) {
-            const w = getWidget(widgetName);
-            if (!w) return;
-            // Camera at bottom: dy > 0 is bottom (0°), dx > 0 is right (+90°), dy < 0 is top (+/-180°)
-            let deg = Math.atan2(dx, dy) * (180 / Math.PI);
-            deg = Math.round(deg);
-            w.value = deg;
-            if (w.inputEl) w.inputEl.value = deg;
-            if (presetWidget && presetWidget.value !== "Custom") {
-                presetWidget.value = "Custom";
-                if (presetWidget.inputEl) presetWidget.inputEl.value = "Custom";
-            }
-            if (w.callback) {
-                w.callback(w.value);
-            }
-            node.setDirtyCanvas(true, true);
-            app.canvas?.setDirty(true, true);
-        }
-
-        // Draw interactive visual studio radar on node canvas
-        const originalOnDrawForeground = node.onDrawForeground?.bind(node);
-        node.onDrawForeground = function (ctx) {
-            if (originalOnDrawForeground) {
-                originalOnDrawForeground(ctx);
-            }
-
-            if (node.flags?.collapsed) return;
-
-            const width = node.size[0];
-            const radarY = node.size[1] - RADAR_HEIGHT - 12;
-            const cx = width / 2;
-            const cy = radarY + RADAR_HEIGHT / 2;
-            const radius = Math.min(width, RADAR_HEIGHT) / 2 - 20;
-
-            ctx.save();
-
-            // Background pod container
-            ctx.fillStyle = "#121215";
-            ctx.strokeStyle = "#2c2c34";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.roundRect(14, radarY, width - 28, RADAR_HEIGHT, 8);
-            ctx.fill();
-            ctx.stroke();
-
-            // Circular radar grid
-            ctx.strokeStyle = "#222228";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius * 0.5, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Crosshairs
-            ctx.strokeStyle = "#1e1e24";
-            ctx.beginPath();
-            ctx.moveTo(cx - radius, cy);
-            ctx.lineTo(cx + radius, cy);
-            ctx.moveTo(cx, cy - radius);
-            ctx.lineTo(cx, cy + radius);
-            ctx.stroke();
-
-            // Diagonal guidelines (+/- 45°, +/- 135°)
-            ctx.strokeStyle = "#1a1a20";
-            for (const angle of [45, 135, -45, -135]) {
-                const rad = angle * (Math.PI / 180);
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.lineTo(cx + radius * Math.sin(rad), cy + radius * Math.cos(rad));
-                ctx.stroke();
-            }
-
-            // Elevation readout in top-left corner
-            const kEl = getWidget("key_elevation")?.value ?? 35;
-            const fEl = getWidget("fill_elevation")?.value ?? 15;
-            const rEl = getWidget("rim_elevation")?.value ?? 40;
-            ctx.fillStyle = "#6e6e7c";
-            ctx.font = "8px monospace";
-            ctx.textAlign = "left";
-            ctx.fillText(`EL: K:${Math.round(kEl)}° F:${Math.round(fEl)}° R:${Math.round(rEl)}°`, 22, radarY + 14);
-
-            // Camera indicator at bottom (0°) - User is behind the camera
-            ctx.fillStyle = "#9a9aa8";
-            ctx.font = "bold 8px monospace";
-            ctx.textAlign = "center";
-            ctx.fillText("▼ CAMERA (0°)", cx, cy + radius + 14);
-
-            // Center subject dot
-            ctx.fillStyle = "#ffffff";
-            ctx.beginPath();
-            ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Helper to render light ray & handle
-            function drawLightHandle(azimuth, elevation, color, label, enabled) {
-                if (!enabled) return;
-
-                // 0° is bottom (camera), +45° is camera-right (screen right), +/-180° is top (backlight)
-                const rad = azimuth * (Math.PI / 180);
-                const lx = cx + radius * Math.sin(rad);
-                const ly = cy + radius * Math.cos(rad);
-
-                // Ray line
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.lineTo(lx, ly);
-                ctx.stroke();
-
-                // Glowing handle
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.arc(lx, ly, 5.5, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.strokeStyle = "#ffffff";
-                ctx.lineWidth = 1.2;
-                ctx.stroke();
-
-                // Text badge
-                ctx.fillStyle = color;
-                ctx.font = "bold 9px sans-serif";
-                const isRight = Math.sin(rad) >= 0;
-                ctx.textAlign = isRight ? "left" : "right";
-                ctx.fillText(`${label} ${Math.round(azimuth)}°`, lx + (isRight ? 8 : -8), ly + 3);
-            }
-
-            const kAz = getWidget("key_azimuth")?.value ?? 45;
-            const kEn = getWidget("key_enabled")?.value ?? true;
-
-            const fAz = getWidget("fill_azimuth")?.value ?? -30;
-            const fEn = getWidget("fill_enabled")?.value ?? true;
-
-            const rAz = getWidget("rim_azimuth")?.value ?? 140;
-            const rEn = getWidget("rim_enabled")?.value ?? true;
-
-            // Draw lights
-            drawLightHandle(kAz, kEl, "#ffb92d", "KEY", kEn);
-            drawLightHandle(fAz, fEl, "#41cdff", "FILL", fEn);
-            drawLightHandle(rAz, rEl, "#f54baf", "RIM", rEn);
-
-            ctx.restore();
-        };
     }
 });
