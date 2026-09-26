@@ -1,6 +1,6 @@
 {
-  "last_node_id": 14,
-  "last_link_id": 15,
+  "last_node_id": 13,
+  "last_link_id": 14,
   "nodes": [
     {
       "id": 1,
@@ -35,7 +35,7 @@
         "flux1-krea-dev.safetensors",
         "default"
       ],
-      "title": "Flux Krea Dev (UNET)"
+      "title": "Flux Krea Dev (Base UNET)"
     },
     {
       "id": 2,
@@ -111,29 +111,39 @@
     },
     {
       "id": 4,
-      "type": "LoraLoaderModelOnly",
+      "type": "SIPromptBlock",
       "pos": [
-        -840,
+        -800,
         100
       ],
       "size": [
-        320,
-        90
+        380,
+        280
       ],
       "flags": {},
       "order": 4,
       "mode": 0,
       "inputs": [
         {
-          "name": "model",
-          "type": "MODEL",
-          "link": 1
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "name": "conditioning_in",
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": null
         }
       ],
       "outputs": [
         {
-          "name": "MODEL",
-          "type": "MODEL",
+          "name": "conditioning",
+          "type": "CONDITIONING",
           "links": [
             6
           ],
@@ -142,23 +152,29 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "LoraLoaderModelOnly"
+        "Node name for S&R": "SIPromptBlock"
       },
       "widgets_values": [
-        "chromecore_flux.safetensors",
-        0.75
+        "Fashion Subject",
+        "cinematic editorial fashion portrait of an elegant woman, high-fashion styling, flawless natural skin texture, subtle freckles, sharp depth of field, neutral dark grey studio backdrop, 85mm portrait lens, 8k resolution, Vogue magazine cover quality",
+        true,
+        1.0,
+        "ADDITIVE",
+        0.0,
+        0.4,
+        "concat"
       ],
-      "title": "ChromeCore LoRA"
+      "title": "\u2728 [Fashion Subject] SIPromptBlock (0.0 \u2192 0.40)"
     },
     {
       "id": 5,
       "type": "SIPromptBlock",
       "pos": [
-        -480,
-        100
+        -800,
+        420
       ],
       "size": [
-        360,
+        380,
         280
       ],
       "flags": {},
@@ -168,7 +184,7 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 2
+          "link": 3
         },
         {
           "name": "conditioning_in",
@@ -196,65 +212,8 @@
         "Node name for S&R": "SIPromptBlock"
       },
       "widgets_values": [
-        "Subject",
-        "a high-fashion portrait bust of a feminine cyborg made of polished mirror chrome, sleek liquid metal surface, delicate facial features, intense gaze, neutral dark grey studio backdrop",
-        true,
-        1.0,
-        "ADDITIVE",
-        0.0,
-        0.4,
-        "concat"
-      ],
-      "title": "\u2728 [Subject] SI Prompt Block (0.0 \u2192 0.40)"
-    },
-    {
-      "id": 6,
-      "type": "SIPromptBlock",
-      "pos": [
-        -480,
-        420
-      ],
-      "size": [
-        360,
-        280
-      ],
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 3
-        },
-        {
-          "name": "conditioning_in",
-          "type": "CONDITIONING",
-          "link": null
-        },
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "conditioning",
-          "type": "CONDITIONING",
-          "links": [
-            8
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SIPromptBlock"
-      },
-      "widgets_values": [
-        "Negative",
-        "worst quality, blurry, noisy, low resolution, blown out light flares, deformed, extra limbs, bad anatomy, artifacts",
+        "Negative Suppression",
+        "blurry, out of focus, low quality, distorted, deformed anatomy, bad eyes, extra limbs, cartoon, 3d render illustration, oversaturated, flat plastic texture, noise, grain, amateur photography",
         true,
         1.0,
         "ADDITIVE",
@@ -265,10 +224,10 @@
       "title": "\u26d4 [Negative] Universal Suppression"
     },
     {
-      "id": 7,
+      "id": 6,
       "type": "StudioLightRig",
       "pos": [
-        -80,
+        -380,
         100
       ],
       "size": [
@@ -276,7 +235,7 @@
         720
       ],
       "flags": {},
-      "order": 7,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -297,7 +256,7 @@
         {
           "name": "conditioning_in",
           "type": "CONDITIONING",
-          "link": 7
+          "link": 6
         },
         {
           "name": "prompt_text_optional",
@@ -310,7 +269,7 @@
           "name": "relighting_map",
           "type": "IMAGE",
           "links": [
-            9
+            8
           ],
           "shape": 3,
           "slot_index": 0
@@ -319,7 +278,7 @@
           "name": "probe_preview",
           "type": "IMAGE",
           "links": [
-            10
+            9
           ],
           "shape": 3,
           "slot_index": 1
@@ -328,7 +287,7 @@
           "name": "conditioning",
           "type": "CONDITIONING",
           "links": [
-            11
+            10
           ],
           "shape": 3,
           "slot_index": 2
@@ -375,10 +334,10 @@
       "title": "\ud83c\udf9b\ufe0f StudioLight (Rembrandt Console)"
     },
     {
-      "id": 8,
+      "id": 7,
       "type": "PreviewImage",
       "pos": [
-        340,
+        40,
         100
       ],
       "size": [
@@ -386,35 +345,7 @@
         320
       ],
       "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 10
-        }
-      ],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "title": "\u2728 VFX Probe (18% Grey & Chrome Ball + Radar)"
-    },
-    {
-      "id": 12,
-      "type": "PreviewImage",
-      "pos": [
-        340,
-        460
-      ],
-      "size": [
-        320,
-        320
-      ],
-      "flags": {},
-      "order": 9,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -428,13 +359,41 @@
         "Node name for S&R": "PreviewImage"
       },
       "widgets_values": [],
+      "title": "\u2728 VFX Probe (18% Grey & Chrome Ball + Radar)"
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "pos": [
+        40,
+        460
+      ],
+      "size": [
+        320,
+        320
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
       "title": "\u2728 32-bit Deferred Lighting Pass"
     },
     {
       "id": 9,
       "type": "FluxGuidance",
       "pos": [
-        700,
+        400,
         100
       ],
       "size": [
@@ -442,13 +401,13 @@
         80
       ],
       "flags": {},
-      "order": 10,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
           "name": "conditioning",
           "type": "CONDITIONING",
-          "link": 11
+          "link": 10
         }
       ],
       "outputs": [
@@ -456,7 +415,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            12
+            11
           ],
           "shape": 3,
           "slot_index": 0
@@ -474,7 +433,7 @@
       "id": 10,
       "type": "EmptySD3LatentImage",
       "pos": [
-        700,
+        400,
         220
       ],
       "size": [
@@ -482,7 +441,7 @@
         110
       ],
       "flags": {},
-      "order": 11,
+      "order": 10,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -490,7 +449,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            13
+            12
           ],
           "shape": 3,
           "slot_index": 0
@@ -510,7 +469,7 @@
       "id": 11,
       "type": "KSampler",
       "pos": [
-        1000,
+        700,
         100
       ],
       "size": [
@@ -518,28 +477,28 @@
         260
       ],
       "flags": {},
-      "order": 12,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 6
+          "link": 1
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 12
+          "link": 11
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 8
+          "link": 7
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 13
+          "link": 12
         }
       ],
       "outputs": [
@@ -547,7 +506,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            14
+            13
           ],
           "shape": 3,
           "slot_index": 0
@@ -565,13 +524,13 @@
         "beta",
         1.0
       ],
-      "title": "\ud83d\ude80 Flux KSampler"
+      "title": "\ud83d\ude80 Flux KSampler (Pure Base UNET)"
     },
     {
-      "id": 13,
+      "id": 12,
       "type": "VAEDecode",
       "pos": [
-        1000,
+        700,
         400
       ],
       "size": [
@@ -579,13 +538,13 @@
         80
       ],
       "flags": {},
-      "order": 13,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 14
+          "link": 13
         },
         {
           "name": "vae",
@@ -598,7 +557,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            15
+            14
           ],
           "shape": 3,
           "slot_index": 0
@@ -611,24 +570,24 @@
       "title": "VAE Decode"
     },
     {
-      "id": 14,
+      "id": 13,
       "type": "SaveImage",
       "pos": [
-        1340,
+        1040,
         100
       ],
       "size": [
-        420,
-        520
+        440,
+        540
       ],
       "flags": {},
-      "order": 14,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 15
+          "link": 14
         }
       ],
       "outputs": [],
@@ -636,19 +595,19 @@
         "Node name for S&R": "SaveImage"
       },
       "widgets_values": [
-        "StudioLight_T2I"
+        "Fashion_StudioLight"
       ],
-      "title": "\ud83c\udf89 [T2I] Master Render"
+      "title": "\ud83c\udf89 [Fashion T2I] Vogue Master Render"
     }
   ],
   "links": [
     [
       1,
-      1,
+      2,
       0,
       4,
       0,
-      "MODEL"
+      "CLIP"
     ],
     [
       2,
@@ -663,75 +622,67 @@
       2,
       0,
       6,
-      0,
+      2,
       "CLIP"
     ],
     [
       4,
-      2,
+      4,
       0,
-      7,
-      2,
-      "CLIP"
-    ],
-    [
-      5,
-      5,
-      0,
-      7,
+      6,
       3,
       "CONDITIONING"
     ],
     [
+      5,
       6,
-      7,
       1,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      6,
+      0,
       8,
       0,
       "IMAGE"
     ],
     [
       7,
-      7,
-      0,
-      12,
-      0,
-      "IMAGE"
-    ],
-    [
-      8,
-      7,
+      6,
       2,
       9,
       0,
       "CONDITIONING"
     ],
     [
-      9,
-      4,
+      8,
+      1,
       0,
       11,
       0,
       "MODEL"
+    ],
+    [
+      9,
+      9,
+      0,
+      11,
+      1,
+      "CONDITIONING"
     ],
     [
       10,
-      9,
-      0,
-      11,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      11,
-      6,
+      5,
       0,
       11,
       2,
       "CONDITIONING"
     ],
     [
-      12,
+      11,
       10,
       0,
       11,
@@ -739,47 +690,47 @@
       "LATENT"
     ],
     [
-      13,
+      12,
       11,
       0,
-      13,
+      12,
       0,
       "LATENT"
     ],
     [
-      14,
+      13,
       3,
       0,
-      13,
+      12,
       1,
       "VAE"
     ],
     [
-      15,
-      13,
-      0,
       14,
+      12,
+      0,
+      13,
       0,
       "IMAGE"
     ]
   ],
   "groups": [
     {
-      "title": "1. BASE MODELS (FLUX KREA DEV + CHROMECORE)",
+      "title": "1. PURE BASE MODELS (FLUX KREA DEV \u2014 ZERO LORAS)",
       "bounding": [
         -1240,
         40,
-        740,
+        400,
         480
       ],
       "color": "#2a363b"
     },
     {
-      "title": "2. PROMPT & STUDIOLIGHT CONSOLE",
+      "title": "2. EDITORIAL FASHION PROMPT & STUDIOLIGHT CONSOLE",
       "bounding": [
-        -520,
+        -840,
         40,
-        840,
+        860,
         820
       ],
       "color": "#3f2b47"
@@ -787,7 +738,7 @@
     {
       "title": "3. VFX PROBES & DEFERRED PASS",
       "bounding": [
-        300,
+        0,
         40,
         380,
         780
@@ -795,11 +746,11 @@
       "color": "#1f3a3d"
     },
     {
-      "title": "4. FLUX SAMPLING & 2K MASTER OUTPUT",
+      "title": "4. FLUX SAMPLING & VOGUE MASTER OUTPUT",
       "bounding": [
-        660,
+        360,
         40,
-        1140,
+        1160,
         620
       ],
       "color": "#2e2d4d"

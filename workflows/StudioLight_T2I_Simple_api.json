@@ -22,23 +22,12 @@
   },
   "4": {
     "inputs": {
-      "lora_name": "chromecore_flux.safetensors",
-      "strength_model": 0.75,
-      "model": [
-        "1",
-        0
-      ]
-    },
-    "class_type": "LoraLoaderModelOnly"
-  },
-  "5": {
-    "inputs": {
       "clip": [
         "2",
         0
       ],
-      "label": "Subject",
-      "text": "a high-fashion portrait bust of a feminine cyborg made of polished mirror chrome, sleek liquid metal surface, delicate facial features, intense gaze, neutral dark grey studio backdrop",
+      "label": "Fashion Subject",
+      "text": "cinematic editorial fashion portrait of an elegant woman, high-fashion styling, flawless natural skin texture, subtle freckles, sharp depth of field, neutral dark grey studio backdrop, 85mm portrait lens, 8k resolution, Vogue magazine cover quality",
       "enabled": true,
       "strength": 1.0,
       "weight_type": "ADDITIVE",
@@ -48,14 +37,14 @@
     },
     "class_type": "SIPromptBlock"
   },
-  "6": {
+  "5": {
     "inputs": {
       "clip": [
         "2",
         0
       ],
-      "label": "Negative",
-      "text": "worst quality, blurry, noisy, low resolution, blown out light flares, deformed, extra limbs, bad anatomy, artifacts",
+      "label": "Negative Suppression",
+      "text": "blurry, out of focus, low quality, distorted, deformed anatomy, bad eyes, extra limbs, cartoon, 3d render illustration, oversaturated, flat plastic texture, noise, grain, amateur photography",
       "enabled": true,
       "strength": 1.0,
       "weight_type": "ADDITIVE",
@@ -65,7 +54,7 @@
     },
     "class_type": "SIPromptBlock"
   },
-  "7": {
+  "6": {
     "inputs": {
       "preset": "Rembrandt Classic",
       "framing": "Portrait (Classical Bust)",
@@ -98,25 +87,25 @@
         0
       ],
       "conditioning_in": [
-        "5",
+        "4",
         0
       ]
     },
     "class_type": "StudioLightRig"
   },
-  "8": {
+  "7": {
     "inputs": {
       "images": [
-        "7",
+        "6",
         1
       ]
     },
     "class_type": "PreviewImage"
   },
-  "12": {
+  "8": {
     "inputs": {
       "images": [
-        "7",
+        "6",
         0
       ]
     },
@@ -126,7 +115,7 @@
     "inputs": {
       "guidance": 3.5,
       "conditioning": [
-        "7",
+        "6",
         2
       ]
     },
@@ -149,7 +138,7 @@
       "scheduler": "beta",
       "denoise": 1.0,
       "model": [
-        "4",
+        "1",
         0
       ],
       "positive": [
@@ -157,7 +146,7 @@
         0
       ],
       "negative": [
-        "6",
+        "5",
         0
       ],
       "latent_image": [
@@ -167,7 +156,7 @@
     },
     "class_type": "KSampler"
   },
-  "13": {
+  "12": {
     "inputs": {
       "samples": [
         "11",
@@ -180,11 +169,11 @@
     },
     "class_type": "VAEDecode"
   },
-  "14": {
+  "13": {
     "inputs": {
-      "filename_prefix": "StudioLight_T2I",
+      "filename_prefix": "Fashion_StudioLight",
       "images": [
-        "13",
+        "12",
         0
       ]
     },
