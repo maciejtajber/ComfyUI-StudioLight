@@ -1,0 +1,193 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "flux1-krea-dev.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "2": {
+    "inputs": {
+      "clip_name1": "t5xxl_fp16.safetensors",
+      "clip_name2": "clip_l.safetensors",
+      "type": "flux"
+    },
+    "class_type": "DualCLIPLoader"
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "4": {
+    "inputs": {
+      "lora_name": "chromecore_flux.safetensors",
+      "strength_model": 0.75,
+      "model": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly"
+  },
+  "5": {
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "label": "Subject",
+      "text": "a high-fashion portrait bust of a feminine cyborg made of polished mirror chrome, sleek liquid metal surface, delicate facial features, intense gaze, neutral dark grey studio backdrop",
+      "enabled": true,
+      "strength": 1.0,
+      "weight_type": "ADDITIVE",
+      "start_step": 0.0,
+      "end_step": 0.4,
+      "merge_mode": "concat"
+    },
+    "class_type": "SIPromptBlock"
+  },
+  "6": {
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "label": "Negative",
+      "text": "worst quality, blurry, noisy, low resolution, blown out light flares, deformed, extra limbs, bad anatomy, artifacts",
+      "enabled": true,
+      "strength": 1.0,
+      "weight_type": "ADDITIVE",
+      "start_step": 0.0,
+      "end_step": 1.0,
+      "merge_mode": "concat"
+    },
+    "class_type": "SIPromptBlock"
+  },
+  "7": {
+    "inputs": {
+      "preset": "Rembrandt Classic",
+      "framing": "Portrait (Classical Bust)",
+      "ambient_intensity": 0.05,
+      "invert_normals_y": false,
+      "key_enabled": true,
+      "key_azimuth": 45.0,
+      "key_elevation": 35.0,
+      "key_intensity": 1.0,
+      "key_kelvin": 5500,
+      "key_modifier": "Octabox (Soft)",
+      "fill_enabled": true,
+      "fill_azimuth": -30.0,
+      "fill_elevation": 15.0,
+      "fill_intensity": 0.35,
+      "fill_kelvin": 4800,
+      "fill_modifier": "Octabox (Soft)",
+      "rim_enabled": true,
+      "rim_azimuth": 160.0,
+      "rim_elevation": 45.0,
+      "rim_intensity": 1.1,
+      "rim_kelvin": 6500,
+      "rim_modifier": "Stripbox",
+      "start_step": 0.4,
+      "end_step": 1.0,
+      "conditioning_strength": 1.0,
+      "weight_type": "A_NORM",
+      "clip_optional": [
+        "2",
+        0
+      ],
+      "conditioning_in": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "StudioLightRig"
+  },
+  "8": {
+    "inputs": {
+      "images": [
+        "7",
+        1
+      ]
+    },
+    "class_type": "PreviewImage"
+  },
+  "12": {
+    "inputs": {
+      "images": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "PreviewImage"
+  },
+  "9": {
+    "inputs": {
+      "guidance": 3.5,
+      "conditioning": [
+        "7",
+        2
+      ]
+    },
+    "class_type": "FluxGuidance"
+  },
+  "10": {
+    "inputs": {
+      "width": 896,
+      "height": 1152,
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage"
+  },
+  "11": {
+    "inputs": {
+      "seed": 42,
+      "steps": 25,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "denoise": 1.0,
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "6",
+        0
+      ],
+      "latent_image": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "KSampler"
+  },
+  "13": {
+    "inputs": {
+      "samples": [
+        "11",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "VAEDecode"
+  },
+  "14": {
+    "inputs": {
+      "filename_prefix": "StudioLight_T2I",
+      "images": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "SaveImage"
+  }
+}
