@@ -6,7 +6,7 @@
       "id": 1,
       "type": "UNETLoader",
       "pos": [
-        -1200,
+        -1400,
         100
       ],
       "size": [
@@ -41,8 +41,8 @@
       "id": 2,
       "type": "DualCLIPLoader",
       "pos": [
-        -1200,
-        240
+        -1400,
+        230
       ],
       "size": [
         320,
@@ -79,8 +79,8 @@
       "id": 3,
       "type": "VAELoader",
       "pos": [
-        -1200,
-        400
+        -1400,
+        380
       ],
       "size": [
         320,
@@ -95,7 +95,7 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            10,
+            11,
             18
           ],
           "shape": 3,
@@ -114,8 +114,8 @@
       "id": 14,
       "type": "ControlNetLoader",
       "pos": [
-        -1200,
-        510
+        -1400,
+        500
       ],
       "size": [
         320,
@@ -148,7 +148,7 @@
       "id": 4,
       "type": "SIPromptBlock",
       "pos": [
-        -800,
+        -980,
         100
       ],
       "size": [
@@ -205,7 +205,7 @@
       "id": 5,
       "type": "SIPromptBlock",
       "pos": [
-        -800,
+        -980,
         420
       ],
       "size": [
@@ -262,7 +262,7 @@
       "id": 6,
       "type": "StudioLightRig",
       "pos": [
-        -380,
+        -560,
         100
       ],
       "size": [
@@ -305,7 +305,7 @@
           "type": "IMAGE",
           "links": [
             6,
-            11
+            10
           ],
           "shape": 3,
           "slot_index": 0
@@ -373,7 +373,7 @@
       "id": 7,
       "type": "PreviewImage",
       "pos": [
-        60,
+        -120,
         100
       ],
       "size": [
@@ -401,7 +401,7 @@
       "id": 8,
       "type": "PreviewImage",
       "pos": [
-        60,
+        -120,
         460
       ],
       "size": [
@@ -427,9 +427,9 @@
     },
     {
       "id": 15,
-      "type": "ControlNetApplySD3",
+      "type": "ControlNetApplyAdvanced",
       "pos": [
-        440,
+        280,
         100
       ],
       "size": [
@@ -456,13 +456,13 @@
           "link": 9
         },
         {
-          "name": "vae",
-          "type": "VAE",
+          "name": "image",
+          "type": "IMAGE",
           "link": 10
         },
         {
-          "name": "image",
-          "type": "IMAGE",
+          "name": "vae",
+          "type": "VAE",
           "link": 11
         }
       ],
@@ -487,7 +487,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "ControlNetApplySD3"
+        "Node name for S&R": "ControlNetApplyAdvanced"
       },
       "widgets_values": [
         0.35,
@@ -500,7 +500,7 @@
       "id": 9,
       "type": "FluxGuidance",
       "pos": [
-        800,
+        640,
         100
       ],
       "size": [
@@ -540,7 +540,7 @@
       "id": 10,
       "type": "EmptySD3LatentImage",
       "pos": [
-        800,
+        640,
         220
       ],
       "size": [
@@ -576,7 +576,7 @@
       "id": 11,
       "type": "KSampler",
       "pos": [
-        1100,
+        940,
         100
       ],
       "size": [
@@ -637,7 +637,7 @@
       "id": 12,
       "type": "VAEDecode",
       "pos": [
-        1100,
+        940,
         400
       ],
       "size": [
@@ -680,7 +680,7 @@
       "id": 13,
       "type": "SaveImage",
       "pos": [
-        1440,
+        1280,
         100
       ],
       "size": [
@@ -782,19 +782,19 @@
     ],
     [
       10,
-      3,
-      0,
-      15,
-      3,
-      "VAE"
-    ],
-    [
-      11,
       6,
       0,
       15,
-      4,
+      3,
       "IMAGE"
+    ],
+    [
+      11,
+      3,
+      0,
+      15,
+      4,
+      "VAE"
     ],
     [
       12,
@@ -863,9 +863,9 @@
   ],
   "groups": [
     {
-      "title": "1. PURE BASE MODELS & CONTROLNET (FLUX KREA DEV \u2014 ZERO LORAS)",
+      "title": "1. BASE MODELS & CONTROLNET (FLUX KREA DEV)",
       "bounding": [
-        -1240,
+        -1440,
         40,
         400,
         600
@@ -873,11 +873,11 @@
       "color": "#2a363b"
     },
     {
-      "title": "2. EDITORIAL FASHION PROMPT & STUDIOLIGHT CONSOLE",
+      "title": "2. EDITORIAL PROMPT & STUDIOLIGHT CONSOLE",
       "bounding": [
-        -840,
+        -1020,
         40,
-        860,
+        880,
         820
       ],
       "color": "#3f2b47"
@@ -885,20 +885,20 @@
     {
       "title": "3. VFX PROBES & DEFERRED PASS",
       "bounding": [
-        20,
+        -160,
         40,
-        380,
+        400,
         820
       ],
       "color": "#1f3a3d"
     },
     {
-      "title": "4. DUAL-HYBRID SPATIAL INJECTION & SAMPLING",
+      "title": "4. DUAL-HYBRID LIGHT INJECTION & SAMPLING",
       "bounding": [
-        420,
+        240,
         40,
-        1500,
-        620
+        1520,
+        640
       ],
       "color": "#2e2d4d"
     }
@@ -908,8 +908,8 @@
     "ds": {
       "scale": 0.85,
       "offset": [
-        1300,
-        80
+        1500,
+        100
       ]
     }
   },

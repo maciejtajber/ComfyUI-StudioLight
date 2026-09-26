@@ -59,18 +59,18 @@ class WorkflowBuilder:
             "links": self.links,
             "groups": groups or [],
             "config": {},
-            "extra": {"ds": {"scale": 0.85, "offset": offset or [1300, 80]}},
+            "extra": {"ds": {"scale": 0.85, "offset": offset or [1500, 100]}},
             "version": 0.4
         }
 
 wb = WorkflowBuilder()
 
-# 1. Base Models (UNET, DualCLIP, VAE)
+# 1. Base Models & ControlNet
 wb.add_node(
     node_id=1,
     node_type="UNETLoader",
     title="Flux Krea Dev (Base UNET)",
-    pos=[-1200, 100],
+    pos=[-1400, 100],
     size=[320, 90],
     widgets_values=["flux1-krea-dev.safetensors", "default"],
     input_names=[],
@@ -81,7 +81,7 @@ wb.add_node(
     node_id=2,
     node_type="DualCLIPLoader",
     title="Dual CLIP Loader (T5 + CLIP-L)",
-    pos=[-1200, 240],
+    pos=[-1400, 230],
     size=[320, 110],
     widgets_values=["t5xxl_fp16.safetensors", "clip_l.safetensors", "flux"],
     input_names=[],
@@ -92,7 +92,7 @@ wb.add_node(
     node_id=3,
     node_type="VAELoader",
     title="Flux VAE",
-    pos=[-1200, 400],
+    pos=[-1400, 380],
     size=[320, 80],
     widgets_values=["ae.safetensors"],
     input_names=[],
@@ -103,7 +103,7 @@ wb.add_node(
     node_id=14,
     node_type="ControlNetLoader",
     title="ControlNet Union Pro 2",
-    pos=[-1200, 510],
+    pos=[-1400, 500],
     size=[320, 80],
     widgets_values=["flux-union-pro-2.safetensors"],
     input_names=[],
@@ -115,7 +115,7 @@ wb.add_node(
     node_id=4,
     node_type="SIPromptBlock",
     title="✨ [Fashion Subject] SIPromptBlock (0.0 → 0.40)",
-    pos=[-800, 100],
+    pos=[-980, 100],
     size=[380, 280],
     widgets_values=[
         "Fashion Subject",
@@ -135,7 +135,7 @@ wb.add_node(
     node_id=5,
     node_type="SIPromptBlock",
     title="⛔ [Negative] Universal Suppression",
-    pos=[-800, 420],
+    pos=[-980, 420],
     size=[380, 280],
     widgets_values=[
         "Negative Suppression",
@@ -156,7 +156,7 @@ wb.add_node(
     node_id=6,
     node_type="StudioLightRig",
     title="🎛️ StudioLight (Rembrandt Console)",
-    pos=[-380, 100],
+    pos=[-560, 100],
     size=[380, 720],
     widgets_values=[
         "Rembrandt Classic",
@@ -188,7 +188,7 @@ wb.add_node(
     node_id=7,
     node_type="PreviewImage",
     title="✨ VFX Probe (18% Grey & Chrome Ball + Radar)",
-    pos=[60, 100],
+    pos=[-120, 100],
     size=[320, 320],
     widgets_values=[],
     input_names=[("images", "IMAGE")],
@@ -199,27 +199,27 @@ wb.add_node(
     node_id=8,
     node_type="PreviewImage",
     title="✨ 32-bit Deferred Lighting Pass",
-    pos=[60, 460],
+    pos=[-120, 460],
     size=[320, 320],
     widgets_values=[],
     input_names=[("images", "IMAGE")],
     output_defs=[]
 )
 
-# 5. Dual-Hybrid Spatial Lighting Control (ControlNet Union Pro 2)
+# 5. Dual-Hybrid Spatial Lighting Control (ControlNet Apply Advanced)
 wb.add_node(
     node_id=15,
-    node_type="ControlNetApplySD3",
+    node_type="ControlNetApplyAdvanced",
     title="✨ Dual-Hybrid Spatial Lighting Control",
-    pos=[440, 100],
+    pos=[280, 100],
     size=[320, 240],
     widgets_values=[0.35, 0.0, 0.35],
     input_names=[
         ("positive", "CONDITIONING"),
         ("negative", "CONDITIONING"),
         ("control_net", "CONTROL_NET"),
-        ("vae", "VAE"),
-        ("image", "IMAGE")
+        ("image", "IMAGE"),
+        ("vae", "VAE")
     ],
     output_defs=[
         ("positive", "CONDITIONING"),
@@ -232,7 +232,7 @@ wb.add_node(
     node_id=9,
     node_type="FluxGuidance",
     title="Flux Guidance (3.5)",
-    pos=[800, 100],
+    pos=[640, 100],
     size=[260, 80],
     widgets_values=[3.5],
     input_names=[("conditioning", "CONDITIONING")],
@@ -243,7 +243,7 @@ wb.add_node(
     node_id=10,
     node_type="EmptySD3LatentImage",
     title="Empty Latent (896x1152)",
-    pos=[800, 220],
+    pos=[640, 220],
     size=[260, 110],
     widgets_values=[896, 1152, 1],
     input_names=[],
@@ -254,7 +254,7 @@ wb.add_node(
     node_id=11,
     node_type="KSampler",
     title="🚀 Flux KSampler (Pure Base UNET)",
-    pos=[1100, 100],
+    pos=[940, 100],
     size=[300, 260],
     widgets_values=[42, "randomize", 25, 1.0, "euler", "beta", 1.0],
     input_names=[
@@ -270,7 +270,7 @@ wb.add_node(
     node_id=12,
     node_type="VAEDecode",
     title="VAE Decode",
-    pos=[1100, 400],
+    pos=[940, 400],
     size=[240, 80],
     widgets_values=[],
     input_names=[("samples", "LATENT"), ("vae", "VAE")],
@@ -281,7 +281,7 @@ wb.add_node(
     node_id=13,
     node_type="SaveImage",
     title="🎉 [Fashion T2I] Vogue Master Render",
-    pos=[1440, 100],
+    pos=[1280, 100],
     size=[440, 540],
     widgets_values=["Fashion_StudioLight"],
     input_names=[("images", "IMAGE")],
@@ -308,20 +308,20 @@ wb.connect(6, 1, 7, 0, "IMAGE")
 wb.connect(6, 0, 8, 0, "IMAGE")
 
 # DUAL-HYBRID INJECTION:
-# StudioLight conditioning (Node 6, Slot 2) -> ControlNetApplySD3 positive (Node 15, Slot 0)
+# StudioLight conditioning (Node 6, Slot 2) -> ControlNetApplyAdvanced positive (Node 15, Slot 0)
 wb.connect(6, 2, 15, 0, "CONDITIONING")
 
-# Negative Suppression (Node 5, Slot 0) -> ControlNetApplySD3 negative (Node 15, Slot 1)
+# Negative Suppression (Node 5, Slot 0) -> ControlNetApplyAdvanced negative (Node 15, Slot 1)
 wb.connect(5, 0, 15, 1, "CONDITIONING")
 
-# ControlNet Union Pro 2 (Node 14, Slot 0) -> ControlNetApplySD3 control_net (Node 15, Slot 2)
+# ControlNet Union Pro 2 (Node 14, Slot 0) -> ControlNetApplyAdvanced control_net (Node 15, Slot 2)
 wb.connect(14, 0, 15, 2, "CONTROL_NET")
 
-# Flux VAE (Node 3, Slot 0) -> ControlNetApplySD3 vae (Node 15, Slot 3)
-wb.connect(3, 0, 15, 3, "VAE")
+# StudioLight relighting_map (Node 6, Slot 0) -> ControlNetApplyAdvanced image (Node 15, Slot 3)
+wb.connect(6, 0, 15, 3, "IMAGE")
 
-# StudioLight relighting_map (Node 6, Slot 0) -> ControlNetApplySD3 image (Node 15, Slot 4)
-wb.connect(6, 0, 15, 4, "IMAGE")
+# Flux VAE (Node 3, Slot 0) -> ControlNetApplyAdvanced vae (Node 15, Slot 4)
+wb.connect(3, 0, 15, 4, "VAE")
 
 # ControlNet positive (Node 15, Slot 0) -> FluxGuidance (Node 9, Slot 0)
 wb.connect(15, 0, 9, 0, "CONDITIONING")
@@ -348,10 +348,10 @@ wb.connect(3, 0, 12, 1, "VAE")
 wb.connect(12, 0, 13, 0, "IMAGE")
 
 groups = [
-    {"title": "1. PURE BASE MODELS & CONTROLNET (FLUX KREA DEV — ZERO LORAS)", "bounding": [-1240, 40, 400, 600], "color": "#2a363b"},
-    {"title": "2. EDITORIAL FASHION PROMPT & STUDIOLIGHT CONSOLE", "bounding": [-840, 40, 860, 820], "color": "#3f2b47"},
-    {"title": "3. VFX PROBES & DEFERRED PASS", "bounding": [20, 40, 380, 820], "color": "#1f3a3d"},
-    {"title": "4. DUAL-HYBRID SPATIAL INJECTION & SAMPLING", "bounding": [420, 40, 1500, 620], "color": "#2e2d4d"}
+    {"title": "1. BASE MODELS & CONTROLNET (FLUX KREA DEV)", "bounding": [-1440, 40, 400, 600], "color": "#2a363b"},
+    {"title": "2. EDITORIAL PROMPT & STUDIOLIGHT CONSOLE", "bounding": [-1020, 40, 880, 820], "color": "#3f2b47"},
+    {"title": "3. VFX PROBES & DEFERRED PASS", "bounding": [-160, 40, 400, 820], "color": "#1f3a3d"},
+    {"title": "4. DUAL-HYBRID LIGHT INJECTION & SAMPLING", "bounding": [240, 40, 1520, 640], "color": "#2e2d4d"}
 ]
 
 workflow_data = wb.build(groups=groups)
@@ -361,4 +361,3 @@ with open(out_path, "w", encoding="utf-8") as f:
     json.dump(workflow_data, f, indent=2)
 
 print("Saved mathematically verified workflow to:", out_path)
-

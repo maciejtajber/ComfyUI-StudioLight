@@ -111,12 +111,46 @@
     },
     "class_type": "PreviewImage"
   },
+  "14": {
+    "inputs": {
+      "control_net_name": "flux-union-pro-2.safetensors"
+    },
+    "class_type": "ControlNetLoader"
+  },
+  "15": {
+    "inputs": {
+      "positive": [
+        "6",
+        2
+      ],
+      "negative": [
+        "5",
+        0
+      ],
+      "control_net": [
+        "14",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ],
+      "image": [
+        "6",
+        0
+      ],
+      "strength": 0.35,
+      "start_percent": 0.0,
+      "end_percent": 0.35
+    },
+    "class_type": "ControlNetApplyAdvanced"
+  },
   "9": {
     "inputs": {
       "guidance": 3.5,
       "conditioning": [
-        "6",
-        2
+        "15",
+        0
       ]
     },
     "class_type": "FluxGuidance"
@@ -146,8 +180,8 @@
         0
       ],
       "negative": [
-        "5",
-        0
+        "15",
+        1
       ],
       "latent_image": [
         "10",
