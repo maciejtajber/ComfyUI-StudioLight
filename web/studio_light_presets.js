@@ -1,12 +1,12 @@
 /**
- * ComfyUI-StudioLight — Live Preset Synchronizer (Zero-Canvas Architecture)
+ * ComfyUI-StudioLight — Live Preset Synchronizer & Visual Section Dividers
  * Author: Maciej Tajber (https://github.com/maciejtajber)
  * License: MIT
  *
- * Lightweight UI synchronization for lighting presets:
  * 1. Selecting a preset updates all light sliders instantly.
  * 2. Adjusting any slider automatically flips preset to "Custom".
- * 3. Zero canvas hooks, zero size mutation, 100% crash-proof.
+ * 3. Injects sleek, non-serialized section dividers between Key, Fill, Rim, and Scheduling.
+ * 4. Zero canvas drawing hooks on the node, zero size recursion, 100% crash-proof.
  */
 
 import { app } from "../../scripts/app.js";
@@ -54,6 +54,103 @@ fetch("/studiolight/presets")
     })
     .catch(() => {});
 
+// ─── Visual Section Divider Constructor ──────────────────────────────────────
+function createDividerWidget(id, label, color) {
+    return {
+        name: "_sl_div_" + id,
+        type: "custom",
+        value: "",
+        serialize: false,
+        options: { serialize: false, canvasOnly: true },
+        computeSize(width) {
+            return [width || 360, 24];
+        },
+        draw(ctx, targetNode, widget_width, y, widget_height) {
+            const w = widget_width || (targetNode.size ? targetNode.size[0] : 360);
+            const midY = y + 12;
+
+            ctx.save();
+
+            // 1. Subtle horizontal divider rule
+            ctx.strokeStyle = "#343442";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(10, midY);
+            ctx.lineTo(w - 10, midY);
+            ctx.stroke();
+
+            // 2. Section pill badge
+            ctx.font = "bold 9px sans-serif";
+            const textWidth = ctx.measureText(label).width;
+            const badgeWidth = textWidth + 22;
+            const badgeX = 16;
+            const badgeY = midY - 8;
+
+            // Pill container background
+            ctx.fillStyle = "#16161e";
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            if (typeof ctx.roundRect === "function") {
+                ctx.roundRect(badgeX, badgeY, badgeWidth, 16, 3);
+            } else {
+                ctx.rect(badgeX, badgeY, badgeWidth, 16);
+            }
+            ctx.fill();
+            ctx.stroke();
+
+            // Glowing accent dot
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(badgeX + 8, midY, 2.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Label text
+            ctx.fillStyle = "#e0e0ea";
+            ctx.textAlign = "left";
+            ctx.fillText(label, badgeX + 15, midY + 3);
+
+            ctx.restore();
+        },
+        mouse() {
+            return false;
+        }
+    };
+}
+
+function insertSectionDividers(node) {
+    if (!node || !node.widgets || node._sl_dividers_added) return;
+
+    // Check if dividers already exist
+    if (node.widgets.some((w) => w.name && w.name.startsWith("_sl_div_"))) {
+        node._sl_dividers_added = true;
+        return;
+    }
+
+    node._sl_dividers_added = true;
+
+    const sections = [
+        { target: "key_enabled", id: "key", label: "KEY LIGHT", color: "#ffaa00" },
+        { target: "fill_enabled", id: "fill", label: "FILL LIGHT", color: "#00d4ff" },
+        { target: "rim_enabled", id: "rim", label: "RIM / KICKER LIGHT", color: "#ff2a85" },
+        { target: "start_step", id: "sched", label: "SCHEDULING & CONDITIONING", color: "#8e8ea0" },
+    ];
+
+    for (const sec of sections) {
+        const idx = node.widgets.findIndex((w) => w.name === sec.target);
+        if (idx !== -1) {
+            const div = createDividerWidget(sec.id, sec.label, sec.color);
+            node.widgets.splice(idx, 0, div);
+        }
+    }
+
+    // Expand node height once cleanly
+    if (node.size) {
+        node.size[1] = Math.max(node.size[1] || 0, 700) + 24 * sections.length;
+    }
+    node.setDirtyCanvas(true, true);
+}
+
 function hookNodePresets(node) {
     if (!node || !node.widgets || node._sl_preset_hooked) return;
     node._sl_preset_hooked = true;
@@ -84,7 +181,7 @@ function hookNodePresets(node) {
 
     // 2. Hook All Setting Widgets -> Auto-flip preset to "Custom" on tweak
     for (const w of node.widgets) {
-        if (w.name === "preset" || w.name === "framing") continue;
+        if (w.name.startsWith("_sl_div_") || w.name === "preset" || w.name === "framing") continue;
         const origCb = w.callback;
         w.callback = function () {
             if (origCb) origCb.apply(this, arguments);
@@ -100,16 +197,18 @@ function hookNodePresets(node) {
 }
 
 app.registerExtension({
-    name: "ComfyUI.StudioLight.PresetSync",
+    name: "ComfyUI.StudioLight.UI",
 
     nodeCreated(node) {
         if (node.comfyClass === "StudioLightRig" || node.type === "StudioLightRig") {
+            insertSectionDividers(node);
             hookNodePresets(node);
         }
     },
 
     loadedGraphNode(node) {
         if (node.comfyClass === "StudioLightRig" || node.type === "StudioLightRig") {
+            insertSectionDividers(node);
             hookNodePresets(node);
         }
     }
