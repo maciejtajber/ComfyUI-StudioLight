@@ -12,7 +12,12 @@ from typing import Dict, Any, Optional, Tuple, List
 import torch
 from .color_utils import MODIFIER_PRESETS
 from .preset_manager import list_presets, load_preset_data
-from .shader_engine import render_studio_lighting
+from .shader_engine import (
+    render_studio_lighting,
+    compute_light_shading,
+    azimuth_elevation_to_vector,
+    kelvin_to_rgb,
+)
 from .prompt_synthesizer import synthesize_high_signal_prompt, encode_scheduled_conditioning
 
 
@@ -446,6 +451,38 @@ class StudioLightRig:
             else:
                 d_resized = diff_pass
                 s_resized = spec_pass
+
+            # CRITICAL SAFEGUARD: If normals_optional was NOT provided, diff_pass
+            # contains the built-in static mannequin bust normals and its alpha stencil mask!
+            # Stamping a static mannequin cutout onto an arbitrary photo creates a ghost artifact.
+            # In this case, synthesize a smooth full-frame directional lighting gradient instead.
+            if normals_optional is None:
+                h, w = comp_img.shape[1], comp_img.shape[2]
+                dev = comp_img.device
+                y_g, x_g = torch.meshgrid(
+                    torch.linspace(-1.0, 1.0, h, device=dev),
+                    torch.linspace(-1.0, 1.0, w, device=dev),
+                    indexing="ij"
+                )
+                nx = x_g * 0.55
+                ny = -y_g * 0.35
+                nz = torch.sqrt(torch.clamp(1.0 - nx**2 - ny**2, min=0.15))
+                smooth_norm = torch.stack([nx, ny, nz], dim=-1).unsqueeze(0)
+                smooth_norm = smooth_norm / torch.norm(smooth_norm, dim=-1, keepdim=True)
+
+                d_fallback = torch.zeros_like(smooth_norm)
+                s_fallback = torch.zeros_like(smooth_norm)
+                for p_dict in [key_params, fill_params, rim_params]:
+                    if p_dict.get("enabled", True):
+                        p_vec = azimuth_elevation_to_vector(p_dict["azimuth"], p_dict["elevation"])
+                        p_col = kelvin_to_rgb(p_dict["kelvin"])
+                        d_sub, s_sub = compute_light_shading(
+                            smooth_norm, p_vec, p_col, p_dict["intensity"], p_dict["modifier"], depth=None, return_separate=True
+                        )
+                        d_fallback = d_fallback + d_sub
+                        s_fallback = s_fallback + s_sub
+                d_resized = d_fallback
+                s_resized = s_fallback
 
             lit_composite = composite_photometric_relight(
                 base_image_srgb=comp_img,
