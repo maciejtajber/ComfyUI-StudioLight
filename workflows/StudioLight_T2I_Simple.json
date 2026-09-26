@@ -1,6 +1,6 @@
 {
-  "last_node_id": 13,
-  "last_link_id": 14,
+  "last_node_id": 15,
+  "last_link_id": 19,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            8
+            15
           ],
           "shape": 3,
           "slot_index": 0
@@ -95,7 +95,8 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            13
+            10,
+            18
           ],
           "shape": 3,
           "slot_index": 0
@@ -110,6 +111,40 @@
       "title": "Flux VAE"
     },
     {
+      "id": 14,
+      "type": "ControlNetLoader",
+      "pos": [
+        -1200,
+        510
+      ],
+      "size": [
+        320,
+        80
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
+          "links": [
+            9
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ControlNetLoader"
+      },
+      "widgets_values": [
+        "flux-union-pro-2.safetensors"
+      ],
+      "title": "ControlNet Union Pro 2"
+    },
+    {
       "id": 4,
       "type": "SIPromptBlock",
       "pos": [
@@ -121,7 +156,7 @@
         280
       ],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -178,7 +213,7 @@
         280
       ],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -202,7 +237,7 @@
           "name": "conditioning",
           "type": "CONDITIONING",
           "links": [
-            10
+            8
           ],
           "shape": 3,
           "slot_index": 0
@@ -235,7 +270,7 @@
         720
       ],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -269,7 +304,8 @@
           "name": "relighting_map",
           "type": "IMAGE",
           "links": [
-            6
+            6,
+            11
           ],
           "shape": 3,
           "slot_index": 0
@@ -337,7 +373,7 @@
       "id": 7,
       "type": "PreviewImage",
       "pos": [
-        40,
+        60,
         100
       ],
       "size": [
@@ -345,7 +381,7 @@
         320
       ],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -365,7 +401,7 @@
       "id": 8,
       "type": "PreviewImage",
       "pos": [
-        40,
+        60,
         460
       ],
       "size": [
@@ -373,7 +409,7 @@
         320
       ],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -390,10 +426,81 @@
       "title": "\u2728 32-bit Deferred Lighting Pass"
     },
     {
+      "id": 15,
+      "type": "ControlNetApplySD3",
+      "pos": [
+        440,
+        100
+      ],
+      "size": [
+        320,
+        240
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 7
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 8
+        },
+        {
+          "name": "control_net",
+          "type": "CONTROL_NET",
+          "link": 9
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 10
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            12
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": [
+            14
+          ],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ControlNetApplySD3"
+      },
+      "widgets_values": [
+        0.35,
+        0.0,
+        0.35
+      ],
+      "title": "\u2728 Dual-Hybrid Spatial Lighting Control"
+    },
+    {
       "id": 9,
       "type": "FluxGuidance",
       "pos": [
-        400,
+        800,
         100
       ],
       "size": [
@@ -401,13 +508,13 @@
         80
       ],
       "flags": {},
-      "order": 9,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
           "name": "conditioning",
           "type": "CONDITIONING",
-          "link": 7
+          "link": 12
         }
       ],
       "outputs": [
@@ -415,7 +522,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            9
+            13
           ],
           "shape": 3,
           "slot_index": 0
@@ -433,7 +540,7 @@
       "id": 10,
       "type": "EmptySD3LatentImage",
       "pos": [
-        400,
+        800,
         220
       ],
       "size": [
@@ -441,7 +548,7 @@
         110
       ],
       "flags": {},
-      "order": 10,
+      "order": 12,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -449,7 +556,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            11
+            16
           ],
           "shape": 3,
           "slot_index": 0
@@ -469,7 +576,7 @@
       "id": 11,
       "type": "KSampler",
       "pos": [
-        700,
+        1100,
         100
       ],
       "size": [
@@ -477,28 +584,28 @@
         260
       ],
       "flags": {},
-      "order": 11,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 8
+          "link": 15
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 9
+          "link": 13
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 10
+          "link": 14
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 11
+          "link": 16
         }
       ],
       "outputs": [
@@ -506,7 +613,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            12
+            17
           ],
           "shape": 3,
           "slot_index": 0
@@ -530,7 +637,7 @@
       "id": 12,
       "type": "VAEDecode",
       "pos": [
-        700,
+        1100,
         400
       ],
       "size": [
@@ -538,18 +645,18 @@
         80
       ],
       "flags": {},
-      "order": 12,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 12
+          "link": 17
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 13
+          "link": 18
         }
       ],
       "outputs": [
@@ -557,7 +664,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            14
+            19
           ],
           "shape": 3,
           "slot_index": 0
@@ -573,7 +680,7 @@
       "id": 13,
       "type": "SaveImage",
       "pos": [
-        1040,
+        1440,
         100
       ],
       "size": [
@@ -581,13 +688,13 @@
         540
       ],
       "flags": {},
-      "order": 13,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 14
+          "link": 19
         }
       ],
       "outputs": [],
@@ -653,12 +760,68 @@
       7,
       6,
       2,
-      9,
+      15,
       0,
       "CONDITIONING"
     ],
     [
       8,
+      5,
+      0,
+      15,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      9,
+      14,
+      0,
+      15,
+      2,
+      "CONTROL_NET"
+    ],
+    [
+      10,
+      3,
+      0,
+      15,
+      3,
+      "VAE"
+    ],
+    [
+      11,
+      6,
+      0,
+      15,
+      4,
+      "IMAGE"
+    ],
+    [
+      12,
+      15,
+      0,
+      9,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      13,
+      9,
+      0,
+      11,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      14,
+      15,
+      1,
+      11,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      15,
       1,
       0,
       11,
@@ -666,23 +829,7 @@
       "MODEL"
     ],
     [
-      9,
-      9,
-      0,
-      11,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      10,
-      5,
-      0,
-      11,
-      2,
-      "CONDITIONING"
-    ],
-    [
-      11,
+      16,
       10,
       0,
       11,
@@ -690,7 +837,7 @@
       "LATENT"
     ],
     [
-      12,
+      17,
       11,
       0,
       12,
@@ -698,7 +845,7 @@
       "LATENT"
     ],
     [
-      13,
+      18,
       3,
       0,
       12,
@@ -706,7 +853,7 @@
       "VAE"
     ],
     [
-      14,
+      19,
       12,
       0,
       13,
@@ -716,12 +863,12 @@
   ],
   "groups": [
     {
-      "title": "1. PURE BASE MODELS (FLUX KREA DEV \u2014 ZERO LORAS)",
+      "title": "1. PURE BASE MODELS & CONTROLNET (FLUX KREA DEV \u2014 ZERO LORAS)",
       "bounding": [
         -1240,
         40,
         400,
-        480
+        600
       ],
       "color": "#2a363b"
     },
@@ -738,19 +885,19 @@
     {
       "title": "3. VFX PROBES & DEFERRED PASS",
       "bounding": [
-        0,
+        20,
         40,
         380,
-        780
+        820
       ],
       "color": "#1f3a3d"
     },
     {
-      "title": "4. FLUX SAMPLING & VOGUE MASTER OUTPUT",
+      "title": "4. DUAL-HYBRID SPATIAL INJECTION & SAMPLING",
       "bounding": [
-        360,
+        420,
         40,
-        1160,
+        1500,
         620
       ],
       "color": "#2e2d4d"

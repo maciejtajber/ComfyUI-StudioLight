@@ -99,6 +99,17 @@ wb.add_node(
     output_defs=[("VAE", "VAE")]
 )
 
+wb.add_node(
+    node_id=14,
+    node_type="ControlNetLoader",
+    title="ControlNet Union Pro 2",
+    pos=[-1200, 510],
+    size=[320, 80],
+    widgets_values=["flux-union-pro-2.safetensors"],
+    input_names=[],
+    output_defs=[("CONTROL_NET", "CONTROL_NET")]
+)
+
 # 2. Fashion Subject & Universal Negative PromptBlocks
 wb.add_node(
     node_id=4,
@@ -177,7 +188,7 @@ wb.add_node(
     node_id=7,
     node_type="PreviewImage",
     title="✨ VFX Probe (18% Grey & Chrome Ball + Radar)",
-    pos=[40, 100],
+    pos=[60, 100],
     size=[320, 320],
     widgets_values=[],
     input_names=[("images", "IMAGE")],
@@ -188,19 +199,40 @@ wb.add_node(
     node_id=8,
     node_type="PreviewImage",
     title="✨ 32-bit Deferred Lighting Pass",
-    pos=[40, 460],
+    pos=[60, 460],
     size=[320, 320],
     widgets_values=[],
     input_names=[("images", "IMAGE")],
     output_defs=[]
 )
 
-# 5. Sampling Pipeline
+# 5. Dual-Hybrid Spatial Lighting Control (ControlNet Union Pro 2)
+wb.add_node(
+    node_id=15,
+    node_type="ControlNetApplySD3",
+    title="✨ Dual-Hybrid Spatial Lighting Control",
+    pos=[440, 100],
+    size=[320, 240],
+    widgets_values=[0.35, 0.0, 0.35],
+    input_names=[
+        ("positive", "CONDITIONING"),
+        ("negative", "CONDITIONING"),
+        ("control_net", "CONTROL_NET"),
+        ("vae", "VAE"),
+        ("image", "IMAGE")
+    ],
+    output_defs=[
+        ("positive", "CONDITIONING"),
+        ("negative", "CONDITIONING")
+    ]
+)
+
+# 6. Sampling Pipeline
 wb.add_node(
     node_id=9,
     node_type="FluxGuidance",
     title="Flux Guidance (3.5)",
-    pos=[400, 100],
+    pos=[800, 100],
     size=[260, 80],
     widgets_values=[3.5],
     input_names=[("conditioning", "CONDITIONING")],
@@ -211,7 +243,7 @@ wb.add_node(
     node_id=10,
     node_type="EmptySD3LatentImage",
     title="Empty Latent (896x1152)",
-    pos=[400, 220],
+    pos=[800, 220],
     size=[260, 110],
     widgets_values=[896, 1152, 1],
     input_names=[],
@@ -222,7 +254,7 @@ wb.add_node(
     node_id=11,
     node_type="KSampler",
     title="🚀 Flux KSampler (Pure Base UNET)",
-    pos=[700, 100],
+    pos=[1100, 100],
     size=[300, 260],
     widgets_values=[42, "randomize", 25, 1.0, "euler", "beta", 1.0],
     input_names=[
@@ -238,7 +270,7 @@ wb.add_node(
     node_id=12,
     node_type="VAEDecode",
     title="VAE Decode",
-    pos=[700, 400],
+    pos=[1100, 400],
     size=[240, 80],
     widgets_values=[],
     input_names=[("samples", "LATENT"), ("vae", "VAE")],
@@ -249,7 +281,7 @@ wb.add_node(
     node_id=13,
     node_type="SaveImage",
     title="🎉 [Fashion T2I] Vogue Master Render",
-    pos=[1040, 100],
+    pos=[1440, 100],
     size=[440, 540],
     widgets_values=["Fashion_StudioLight"],
     input_names=[("images", "IMAGE")],
@@ -275,17 +307,33 @@ wb.connect(6, 1, 7, 0, "IMAGE")
 # StudioLight relighting_map (Node 6, Slot 0) -> PreviewImage Deferred (Node 8, Slot 0)
 wb.connect(6, 0, 8, 0, "IMAGE")
 
-# StudioLight conditioning (Node 6, Slot 2) -> FluxGuidance (Node 9, Slot 0)
-wb.connect(6, 2, 9, 0, "CONDITIONING")
+# DUAL-HYBRID INJECTION:
+# StudioLight conditioning (Node 6, Slot 2) -> ControlNetApplySD3 positive (Node 15, Slot 0)
+wb.connect(6, 2, 15, 0, "CONDITIONING")
 
-# UNET (Node 1, Slot 0) -> KSampler model (Node 11, Slot 0)
-wb.connect(1, 0, 11, 0, "MODEL")
+# Negative Suppression (Node 5, Slot 0) -> ControlNetApplySD3 negative (Node 15, Slot 1)
+wb.connect(5, 0, 15, 1, "CONDITIONING")
+
+# ControlNet Union Pro 2 (Node 14, Slot 0) -> ControlNetApplySD3 control_net (Node 15, Slot 2)
+wb.connect(14, 0, 15, 2, "CONTROL_NET")
+
+# Flux VAE (Node 3, Slot 0) -> ControlNetApplySD3 vae (Node 15, Slot 3)
+wb.connect(3, 0, 15, 3, "VAE")
+
+# StudioLight relighting_map (Node 6, Slot 0) -> ControlNetApplySD3 image (Node 15, Slot 4)
+wb.connect(6, 0, 15, 4, "IMAGE")
+
+# ControlNet positive (Node 15, Slot 0) -> FluxGuidance (Node 9, Slot 0)
+wb.connect(15, 0, 9, 0, "CONDITIONING")
 
 # FluxGuidance (Node 9, Slot 0) -> KSampler positive (Node 11, Slot 1)
 wb.connect(9, 0, 11, 1, "CONDITIONING")
 
-# Negative Suppression (Node 5, Slot 0) -> KSampler negative (Node 11, Slot 2)
-wb.connect(5, 0, 11, 2, "CONDITIONING")
+# ControlNet negative (Node 15, Slot 1) -> KSampler negative (Node 11, Slot 2)
+wb.connect(15, 1, 11, 2, "CONDITIONING")
+
+# UNET (Node 1, Slot 0) -> KSampler model (Node 11, Slot 0)
+wb.connect(1, 0, 11, 0, "MODEL")
 
 # EmptySD3LatentImage (Node 10, Slot 0) -> KSampler latent_image (Node 11, Slot 3)
 wb.connect(10, 0, 11, 3, "LATENT")
@@ -300,10 +348,10 @@ wb.connect(3, 0, 12, 1, "VAE")
 wb.connect(12, 0, 13, 0, "IMAGE")
 
 groups = [
-    {"title": "1. PURE BASE MODELS (FLUX KREA DEV — ZERO LORAS)", "bounding": [-1240, 40, 400, 480], "color": "#2a363b"},
+    {"title": "1. PURE BASE MODELS & CONTROLNET (FLUX KREA DEV — ZERO LORAS)", "bounding": [-1240, 40, 400, 600], "color": "#2a363b"},
     {"title": "2. EDITORIAL FASHION PROMPT & STUDIOLIGHT CONSOLE", "bounding": [-840, 40, 860, 820], "color": "#3f2b47"},
-    {"title": "3. VFX PROBES & DEFERRED PASS", "bounding": [0, 40, 380, 780], "color": "#1f3a3d"},
-    {"title": "4. FLUX SAMPLING & VOGUE MASTER OUTPUT", "bounding": [360, 40, 1160, 620], "color": "#2e2d4d"}
+    {"title": "3. VFX PROBES & DEFERRED PASS", "bounding": [20, 40, 380, 820], "color": "#1f3a3d"},
+    {"title": "4. DUAL-HYBRID SPATIAL INJECTION & SAMPLING", "bounding": [420, 40, 1500, 620], "color": "#2e2d4d"}
 ]
 
 workflow_data = wb.build(groups=groups)
@@ -313,3 +361,4 @@ with open(out_path, "w", encoding="utf-8") as f:
     json.dump(workflow_data, f, indent=2)
 
 print("Saved mathematically verified workflow to:", out_path)
+
