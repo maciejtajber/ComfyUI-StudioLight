@@ -16,6 +16,15 @@ from .shader_engine import render_studio_lighting
 from .prompt_synthesizer import synthesize_high_signal_prompt, encode_scheduled_conditioning
 
 
+FRAMING_OPTIONS = [
+    "Portrait (Classical Bust)",
+    "American Plan (3/4 Shot)",
+    "Full Body (Standing Lookbook)",
+    "Volumetric Cyc (Crowds / Dynamic)",
+    "Auto (Detect from Prompt)",
+]
+
+
 class StudioLightRig:
     """
     Three-Point Studio Lighting Console.
@@ -32,6 +41,9 @@ class StudioLightRig:
             "required": {
                 "preset": (preset_list, {
                     "default": "Custom",
+                }),
+                "framing": (FRAMING_OPTIONS, {
+                    "default": "Portrait (Classical Bust)",
                 }),
                 "ambient_intensity": ("FLOAT", {
                     "default": 0.05,
@@ -149,7 +161,7 @@ class StudioLightRig:
 
                 # --- SCHEDULING & CONDITIONING (PromptBlock Integration) ---
                 "start_step": ("FLOAT", {
-                    "default": 0.40,
+                    "default": 0.00,
                     "min": 0.0,
                     "max": 1.0,
                     "step": 0.01,
@@ -175,6 +187,12 @@ class StudioLightRig:
                 "depth_optional": ("IMAGE",),
                 "clip_optional": ("CLIP",),
                 "conditioning_in": ("CONDITIONING",),
+                "prompt_text_optional": ("STRING", {"forceInput": True}),
+            },
+            "hidden": {
+                "prompt": "PROMPT",
+                "unique_id": "UNIQUE_ID",
+                "extra_pnginfo": "EXTRA_PNGINFO",
             },
         }
 
@@ -193,36 +211,42 @@ class StudioLightRig:
     def execute_rig(
         self,
         preset: str,
-        ambient_intensity: float,
-        invert_normals_y: bool,
-        key_enabled: bool,
-        key_azimuth: float,
-        key_elevation: float,
-        key_intensity: float,
-        key_kelvin: int,
-        key_modifier: str,
-        fill_enabled: bool,
-        fill_azimuth: float,
-        fill_elevation: float,
-        fill_intensity: float,
-        fill_kelvin: int,
-        fill_modifier: str,
-        rim_enabled: bool,
-        rim_azimuth: float,
-        rim_elevation: float,
-        rim_intensity: float,
-        rim_kelvin: int,
-        rim_modifier: str,
-        start_step: float,
-        end_step: float,
-        conditioning_strength: float,
-        weight_type: str,
+        framing: str = "Portrait (Classical Bust)",
+        ambient_intensity: float = 0.05,
+        invert_normals_y: bool = False,
+        key_enabled: bool = True,
+        key_azimuth: float = 45.0,
+        key_elevation: float = 35.0,
+        key_intensity: float = 1.0,
+        key_kelvin: int = 5500,
+        key_modifier: str = "Octabox (Soft)",
+        fill_enabled: bool = True,
+        fill_azimuth: float = -30.0,
+        fill_elevation: float = 15.0,
+        fill_intensity: float = 0.35,
+        fill_kelvin: int = 4800,
+        fill_modifier: str = "Octabox (Soft)",
+        rim_enabled: bool = True,
+        rim_azimuth: float = 160.0,
+        rim_elevation: float = 45.0,
+        rim_intensity: float = 1.1,
+        rim_kelvin: int = 6500,
+        rim_modifier: str = "Stripbox",
+        start_step: float = 0.0,
+        end_step: float = 1.0,
+        conditioning_strength: float = 1.0,
+        weight_type: str = "A_NORM",
         normals_optional: Optional[torch.Tensor] = None,
         depth_optional: Optional[torch.Tensor] = None,
         clip_optional: Optional[Any] = None,
         conditioning_in: Optional[List] = None,
+        prompt_text_optional: Optional[str] = None,
+        prompt: Optional[Dict] = None,
+        unique_id: Optional[str] = None,
+        extra_pnginfo: Optional[Dict] = None,
+        **kwargs,
     ):
-        # 1. Check if a non-custom preset was selected
+        # 1. Preset Synchronization: If a preset is selected, load its values
         if preset != "Custom":
             p_data = load_preset_data(preset)
             if p_data:
@@ -276,7 +300,38 @@ class StudioLightRig:
             "modifier": rim_modifier,
         }
 
-        # 2. Render Physical Relighting Map and Dual-Sphere VFX Probe
+        # 2. Extract detected prompt text for "Auto (Detect from Prompt)"
+        detected_prompt = ""
+        if prompt_text_optional:
+            detected_prompt = str(prompt_text_optional).strip()
+        elif prompt and unique_id:
+            try:
+                # Check directly connected node via conditioning_in
+                node_info = prompt.get(str(unique_id), {})
+                inputs = node_info.get("inputs", {})
+                cond_link = inputs.get("conditioning_in")
+                if isinstance(cond_link, list) and len(cond_link) > 0:
+                    up_id = str(cond_link[0])
+                    if up_id in prompt:
+                        up_inputs = prompt[up_id].get("inputs", {})
+                        for k in ["text", "prompt", "text_positive", "positive"]:
+                            if k in up_inputs and isinstance(up_inputs[k], str):
+                                detected_prompt = up_inputs[k]
+                                break
+                # Fallback: scan all prompt blocks in the graph for subject keywords
+                if not detected_prompt:
+                    for nid, nval in prompt.items():
+                        ninputs = nval.get("inputs", {})
+                        for k in ["text", "prompt"]:
+                            if k in ninputs and isinstance(ninputs[k], str) and len(ninputs[k]) > 10:
+                                detected_prompt = ninputs[k]
+                                break
+                        if detected_prompt:
+                            break
+            except Exception as e:
+                print(f"[StudioLight] Note: Prompt auto-detection skipped: {e}")
+
+        # 3. Render Physical Relighting Map and Dual-Sphere VFX Probe
         relighting_map, probe_preview = render_studio_lighting(
             normals=normals_optional,
             depth=depth_optional,
@@ -286,6 +341,8 @@ class StudioLightRig:
             ambient_intensity=ambient_intensity,
             invert_normals_y=invert_normals_y,
             preview_resolution=512,
+            framing=framing,
+            detected_prompt=detected_prompt,
         )
 
         # 3. Synthesize High-Signal Photographic Prompt Tokens

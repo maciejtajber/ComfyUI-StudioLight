@@ -7,6 +7,8 @@ Calculates physical deferred lighting across surface normals (diffuse + specular
 and generates visual VFX probes with an integrated 2D studio radar compass.
 """
 
+import os
+
 import math
 import torch
 import numpy as np
@@ -87,7 +89,7 @@ def compute_light_shading(
 ) -> torch.Tensor:
     """Computes diffuse and Blinn-Phong specular contribution for a single light."""
     preset = MODIFIER_PRESETS.get(modifier_name, MODIFIER_PRESETS["Octabox (Soft)"])
-    wrap = preset["wrap_factor"]
+    wrap = min(preset.get("wrap_factor", 0.0), 0.45)
     spec_power = preset["specular_power"]
     spec_strength = preset["specular_strength"]
     falloff_exp = preset["falloff_exponent"]
@@ -114,9 +116,9 @@ def compute_light_shading(
     h_norm = torch.norm(h_vec, dim=-1, keepdim=True) + 1e-7
     h_vec = h_vec / h_norm
 
-    # Blinn-Phong Specular
+    # Blinn-Phong Specular (controlled to preserve diffuse contrast)
     n_dot_h = torch.clamp(torch.sum(normals * h_vec, dim=-1, keepdim=True), min=0.0, max=1.0)
-    specular = torch.pow(n_dot_h, spec_power) * spec_strength
+    specular = torch.pow(n_dot_h, spec_power) * spec_strength * 0.35
 
     shading = (diffuse + specular) * float(intensity)
     c_tensor = torch.tensor(light_color, device=device, dtype=dtype).view(1, 1, 1, 3)
@@ -159,16 +161,16 @@ def draw_studio_radar_diagram(
 
     # Diagonal guidelines (+/- 45 deg, +/- 135 deg)
     for angle in [45, 135, -45, -135]:
-        rad = math.radians(angle - 90)
-        gx = cx + int(radius * math.cos(rad))
-        gy = cy + int(radius * math.sin(rad))
+        rad = math.radians(angle)
+        gx = cx + int(radius * math.sin(rad))
+        gy = cy + int(radius * math.cos(rad))
         draw.line([cx, cy, gx, gy], fill=(32, 32, 36), width=1)
 
     # Subject center marker
     draw.ellipse([cx - 7, cy - 7, cx + 7, cy + 7], fill=(220, 220, 225), outline=(100, 100, 105), width=2)
 
-    # Top Camera marker
-    cam_y = cy - radius - 14
+    # Bottom Camera marker (0°)
+    cam_y = cy + radius + 14
     draw.rectangle([cx - 24, cam_y - 8, cx + 24, cam_y + 8], fill=(30, 30, 36), outline=(90, 90, 100), width=1)
     draw.text((cx - 19, cam_y - 6), "CAMERA", fill=(200, 200, 210))
 
@@ -176,18 +178,18 @@ def draw_studio_radar_diagram(
     def draw_vector(azimuth: float, elevation: float, color_rgb: Tuple[int, int, int], label: str, enabled: bool):
         if not enabled:
             return
-        # Azimuth: 0° is top (camera), +45° is right
-        ang_rad = math.radians(azimuth - 90)
-        lx = cx + int(radius * math.cos(ang_rad))
-        ly = cy + int(radius * math.sin(ang_rad))
+        # Azimuth: 0° is bottom (camera), +45° is camera-right (screen right), +/-180° is top (backlight)
+        ang_rad = math.radians(azimuth)
+        lx = cx + int(radius * math.sin(ang_rad))
+        ly = cy + int(radius * math.cos(ang_rad))
 
         # Ray line
         draw.line([cx, cy, lx, ly], fill=color_rgb, width=3)
         # Light head node
         draw.ellipse([lx - 9, ly - 9, lx + 9, ly + 9], fill=color_rgb, outline=(255, 255, 255), width=2)
         # Degree label
-        tx = lx + (12 if math.cos(ang_rad) >= 0 else -48)
-        ty = ly + (6 if math.sin(ang_rad) >= 0 else -16)
+        tx = lx + (10 if math.sin(ang_rad) >= 0 else -56)
+        ty = ly + (6 if math.cos(ang_rad) >= 0 else -14)
         draw.text((tx, ty), f"{label} {int(azimuth)}°", fill=color_rgb)
 
     # Draw Key (Amber), Fill (Cyan), Rim (Magenta)
@@ -208,6 +210,8 @@ def render_studio_lighting(
     ambient_intensity: float = 0.05,
     invert_normals_y: bool = False,
     preview_resolution: int = 512,
+    framing: str = "Portrait (Classical Bust)",
+    detected_prompt: str = "",
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Renders the complete 3-point photographic studio lighting pass and dual-probe preview.
@@ -226,7 +230,42 @@ def render_studio_lighting(
     rim_vec = azimuth_elevation_to_vector(rim_params["azimuth"], rim_params["elevation"])
     rim_col = kelvin_to_rgb(rim_params["kelvin"])
 
-    # 1. Relighting Map Computation
+    is_built_in_mannequin = (normals is None)
+
+    # 1. Relighting Map Computation: Select framing mannequin or volumetric cyc
+    if normals is None:
+        effective_framing = framing
+        if "Auto" in framing and detected_prompt:
+            p_low = detected_prompt.lower()
+            if any(w in p_low for w in ["full body", "full length", "standing", "gown", "dress", "shoes", "heels", "head to toe"]):
+                effective_framing = "Full Body (Standing Lookbook)"
+            elif any(w in p_low for w in ["american", "cowboy", "waist up", "hips", "mid-thigh", "jacket", "suit", "coat"]):
+                effective_framing = "American Plan (3/4 Shot)"
+            elif any(w in p_low for w in ["crowd", "group", "two models", "three models", "runway", "sitting", "lounging"]):
+                effective_framing = "Volumetric Cyc (Crowds / Dynamic)"
+            else:
+                effective_framing = "Portrait (Classical Bust)"
+
+        assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
+        if "Portrait" in effective_framing:
+            asset_file = "mannequin_bust_normal.png"
+        elif "American" in effective_framing:
+            asset_file = "mannequin_medium_normal.png"
+        elif "Full Body" in effective_framing:
+            asset_file = "mannequin_full_normal.png"
+        else:
+            # Volumetric Cyc / Scene probe
+            asset_file = None
+
+        if asset_file:
+            asset_path = os.path.join(assets_dir, asset_file)
+            if not os.path.exists(asset_path):
+                asset_path = os.path.join(assets_dir, "studio_head_normal.png")
+            if os.path.exists(asset_path):
+                img_asset = Image.open(asset_path).convert("RGB")
+                arr_asset = np.array(img_asset).astype(np.float32) / 255.0
+                normals = torch.from_numpy(arr_asset).unsqueeze(0).to(device)
+
     if normals is not None:
         n = normals.clone()
         if n.shape[-1] != 3 and n.shape[1] == 3:
@@ -238,6 +277,15 @@ def render_studio_lighting(
 
         norm_len = torch.norm(norm_unpacked, dim=-1, keepdim=True) + 1e-7
         norm_unit = norm_unpacked / norm_len
+
+        # Detect background in studio bust (flat normal facing camera)
+        if is_built_in_mannequin:
+            corner_val = norm_unit[:, :6, :6, :].mean(dim=(1, 2), keepdim=True)
+            diff_from_corner = torch.norm(norm_unit - corner_val, dim=-1, keepdim=True)
+            subject_mask = (diff_from_corner > 0.04).float()
+        else:
+            # User-supplied normal map: do not assume corners are background
+            subject_mask = torch.ones_like(norm_unit[..., :1])
 
         total_shading = torch.zeros_like(norm_unit)
 
@@ -256,24 +304,33 @@ def render_studio_lighting(
                 norm_unit, rim_vec, rim_col, rim_params["intensity"], rim_params["modifier"], depth
             )
 
-        if ambient_intensity > 0.0:
-            total_shading = total_shading + float(ambient_intensity)
-
-        relighting_map = torch.clamp(total_shading, 0.0, 1.0)
+        # Composite subject with dark studio cyc backdrop
+        bg_backdrop = torch.full_like(total_shading, max(float(ambient_intensity), 0.03))
+        relighting_map = (total_shading + float(ambient_intensity)) * subject_mask + bg_backdrop * (1.0 - subject_mask)
+        relighting_map = torch.clamp(relighting_map, 0.0, 1.0)
     else:
-        # Default studio cyc backdrop when no normals provided
-        res = preview_resolution
+        # Volumetric Studio Cyc environment (curved wall + floor room gradient)
+        res_h = 1152
+        res_w = 896
         y, x = torch.meshgrid(
-            torch.linspace(0.0, 1.0, res, device=device),
-            torch.linspace(-1.0, 1.0, res, device=device),
+            torch.linspace(-1.0, 1.0, res_h, device=device),
+            torch.linspace(-1.0, 1.0, res_w, device=device),
             indexing="ij"
         )
-        kx = key_vec[0].to(device)
-        grad = torch.clamp(1.0 - torch.sqrt((x - kx * 0.4)**2 + (y - 0.4)**2) * 1.1, min=0.0, max=1.0)
-        c_k = torch.tensor(key_col, device=device).view(1, 1, 1, 3)
-        backdrop = grad.unsqueeze(0).unsqueeze(-1) * c_k * key_params["intensity"] * 0.45
-        backdrop = backdrop + float(ambient_intensity)
-        relighting_map = torch.clamp(backdrop, 0.0, 1.0)
+        lx = key_vec[0].to(device)
+        ly = key_vec[1].to(device)
+        key_grad = torch.clamp((x * lx - y * ly * 0.4 + 0.6) / 1.4, 0.0, 1.0) * key_params["intensity"]
+
+        flx = fill_vec[0].to(device)
+        fill_grad = torch.clamp((x * flx + 0.5) / 1.5, 0.0, 1.0) * fill_params["intensity"] * 0.4
+
+        c_k = torch.tensor(key_col, device=device).view(1, 1, 3)
+        c_f = torch.tensor(fill_col, device=device).view(1, 1, 3)
+        vignette = 1.0 - (x**2 + y**2) * 0.22
+
+        cyc = (key_grad.unsqueeze(-1) * c_k + fill_grad.unsqueeze(-1) * c_f) * vignette.unsqueeze(-1)
+        cyc = cyc + float(ambient_intensity)
+        relighting_map = torch.clamp(cyc.unsqueeze(0), 0.0, 1.0)
 
     # 2. Dual-Sphere Probe Preview Generation (Top: Balls, Bottom: Radar)
     probe_res = preview_resolution
