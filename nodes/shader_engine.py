@@ -86,6 +86,7 @@ def compute_light_shading(
     intensity: float,
     modifier_name: str,
     depth: Optional[torch.Tensor] = None,
+    return_separate: bool = False,
 ) -> torch.Tensor:
     """Computes diffuse and Blinn-Phong specular contribution for a single light."""
     preset = MODIFIER_PRESETS.get(modifier_name, MODIFIER_PRESETS["Octabox (Soft)"])
@@ -122,16 +123,20 @@ def compute_light_shading(
 
     shading = (diffuse + specular) * float(intensity)
     c_tensor = torch.tensor(light_color, device=device, dtype=dtype).view(1, 1, 1, 3)
-    shaded_rgb = shading * c_tensor
+    diffuse_rgb = diffuse * float(intensity) * c_tensor
+    specular_rgb = specular * float(intensity) * c_tensor
 
     if depth is not None:
         d = depth.to(device=device, dtype=dtype)
         if d.shape[-1] != 1 and len(d.shape) == 4:
             d = d[..., 0:1]
         attenuation = torch.clamp(1.0 - (d * 0.35), min=0.25, max=1.0)
-        shaded_rgb = shaded_rgb * attenuation
+        diffuse_rgb = diffuse_rgb * attenuation
+        specular_rgb = specular_rgb * attenuation
 
-    return shaded_rgb
+    if return_separate:
+        return (diffuse_rgb, specular_rgb)
+    return diffuse_rgb + specular_rgb
 
 
 def draw_studio_radar_diagram(
@@ -212,7 +217,8 @@ def render_studio_lighting(
     preview_resolution: int = 512,
     framing: str = "Portrait (Classical Bust)",
     detected_prompt: str = "",
-) -> Tuple[torch.Tensor, torch.Tensor]:
+    return_passes: bool = False,
+) -> Tuple[torch.Tensor, ...]:
     """
     Renders the complete 3-point photographic studio lighting pass and dual-probe preview.
     Returns:
@@ -309,22 +315,22 @@ def render_studio_lighting(
             # User-supplied normal map: do not assume corners are background
             subject_mask = torch.ones_like(norm_unit[..., :1])
 
-        total_shading = torch.zeros_like(norm_unit)
+        total_diffuse = torch.zeros_like(norm_unit)
+        total_specular = torch.zeros_like(norm_unit)
 
-        if key_params.get("enabled", True):
-            total_shading = total_shading + compute_light_shading(
-                norm_unit, key_vec, key_col, key_params["intensity"], key_params["modifier"], depth
-            )
+        for p_dict, p_vec, p_col in [
+            (key_params, key_vec, key_col),
+            (fill_params, fill_vec, fill_col),
+            (rim_params, rim_vec, rim_col),
+        ]:
+            if p_dict.get("enabled", True):
+                d_rgb, s_rgb = compute_light_shading(
+                    norm_unit, p_vec, p_col, p_dict["intensity"], p_dict["modifier"], depth, return_separate=True
+                )
+                total_diffuse = total_diffuse + d_rgb
+                total_specular = total_specular + s_rgb
 
-        if fill_params.get("enabled", True):
-            total_shading = total_shading + compute_light_shading(
-                norm_unit, fill_vec, fill_col, fill_params["intensity"], fill_params["modifier"], depth
-            )
-
-        if rim_params.get("enabled", True):
-            total_shading = total_shading + compute_light_shading(
-                norm_unit, rim_vec, rim_col, rim_params["intensity"], rim_params["modifier"], depth
-            )
+        total_shading = total_diffuse + total_specular
 
         # Composite subject with dark studio cyc backdrop
         bg_backdrop = torch.full_like(total_shading, max(float(ambient_intensity), 0.03))
@@ -435,4 +441,8 @@ def render_studio_lighting(
     # Complete square probe preview card
     probe_preview = torch.cat([top_half, bottom_half], dim=1)  # [1, probe_res, probe_res, 3]
 
+    if return_passes:
+        diff_out = (total_diffuse * subject_mask).cpu() if "total_diffuse" in locals() else relighting_map.cpu()
+        spec_out = (total_specular * subject_mask).cpu() if "total_specular" in locals() else torch.zeros_like(relighting_map).cpu()
+        return relighting_map.cpu(), probe_preview.cpu(), diff_out, spec_out
     return relighting_map.cpu(), probe_preview.cpu()

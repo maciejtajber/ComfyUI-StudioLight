@@ -28,6 +28,85 @@ FRAMING_OPTIONS = [
 ]
 
 
+def srgb_to_linear(x: torch.Tensor) -> torch.Tensor:
+    """Accurate IEC 61966-2-1 sRGB EOTF (Linear Rec.709)."""
+    return torch.where(
+        x <= 0.04045,
+        x / 12.92,
+        torch.pow(torch.clamp((x + 0.055) / 1.055, min=1e-7), 2.4)
+    )
+
+
+def linear_to_srgb(x: torch.Tensor) -> torch.Tensor:
+    """Accurate IEC 61966-2-1 sRGB OETF."""
+    x_clamped = torch.clamp(x, 0.0, 1.0)
+    return torch.where(
+        x_clamped <= 0.0031308,
+        x_clamped * 12.92,
+        1.055 * torch.pow(torch.clamp(x_clamped, min=1e-7), 1.0 / 2.4) - 0.055
+    )
+
+
+def rgb_to_luminance(x: torch.Tensor) -> torch.Tensor:
+    """Rec.709 / sRGB Photometric Luminance."""
+    weights = torch.tensor([0.212639, 0.715169, 0.072192], device=x.device, dtype=x.dtype).view(1, 1, 1, 3)
+    return torch.sum(x * weights, dim=-1, keepdim=True)
+
+
+def filmic_reinhard_tonemap(x: torch.Tensor, white_point: float = 3.5) -> torch.Tensor:
+    """
+    Luminance-governed extended Reinhard tone reproduction.
+    Guarantees zero hue-shift clipping, preserves chromaticity ratios,
+    and maintains non-zero highlight derivative (C'(x) > 0).
+    """
+    lum_in = rgb_to_luminance(x)
+    w2 = white_point * white_point
+    lum_out = (lum_in * (1.0 + (lum_in / w2))) / (1.0 + lum_in)
+    scale = lum_out / torch.clamp(lum_in, min=1e-6)
+    return x * scale
+
+
+def composite_photometric_relight(
+    base_image_srgb: torch.Tensor,
+    diffuse_irradiance_linear: torch.Tensor,
+    specular_irradiance_linear: torch.Tensor,
+    ambient_floor: float = 0.05,
+    chroma_bleed: float = 0.35,
+    highlight_white_point: float = 3.5,
+) -> torch.Tensor:
+    """
+    Production-grade VFX photometric lighting transfer.
+    Linearizes base image, applies dynamic ambient floor and luminance-governed Kelvin transfer,
+    adds spectrally neutral dielectric specular reflections (catchlights),
+    and applies filmic tone compression before returning display sRGB.
+    """
+    device = base_image_srgb.device
+
+    # 1. Linearize base image into scene-referred physical float space
+    base_linear = srgb_to_linear(base_image_srgb)
+
+    # 2. Dynamic Ambient Modulation (Single-source of truth)
+    amb = max(float(ambient_floor), 0.02)
+    diff_gain = amb + (1.0 - amb) * diffuse_irradiance_linear.to(device)
+
+    # 3. Luminance-Preserving Kelvin Transfer
+    diff_lum = rgb_to_luminance(diff_gain)
+    norm_chroma = diff_gain / torch.clamp(diff_lum, min=1e-5)
+    effective_gain = (1.0 - chroma_bleed) * diff_lum + chroma_bleed * norm_chroma * diff_lum
+
+    # 4. Modulate Diffuse Base
+    lit_diffuse = base_linear * effective_gain
+
+    # 5. Add Dielectric Specular (neutral reflection, never multiplied by skin albedo)
+    lit_hdr = lit_diffuse + specular_irradiance_linear.to(device)
+
+    # 6. Smooth Highlight Tone Compression (Filmic shoulder, zero yellow shift)
+    lit_toned = filmic_reinhard_tonemap(lit_hdr, white_point=highlight_white_point)
+
+    # 7. Encode back to display sRGB
+    return linear_to_srgb(lit_toned)
+
+
 class StudioLightRig:
     """
     Three-Point Studio Lighting Console.
@@ -188,6 +267,7 @@ class StudioLightRig:
             "optional": {
                 "normals_optional": ("IMAGE",),
                 "depth_optional": ("IMAGE",),
+                "image_optional": ("IMAGE",),
                 "clip_optional": ("CLIP",),
                 "conditioning_in": ("CONDITIONING",),
                 "prompt_text_optional": ("STRING", {"forceInput": True}),
@@ -199,16 +279,17 @@ class StudioLightRig:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "IMAGE", "CONDITIONING", "STRING")
-    RETURN_NAMES = ("relighting_map", "probe_preview", "conditioning", "lighting_prompt")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "CONDITIONING", "STRING", "IMAGE")
+    RETURN_NAMES = ("relighting_map", "probe_preview", "conditioning", "lighting_prompt", "lit_composite")
     FUNCTION = "execute_rig"
     CATEGORY = "lighting"
     DESCRIPTION = (
         "ComfyUI-StudioLight: Professional Photographic 3-Point Studio Rig.\n"
-        "• relighting_map: 32-bit deferred physical lighting pass for ControlNet / IC-Light.\n"
+        "• relighting_map: 32-bit deferred physical lighting pass.\n"
         "• probe_preview: VFX 18% Grey Ball + Mirror Chrome Ball + 2D Studio Radar.\n"
         "• conditioning: Step-scheduled prompt latents compatible with PromptBlock (0.40-1.00).\n"
-        "• lighting_prompt: Concise, high-signal photographic tokens for Flux/SDXL."
+        "• lighting_prompt: Concise, high-signal photographic tokens for Flux/SDXL.\n"
+        "• lit_composite: Photometric composite of image_optional * relighting_map for refinement."
     )
 
     def execute_rig(
@@ -241,6 +322,7 @@ class StudioLightRig:
         weight_type: str = "A_NORM",
         normals_optional: Optional[torch.Tensor] = None,
         depth_optional: Optional[torch.Tensor] = None,
+        image_optional: Optional[torch.Tensor] = None,
         clip_optional: Optional[Any] = None,
         conditioning_in: Optional[List] = None,
         prompt_text_optional: Optional[str] = None,
@@ -307,7 +389,7 @@ class StudioLightRig:
                 print(f"[StudioLight] Note: Prompt auto-detection skipped: {e}")
 
         # 3. Render Physical Relighting Map and Dual-Sphere VFX Probe
-        relighting_map, probe_preview = render_studio_lighting(
+        relighting_map, probe_preview, diff_pass, spec_pass = render_studio_lighting(
             normals=normals_optional,
             depth=depth_optional,
             key_params=key_params,
@@ -318,10 +400,21 @@ class StudioLightRig:
             preview_resolution=512,
             framing=framing,
             detected_prompt=detected_prompt,
+            return_passes=True,
         )
 
         # 3. Synthesize High-Signal Photographic Prompt Tokens
-        lighting_prompt = synthesize_high_signal_prompt(key_params, fill_params, rim_params, framing=framing)
+        target_engine = kwargs.get("target_engine", "Flux.1 / Flux.2")
+        if detected_prompt and target_engine == "Flux.1 / Flux.2":
+            p_low = detected_prompt.lower()
+            if any(w in p_low for w in ["video", "cinematic shot", "camera pan", "motion", "wan", "minimax"]):
+                target_engine = "Video (Wan / MiniMax)"
+            elif any(w in p_low for w in ["sdxl", "score_9", "source_pony"]):
+                target_engine = "SDXL"
+
+        lighting_prompt = synthesize_high_signal_prompt(
+            key_params, fill_params, rim_params, framing=framing, target_engine=target_engine
+        )
 
         # 4. Encode Step-Scheduled Conditioning (PromptBlock integration)
         conditioning_out = encode_scheduled_conditioning(
@@ -334,7 +427,38 @@ class StudioLightRig:
             conditioning_in=conditioning_in,
         )
 
-        return (relighting_map, probe_preview, conditioning_out, lighting_prompt)
+        # 5. Photometric Composite (if image_optional is provided)
+        if image_optional is not None:
+            comp_img = image_optional.clone()
+            if comp_img.shape[-1] != 3 and comp_img.shape[1] == 3:
+                comp_img = comp_img.permute(0, 2, 3, 1)
+
+            # Match spatial dimensions if needed
+            if comp_img.shape[1:3] != diff_pass.shape[1:3]:
+                d_perm = diff_pass.permute(0, 3, 1, 2)
+                s_perm = spec_pass.permute(0, 3, 1, 2)
+                d_resized = torch.nn.functional.interpolate(
+                    d_perm, size=comp_img.shape[1:3], mode="bilinear", align_corners=False
+                ).permute(0, 2, 3, 1)
+                s_resized = torch.nn.functional.interpolate(
+                    s_perm, size=comp_img.shape[1:3], mode="bilinear", align_corners=False
+                ).permute(0, 2, 3, 1)
+            else:
+                d_resized = diff_pass
+                s_resized = spec_pass
+
+            lit_composite = composite_photometric_relight(
+                base_image_srgb=comp_img,
+                diffuse_irradiance_linear=d_resized,
+                specular_irradiance_linear=s_resized,
+                ambient_floor=ambient_intensity,
+                chroma_bleed=0.35,
+                highlight_white_point=3.5,
+            )
+        else:
+            lit_composite = relighting_map
+
+        return (relighting_map, probe_preview, conditioning_out, lighting_prompt, lit_composite)
 
 
 NODE_CLASS_MAPPINGS = {

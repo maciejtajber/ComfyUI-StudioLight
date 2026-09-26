@@ -12,25 +12,63 @@ import torch
 from .color_utils import kelvin_to_mood, MODIFIER_PRESETS
 
 
-def get_azimuth_direction_token(azimuth_deg: float) -> str:
-    """Translates numeric azimuth into concise, high-signal camera-relative direction."""
+def get_azimuth_direction_token(
+    azimuth_deg: float,
+    elevation_deg: float = 35.0,
+    target_engine: str = "Flux.1 / Flux.2",
+) -> str:
+    """
+    Translates numeric azimuth & elevation into frame-relative directional language.
+    Eliminates photographic jargon confusion (e.g. 'camera-right' vs 'subject-right').
+    Optimized for Flux.1/2 (T5-XXL), Wan 2.1 / MiniMax (Video blocks), and SDXL (CLIP).
+    """
     az = float(azimuth_deg)
-    if abs(az) <= 18:
-        return "frontal on-axis"
-    elif 18 < az <= 65:
-        return "camera-right Rembrandt"
-    elif -65 <= az < -18:
-        return "camera-left Rembrandt"
-    elif 65 < az <= 115:
-        return "camera-right 90-degree profile"
-    elif -115 <= az < -65:
-        return "camera-left 90-degree profile"
-    elif 115 < az <= 165:
-        return "camera-right rear kicker"
-    elif -165 <= az < -115:
-        return "camera-left rear kicker"
+    elev = float(elevation_deg)
+
+    if "SDXL" in target_engine:
+        if abs(az) <= 18:
+            return "frontal on-axis"
+        elif 18 < az <= 65:
+            return "right side 45 degree"
+        elif -65 <= az < -18:
+            return "left side 45 degree"
+        elif 65 < az <= 115:
+            return "right profile 90 degree"
+        elif -115 <= az < -65:
+            return "left profile 90 degree"
+        elif 115 < az <= 165:
+            return "rear right rim kicker"
+        elif -165 <= az < -115:
+            return "rear left rim kicker"
+        else:
+            return "direct rear backlight"
+
+    # Default: Flux.1 / Flux.2 & Video narrative cause-and-effect
+    if elev > 50:
+        elev_str = "steep high-angle overhead"
+    elif elev > 15:
+        elev_str = f"angled from {int(round(elev))} degrees above"
+    elif elev >= -10:
+        elev_str = "at eye level"
     else:
-        return "direct backlight silhouette"
+        elev_str = f"low-angle uplight from {int(round(abs(elev)))} degrees below"
+
+    if abs(az) <= 18:
+        return f"directly in front on-axis {elev_str}, illuminating the front of the face with minimal side shadows"
+    elif 18 < az <= 65:
+        return f"positioned to the right side of the frame {elev_str}, illuminating the right cheek and casting soft directional shadows across the left side of the face"
+    elif -65 <= az < -18:
+        return f"positioned to the left side of the frame {elev_str}, illuminating the left cheek and casting soft directional shadows across the right side of the face"
+    elif 65 < az <= 115:
+        return f"positioned at the extreme right 90-degree profile edge of the frame {elev_str}, creating high-contrast chiaroscuro split lighting with deep shadows on the left"
+    elif -115 <= az < -65:
+        return f"positioned at the extreme left 90-degree profile edge of the frame {elev_str}, creating high-contrast chiaroscuro split lighting with deep shadows on the right"
+    elif 115 < az <= 165:
+        return f"positioned behind the subject toward the rear right {elev_str}, casting a bright rim kicker edge along the right silhouette"
+    elif -165 <= az < -115:
+        return f"positioned behind the subject toward the rear left {elev_str}, casting a bright rim kicker edge along the left silhouette"
+    else:
+        return f"positioned directly behind the subject {elev_str}, casting a strong backlight halo silhouette"
 
 
 def synthesize_high_signal_prompt(
@@ -38,43 +76,90 @@ def synthesize_high_signal_prompt(
     fill_params: Dict[str, Any],
     rim_params: Dict[str, Any],
     framing: str = "Portrait (Classical Bust)",
+    target_engine: str = "Flux.1 / Flux.2",
 ) -> str:
     """
-    Synthesizes a curated 15-25 word high-signal photographic prompt.
-    Eliminates verbose prompt pollution so Flux/SDXL attention focuses on key features.
-    Adapts context for fashion portraits, tabletop luxury products, industrial design, and cars.
+    Synthesizes a curated high-signal photographic prompt tailored to the target neural architecture.
+    - Flux.1 / Flux.2: Descriptive cause-and-effect narrative grounded in physical optical anchors.
+    - Video (Wan 2.1 / MiniMax / Kling): Temporally stable structured blocks with static light anchors.
+    - SDXL: Weighted, comma-delimited photographic tags.
     """
-    phrases = []
+    k_enabled = key_params.get("enabled", True)
+    f_enabled = fill_params.get("enabled", True) and fill_params.get("intensity", 0.0) > 0.05
+    r_enabled = rim_params.get("enabled", True) and rim_params.get("intensity", 0.0) > 0.1
 
-    # 1. Key Light
-    if key_params.get("enabled", True):
-        k_dir = get_azimuth_direction_token(key_params["azimuth"])
-        k_mood = kelvin_to_mood(key_params["kelvin"])
-        k_mod = MODIFIER_PRESETS.get(key_params["modifier"], {}).get("token", "soft studio light")
-        phrases.append(f"{k_mood} key light from {k_dir}, {k_mod}")
+    k_az = key_params.get("azimuth", 45.0)
+    k_el = key_params.get("elevation", 35.0)
+    k_dir = get_azimuth_direction_token(k_az, k_el, target_engine)
+    k_mood = kelvin_to_mood(key_params.get("kelvin", 5500))
+    k_mod_raw = key_params.get("modifier", "Octabox (Soft)")
+    k_mod_name = k_mod_raw.split(" (")[0] if " (" in k_mod_raw else k_mod_raw
+    k_kelvin = int(key_params.get("kelvin", 5500))
 
-    # 2. Fill Light
-    if fill_params.get("enabled", True) and fill_params.get("intensity", 0.0) > 0.05:
-        f_dir = get_azimuth_direction_token(fill_params["azimuth"])
-        phrases.append(f"subtle soft fill from {f_dir}")
+    f_az = fill_params.get("azimuth", -30.0)
+    f_el = fill_params.get("elevation", 15.0)
+    f_dir = get_azimuth_direction_token(f_az, f_el, target_engine)
+    f_mood = kelvin_to_mood(fill_params.get("kelvin", 4800))
 
-    # 3. Rim Light
-    if rim_params.get("enabled", True) and rim_params.get("intensity", 0.0) > 0.1:
-        r_dir = get_azimuth_direction_token(rim_params["azimuth"])
-        r_mood = kelvin_to_mood(rim_params["kelvin"])
-        phrases.append(f"crisp {r_mood} rim kicker from {r_dir}")
+    r_az = rim_params.get("azimuth", 160.0)
+    r_el = rim_params.get("elevation", 45.0)
+    r_dir = get_azimuth_direction_token(r_az, r_el, target_engine)
+    r_mood = kelvin_to_mood(rim_params.get("kelvin", 6500))
 
-    lighting_body = ", ".join(phrases) if phrases else "clean volumetric studio shadow falloff"
+    # --- VIDEO ENGINE (WAN 2.1 / MINIMAX / KLING) ---
+    if "Video" in target_engine:
+        video_blocks = ["[Cinematic studio lighting]", "[Stationary three-point light setup]"]
+        if k_enabled:
+            video_blocks.append(f"[Fixed key light from a studio {k_mod_name} {k_dir}, steady {k_kelvin}K {k_mood}]")
+        if f_enabled:
+            fill_side = "left" if k_az >= 0 else "right"
+            video_blocks.append(f"[Subtle ambient fill light from the {fill_side} side]")
+        if r_enabled:
+            video_blocks.append(f"[Steady {r_mood} rim kicker from behind for subject separation]")
+        video_blocks.append("[Consistent color temperature, temporally stable lighting, no flickering shadows].")
+        return " + ".join(video_blocks)
 
-    # Genre-aware photographic finishing anchor
+    # --- SDXL ENGINE (COMMA-DELIMITED TAGS) ---
+    if "SDXL" in target_engine:
+        tags = []
+        if "Tabletop" in framing or "Perfume" in framing:
+            tags.append("commercial product photography, luxury tabletop lighting")
+        elif "Automotive" in framing or "Car" in framing:
+            tags.append("commercial automotive photography, infinity cove lighting")
+        elif "Industrial" in framing or "Chair" in framing:
+            tags.append("industrial design photography, studio furniture showcase")
+        else:
+            tags.append("studio portrait, editorial fashion photography")
+
+        if k_enabled:
+            tags.append(f"key light from {k_dir}, studio {k_mod_name}, {k_kelvin}K {k_mood}")
+        if f_enabled:
+            tags.append(f"soft fill light from {f_dir}")
+        if r_enabled:
+            tags.append(f"rim kicker from {r_dir}, {r_mood}")
+        tags.extend(["chiaroscuro", "calibrated studio lighting", "8k photography", "high dynamic range"])
+        return ", ".join(tags)
+
+    # --- FLUX.1 / FLUX.2 ENGINE (NARRATIVE CAUSE & EFFECT) ---
+    clauses = []
+    if k_enabled:
+        clauses.append(f"Key light from a studio {k_mod_name} {k_dir}, calibrated {k_kelvin}K {k_mood}")
+    if f_enabled:
+        fill_side = "left side of the frame" if k_az >= 0 else "right side of the frame"
+        clauses.append(f"subtle soft fill light from the {fill_side} to soften shadow density")
+    if r_enabled:
+        clauses.append(f"crisp {r_mood} rim kicker from behind creating a thin razor-edge highlight along the hair and shoulders")
+
+    lighting_narrative = ". ".join(clauses) if clauses else "clean calibrated studio ambient illumination"
+
     if "Tabletop" in framing or "Perfume" in framing:
-        return f"commercial product photography, luxury tabletop lighting, {lighting_body}, calibrated dynamic range, editorial advertising photography."
+        return f"Commercial luxury product photography. {lighting_narrative}. Calibrated specular reflections, crystalline highlights, editorial advertising photography."
     elif "Industrial" in framing or "Chair" in framing:
-        return f"industrial design photography, studio furniture showcase, {lighting_body}, calibrated dynamic range, architectural digest photography."
+        return f"Industrial design photography. Studio furniture showcase. {lighting_narrative}. Calibrated dynamic range, architectural digest photography."
     elif "Automotive" in framing or "Car" in framing:
-        return f"commercial automotive photography, car studio lighting, infinity cove reflections, {lighting_body}, calibrated dynamic range, editorial automotive photography."
+        return f"Commercial automotive studio photography. {lighting_narrative}. Infinity cove horizon line reflections, glossy clearcoat sheen, calibrated dynamic range."
     else:
-        return f"studio portrait, {lighting_body}, calibrated dynamic range, editorial fashion photography."
+        return f"Studio fashion portrait. {lighting_narrative}. Calibrated dynamic range, natural skin subsurface scattering, high-end editorial fashion photography."
 
 
 def encode_scheduled_conditioning(

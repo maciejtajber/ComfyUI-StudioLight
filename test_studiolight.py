@@ -132,27 +132,43 @@ def test_prompt_synthesizer():
     fill = {"enabled": True, "azimuth": -30.0, "elevation": 15.0, "intensity": 0.35, "kelvin": 4800, "modifier": "Octabox (Soft)"}
     rim = {"enabled": True, "azimuth": 160.0, "elevation": 45.0, "intensity": 1.1, "kelvin": 6500, "modifier": "Stripbox"}
 
-    prompt_port = synthesize_high_signal_prompt(key, fill, rim, framing="Portrait (Classical Bust)")
-    assert "studio portrait" in prompt_port
-    assert "Rembrandt" in prompt_port
-    assert "tungsten" in prompt_port
+    # 1. Flux.1 / Flux.2 Engine (Narrative Cause & Effect)
+    prompt_port = synthesize_high_signal_prompt(key, fill, rim, framing="Portrait (Classical Bust)", target_engine="Flux.1 / Flux.2")
+    assert "Studio fashion portrait" in prompt_port
+    assert "right side of the frame" in prompt_port
+    assert "warm tungsten" in prompt_port
+    assert "left side" in prompt_port
 
+    # 2. Video Engine (Wan 2.1 / MiniMax)
+    prompt_vid = synthesize_high_signal_prompt(key, fill, rim, framing="Portrait (Classical Bust)", target_engine="Video (Wan / MiniMax)")
+    assert "[Cinematic studio lighting]" in prompt_vid
+    assert "[Stationary three-point light setup]" in prompt_vid
+    assert "right side of the frame" in prompt_vid
+    assert "temporally stable" in prompt_vid
+
+    # 3. SDXL Engine
+    prompt_sdxl = synthesize_high_signal_prompt(key, fill, rim, framing="Portrait (Classical Bust)", target_engine="SDXL")
+    assert "studio portrait" in prompt_sdxl
+    assert "right side 45 degree" in prompt_sdxl
+
+    # 4. Product Framing
     prompt_prod = synthesize_high_signal_prompt(key, fill, rim, framing="Tabletop / Luxury (Perfume Bottle / Small Product)")
-    assert "commercial product photography" in prompt_prod
+    assert "Commercial luxury product photography" in prompt_prod
 
     prompt_chair = synthesize_high_signal_prompt(key, fill, rim, framing="Industrial Design (Chair / Medium Product)")
-    assert "industrial design" in prompt_chair
+    assert "Industrial design photography" in prompt_chair
 
     prompt_car = synthesize_high_signal_prompt(key, fill, rim, framing="Automotive Cove (Car / Large Vehicle)")
-    assert "commercial automotive photography" in prompt_car
-    print("✓ prompt_synthesizer passed!")
+    assert "Commercial automotive studio photography" in prompt_car
+    print("✓ prompt_synthesizer passed across all engines (Flux, Video, SDXL)!")
+
 
 
 def test_studio_light_node():
     print("Testing StudioLightRig node execution...")
     node = StudioLightRig()
     # Test 1: Explicit framing (Full Body)
-    relight, probe, cond, prompt = node.execute_rig(
+    relight, probe, cond, prompt, comp = node.execute_rig(
         preset="Rembrandt Classic",
         framing="Full Body (Standing Lookbook)",
         ambient_intensity=0.05,
@@ -185,9 +201,10 @@ def test_studio_light_node():
     assert relight.shape == (1, 1264, 848, 3)
     assert probe is not None and isinstance(probe, torch.Tensor)
     assert isinstance(prompt, str)
+    assert comp is not None and comp.shape == relight.shape
 
     # Test 2: Auto detection (Prompt mentions runway / models -> Cyc)
-    relight_auto, _, _, _ = node.execute_rig(
+    relight_auto, _, _, _, _ = node.execute_rig(
         preset="Rembrandt Classic",
         framing="Auto (Detect from Prompt)",
         ambient_intensity=0.05,
@@ -217,7 +234,23 @@ def test_studio_light_node():
         prompt_text_optional="three fashion models walking together on a runway presentation",
     )
     assert relight_auto.shape == (1, 1152, 896, 3)
-    print("✓ StudioLightRig node execution passed perfectly!")
+
+    # Test 3: Photometric Composite with Draft Image
+    draft_mock = torch.full((1, 512, 512, 3), 0.7)
+    _, _, _, _, lit_out = node.execute_rig(
+        preset="Rembrandt Classic",
+        framing="Portrait (Classical Bust)",
+        key_enabled=True,
+        key_azimuth=45.0,
+        image_optional=draft_mock,
+    )
+    assert lit_out is not None and isinstance(lit_out, torch.Tensor)
+    assert lit_out.shape == (1, 512, 512, 3)
+    # Verify directional contrast on the cheeks (y=200, x=300 right, x=200 left in 512x512)
+    right_lum = lit_out[0, 200, 300, :].mean().item()
+    left_lum = lit_out[0, 200, 200, :].mean().item()
+    assert right_lum > left_lum, f"Key at +45 should make right ({right_lum:.2f}) brighter than left ({left_lum:.2f})"
+    print("✓ StudioLightRig node execution and photometric composite passed perfectly!")
 
 
 if __name__ == "__main__":

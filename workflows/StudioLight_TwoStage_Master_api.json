@@ -1,0 +1,295 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "flux1-krea-dev.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "DualCLIPLoader",
+    "inputs": {
+      "clip_name1": "t5xxl_fp16.safetensors",
+      "clip_name2": "clip_l.safetensors",
+      "type": "flux"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "SIPromptBlock",
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "block_index": 4,
+      "text": "Vogue editorial high-fashion beauty portrait of an elegant woman, exquisite bone structure, flawless natural skin texture, haute couture styling, neutral studio backdrop, 85mm lens, f/2.8, hyperrealistic photography",
+      "start_step": 0.0,
+      "end_step": 0.4,
+      "strength": 1.0,
+      "weight_type": "A_NORM"
+    }
+  },
+  "5": {
+    "class_type": "SIPromptBlock",
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "block_index": 5,
+      "text": "plastic skin, mannequin, low quality, oversaturated, blurry, bad anatomy, deformed, watermark, signature",
+      "start_step": 0.0,
+      "end_step": 1.0,
+      "strength": 1.0,
+      "weight_type": "A_NORM"
+    }
+  },
+  "6": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": {
+      "width": 896,
+      "height": 1152,
+      "batch_size": 1
+    }
+  },
+  "7": {
+    "class_type": "FluxGuidance",
+    "inputs": {
+      "conditioning": [
+        "4",
+        0
+      ],
+      "guidance": 3.5
+    }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "7",
+        0
+      ],
+      "negative": [
+        "5",
+        0
+      ],
+      "latent_image": [
+        "6",
+        0
+      ],
+      "seed": 42,
+      "control_after_generate": "fixed",
+      "steps": 16,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "denoise": 1.0
+    }
+  },
+  "9": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "10": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "9",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "MarigoldModelLoader",
+    "inputs": {
+      "model": "prs-eth/marigold-normals-lcm-v0-1"
+    }
+  },
+  "12": {
+    "class_type": "MarigoldDepthEstimation_v2",
+    "inputs": {
+      "marigold_model": [
+        "11",
+        0
+      ],
+      "image": [
+        "9",
+        0
+      ],
+      "seed": 123,
+      "denoise_steps": 4,
+      "n_repeat": 1,
+      "processing_res": 896,
+      "scheduler": "LCMScheduler",
+      "color_map": false,
+      "invert": true
+    }
+  },
+  "13": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "12",
+        0
+      ]
+    }
+  },
+  "14": {
+    "class_type": "StudioLightRig",
+    "inputs": {
+      "preset": "Rembrandt Classic",
+      "framing": "Portrait (Classical Bust)",
+      "ambient_intensity": 0.05,
+      "invert_normals_y": false,
+      "key_enabled": true,
+      "key_azimuth": 45.0,
+      "key_elevation": 35.0,
+      "key_intensity": 1.0,
+      "key_kelvin": 5500,
+      "key_modifier": "Octabox (Soft)",
+      "fill_enabled": true,
+      "fill_azimuth": -30.0,
+      "fill_elevation": 15.0,
+      "fill_intensity": 0.35,
+      "fill_kelvin": 4800,
+      "fill_modifier": "Octabox (Soft)",
+      "rim_enabled": true,
+      "rim_azimuth": 160.0,
+      "rim_elevation": 45.0,
+      "rim_intensity": 1.1,
+      "rim_kelvin": 6500,
+      "rim_modifier": "Stripbox",
+      "start_step": 0.4,
+      "end_step": 1.0,
+      "conditioning_strength": 1.0,
+      "weight_type": "A_NORM",
+      "normals_optional": [
+        "12",
+        0
+      ],
+      "image_optional": [
+        "9",
+        0
+      ],
+      "clip_optional": [
+        "2",
+        0
+      ],
+      "conditioning_in": [
+        "4",
+        0
+      ]
+    }
+  },
+  "15": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "14",
+        1
+      ]
+    }
+  },
+  "16": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "14",
+        4
+      ]
+    }
+  },
+  "17": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "14",
+        4
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "18": {
+    "class_type": "FluxGuidance",
+    "inputs": {
+      "conditioning": [
+        "14",
+        2
+      ],
+      "guidance": 3.5
+    }
+  },
+  "19": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "18",
+        0
+      ],
+      "negative": [
+        "5",
+        0
+      ],
+      "latent_image": [
+        "17",
+        0
+      ],
+      "seed": 1042,
+      "control_after_generate": "fixed",
+      "steps": 24,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "denoise": 0.25
+    }
+  },
+  "20": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "19",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "21": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "20",
+        0
+      ],
+      "filename_prefix": "StudioLight_Master"
+    }
+  }
+}
