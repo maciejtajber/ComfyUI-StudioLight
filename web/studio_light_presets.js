@@ -196,11 +196,30 @@ function hookNodePresets(node) {
     }
 }
 
+function migrateOldNodeWidgets(node) {
+
+    if (!node || !node.widgets) return;
+
+    if (!node.widgets.find((w) => w.name === "start_step")) {
+        node.addWidget("number", "start_step", 0.40, function (v) { this.value = v; }, { min: 0.0, max: 1.0, step: 0.01, precision: 2 });
+    }
+    if (!node.widgets.find((w) => w.name === "end_step")) {
+        node.addWidget("number", "end_step", 1.00, function (v) { this.value = v; }, { min: 0.0, max: 1.0, step: 0.01, precision: 2 });
+    }
+    if (!node.widgets.find((w) => w.name === "conditioning_strength")) {
+        node.addWidget("number", "conditioning_strength", 1.00, function (v) { this.value = v; }, { min: 0.0, max: 2.0, step: 0.05, precision: 2 });
+    }
+    if (!node.widgets.find((w) => w.name === "weight_type")) {
+        node.addWidget("combo", "weight_type", "A_NORM", function (v) { this.value = v; }, { values: ["A_NORM", "ADDITIVE"] });
+    }
+}
+
 app.registerExtension({
     name: "ComfyUI.StudioLight.UI",
 
     nodeCreated(node) {
         if (node.comfyClass === "StudioLightRig" || node.type === "StudioLightRig") {
+            migrateOldNodeWidgets(node);
             insertSectionDividers(node);
             hookNodePresets(node);
         }
@@ -208,8 +227,10 @@ app.registerExtension({
 
     loadedGraphNode(node) {
         if (node.comfyClass === "StudioLightRig" || node.type === "StudioLightRig") {
+            migrateOldNodeWidgets(node);
             insertSectionDividers(node);
             hookNodePresets(node);
         }
     }
 });
+
