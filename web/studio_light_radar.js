@@ -2,11 +2,15 @@
  * ComfyUI-StudioLight — Interactive 2D Studio Radar & Live Preset Synchronizer
  * Author: Maciej Tajber (https://github.com/maciejtajber)
  * License: MIT
+ *
+ * Architecture: Clean onDrawForeground + prototype mouse event capture.
+ * Zero custom widget mutation, zero closure-chaining in render loop.
+ * 100% resilient across modern and legacy canvas engines.
  */
 
 import { app } from "../../scripts/app.js";
 
-// Static fallback in case backend is offline; dynamically hydrated via /studiolight/presets
+// ─── Preset data ────────────────────────────────────────────────────────────
 const PRESET_MAP = {
     "Rembrandt Classic": {
         ambient_intensity: 0.05,
@@ -40,96 +44,128 @@ const PRESET_MAP = {
     }
 };
 
-// Asynchronously fetch presets from Python backend for 100% Single Source of Truth
+// Hydrate from backend dynamically (best-effort, fallback to static)
 fetch("/studiolight/presets")
-    .then((r) => r.json())
-    .then((data) => {
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
         if (data && typeof data === "object") {
             Object.assign(PRESET_MAP, data);
         }
     })
-    .catch(() => {});
+    .catch(function () {});
 
-const RADAR_HEIGHT = 185;
+
+// ─── Constants ──────────────────────────────────────────────────────────────
+var RADAR_BOX_HEIGHT = 185;
+var RADAR_PADDING    = 12;
+var MIN_NODE_WIDTH   = 380;
+
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function getWidget(node, name) {
-    return node.widgets?.find((w) => w.name === name);
+    if (!node || !node.widgets) return undefined;
+    for (var i = 0; i < node.widgets.length; i++) {
+        if (node.widgets[i].name === name) return node.widgets[i];
+    }
+    return undefined;
 }
 
-function applyPresetValues(node, currentVal) {
-    if (!currentVal || currentVal === "Custom" || !PRESET_MAP[currentVal]) return;
-    node._isApplyingPreset = true;
-    const p = PRESET_MAP[currentVal];
-    for (const [k, v] of Object.entries(p)) {
-        const targetWidget = getWidget(node, k);
-        if (targetWidget) {
-            targetWidget.value = v;
-            if (targetWidget.inputEl) targetWidget.inputEl.value = v;
-            if (targetWidget.element) targetWidget.element.value = v;
-            if (targetWidget.callback) {
-                try {
-                    targetWidget.callback.call(targetWidget, v);
-                } catch (e) {}
-            }
+function getWidgetValue(node, name, fallback) {
+    var w = getWidget(node, name);
+    return (w !== undefined && w.value !== undefined) ? w.value : fallback;
+}
+
+function setWidgetValue(node, name, val) {
+    var w = getWidget(node, name);
+    if (!w) return;
+    w.value = val;
+    if (w.inputEl) w.inputEl.value = val;
+    if (w.element) w.element.value = val;
+    if (w.callback) {
+        try { w.callback.call(w, val); } catch (e) { /* swallow */ }
+    }
+}
+
+function safeRoundRect(ctx, x, y, w, h, r) {
+    if (typeof ctx.roundRect === "function") {
+        ctx.roundRect(x, y, w, h, r);
+    } else {
+        ctx.rect(x, y, w, h);
+    }
+}
+
+
+// ─── Preset synchronization logic ───────────────────────────────────────────
+
+function applyPreset(node, presetName) {
+    if (!presetName || presetName === "Custom" || !PRESET_MAP[presetName]) return;
+    node._sl_applying = true;
+    var p = PRESET_MAP[presetName];
+    for (var k in p) {
+        if (p.hasOwnProperty(k)) {
+            setWidgetValue(node, k, p[k]);
         }
     }
-    node._isApplyingPreset = false;
+    node._sl_applying = false;
     node.setDirtyCanvas(true, true);
-    app.canvas?.setDirty(true, true);
+    if (app.canvas) app.canvas.setDirty(true, true);
 }
 
-function setPresetToCustom(node) {
-    if (!node || node._isApplyingPreset) return;
-    const pw = getWidget(node, "preset");
+function flipToCustom(node) {
+    if (!node || node._sl_applying) return;
+    var pw = getWidget(node, "preset");
     if (pw && pw.value !== "Custom") {
         pw.value = "Custom";
         if (pw.inputEl) pw.inputEl.value = "Custom";
         if (pw.element) pw.element.value = "Custom";
         node.setDirtyCanvas(true, true);
-        app.canvas?.setDirty(true, true);
+        if (app.canvas) app.canvas.setDirty(true, true);
     }
 }
 
-function updateLightAngle(node, dx, dy, widgetName) {
-    const w = getWidget(node, widgetName);
-    if (!w) return;
-    // Camera at bottom (0°): dy > 0 is bottom (0°), dx > 0 is right (+90°), dy < 0 is top (+/-180°)
-    let deg = Math.atan2(dx, dy) * (180 / Math.PI);
-    deg = Math.round(deg);
-    w.value = deg;
-    if (w.inputEl) w.inputEl.value = deg;
-    if (w.element) w.element.value = deg;
-    if (w.callback) {
-        try {
-            w.callback.call(w, w.value);
-        } catch (e) {}
+function hookPresetWidget(node) {
+    if (!node) return;
+    var pw = getWidget(node, "preset");
+    if (pw && !pw._sl_hooked) {
+        pw._sl_hooked = true;
+        var origCb = pw.callback;
+        pw.callback = function (val) {
+            if (origCb) origCb.apply(this, arguments);
+            applyPreset(node, typeof val === "string" ? val : this.value);
+        };
     }
-    setPresetToCustom(node);
-    node.setDirtyCanvas(true, true);
-    app.canvas?.setDirty(true, true);
 }
 
-function drawRadar(node, ctx, yOffset, customHeight, customWidth) {
-    if (node.flags?.collapsed) return;
 
-    const width = customWidth || node.size[0] || 380;
-    const radarY = typeof yOffset === "number" ? yOffset + 4 : (node.size[1] - RADAR_HEIGHT - 10);
-    const boxHeight = customHeight ? customHeight - 8 : RADAR_HEIGHT - 8;
-    const cx = width / 2;
-    const cy = radarY + boxHeight / 2 + 4;
-    const radius = Math.min(width, boxHeight) / 2 - 20;
+// ─── Compute radar geometry relative to node ────────────────────────────────
 
-    // Cache metrics on node for mouse picking
-    node._radarMetrics = { cx, cy, radius, radarY, boxHeight, width };
+function radarMetrics(node) {
+    var w = (node.size && node.size[0]) ? node.size[0] : MIN_NODE_WIDTH;
+    var h = (node.size && node.size[1]) ? node.size[1] : 750;
+    var boxW = w - RADAR_PADDING * 2;
+    var boxH = RADAR_BOX_HEIGHT;
+    var boxX = RADAR_PADDING;
+    var boxY = h - boxH - 8;
+    var cx = w / 2;
+    var cy = boxY + boxH / 2 + 4;
+    var radius = Math.min(boxW, boxH) / 2 - 20;
+    if (radius < 24) radius = 24;
+    return { w: w, h: h, boxX: boxX, boxY: boxY, boxW: boxW, boxH: boxH, cx: cx, cy: cy, radius: radius };
+}
 
-    ctx.save();
+
+// ─── Drawing ────────────────────────────────────────────────────────────────
+
+function drawRadar(node, ctx) {
+    var m = radarMetrics(node);
 
     // 1. Pod container background
     ctx.fillStyle = "#111116";
     ctx.strokeStyle = "#383846";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.rect(12, radarY, width - 24, boxHeight);
+    safeRoundRect(ctx, m.boxX, m.boxY, m.boxW, m.boxH, 5);
     ctx.fill();
     ctx.stroke();
 
@@ -137,35 +173,35 @@ function drawRadar(node, ctx, yOffset, customHeight, customWidth) {
     ctx.fillStyle = "#9a9aa8";
     ctx.font = "bold 9px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("3-POINT STUDIO RADAR (DRAG LIGHTS TO AIM)", cx, radarY + 14);
+    ctx.fillText("3-POINT STUDIO RADAR (DRAG LIGHTS TO AIM)", m.cx, m.boxY + 14);
 
     // 3. Circular radar concentric rings
     ctx.strokeStyle = "#252530";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.arc(m.cx, m.cy, m.radius, 0, Math.PI * 2);
     ctx.stroke();
-
     ctx.beginPath();
-    ctx.arc(cx, cy, radius * 0.5, 0, Math.PI * 2);
+    ctx.arc(m.cx, m.cy, m.radius * 0.5, 0, Math.PI * 2);
     ctx.stroke();
 
     // 4. Crosshairs
     ctx.strokeStyle = "#202028";
     ctx.beginPath();
-    ctx.moveTo(cx - radius, cy);
-    ctx.lineTo(cx + radius, cy);
-    ctx.moveTo(cx, cy - radius);
-    ctx.lineTo(cx, cy + radius);
+    ctx.moveTo(m.cx - m.radius, m.cy);
+    ctx.lineTo(m.cx + m.radius, m.cy);
+    ctx.moveTo(m.cx, m.cy - m.radius);
+    ctx.lineTo(m.cx, m.cy + m.radius);
     ctx.stroke();
 
     // 5. Diagonal guidelines (+/- 45°, +/- 135°)
     ctx.strokeStyle = "#1a1a22";
-    for (const angle of [45, 135, -45, -135]) {
-        const rad = angle * (Math.PI / 180);
+    var diagAngles = [45, 135, -45, -135];
+    for (var i = 0; i < diagAngles.length; i++) {
+        var rad = diagAngles[i] * (Math.PI / 180);
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + radius * Math.sin(rad), cy + radius * Math.cos(rad));
+        ctx.moveTo(m.cx, m.cy);
+        ctx.lineTo(m.cx + m.radius * Math.sin(rad), m.cy + m.radius * Math.cos(rad));
         ctx.stroke();
     }
 
@@ -174,40 +210,47 @@ function drawRadar(node, ctx, yOffset, customHeight, customWidth) {
     ctx.strokeStyle = "#5a5a70";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.rect(cx - 40, cy + radius + 2, 80, 14);
+    safeRoundRect(ctx, m.cx - 40, m.cy + m.radius + 3, 80, 13, 3);
     ctx.fill();
     ctx.stroke();
-
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 8px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("▼ CAMERA (0°)", cx, cy + radius + 12);
+    ctx.fillText("▼ CAMERA (0°)", m.cx, m.cy + m.radius + 12);
 
     // 7. Center subject point
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
-    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.arc(m.cx, m.cy, 4, 0, Math.PI * 2);
     ctx.fill();
 
-    // 8. Helper to render ray, handle, and degree badge
-    function drawLightHandle(azimuth, color, label, enabled) {
-        if (!enabled) return;
+    // 8. Glowing neon light handles
+    var lights = [
+        { azName: "key_azimuth", enName: "key_enabled", elName: "key_elevation", color: "#ffaa00", label: "KEY", defAz: 45, defEl: 35 },
+        { azName: "fill_azimuth", enName: "fill_enabled", elName: "fill_elevation", color: "#00d4ff", label: "FILL", defAz: -30, defEl: 15 },
+        { azName: "rim_azimuth", enName: "rim_enabled", elName: "rim_elevation", color: "#ff2a85", label: "RIM", defAz: 160, defEl: 45 },
+    ];
 
-        // 0° is bottom (camera), +45° is camera-right (screen right), +/-180° is top (backlight)
-        const rad = azimuth * (Math.PI / 180);
-        const lx = cx + radius * Math.sin(rad);
-        const ly = cy + radius * Math.cos(rad);
+    for (var li = 0; li < lights.length; li++) {
+        var info = lights[li];
+        var enabled = getWidgetValue(node, info.enName, true);
+        if (!enabled) continue;
+
+        var az = getWidgetValue(node, info.azName, info.defAz);
+        var rad = az * (Math.PI / 180);
+        var lx = m.cx + m.radius * Math.sin(rad);
+        var ly = m.cy + m.radius * Math.cos(rad);
 
         // Ray line from center to light
-        ctx.strokeStyle = color;
+        ctx.strokeStyle = info.color;
         ctx.lineWidth = 2.2;
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
+        ctx.moveTo(m.cx, m.cy);
         ctx.lineTo(lx, ly);
         ctx.stroke();
 
         // Glowing outer handle ring
-        ctx.fillStyle = color;
+        ctx.fillStyle = info.color;
         ctx.beginPath();
         ctx.arc(lx, ly, 7.5, 0, Math.PI * 2);
         ctx.fill();
@@ -223,212 +266,180 @@ function drawRadar(node, ctx, yOffset, customHeight, customWidth) {
         ctx.fill();
 
         // Text label badge
-        ctx.fillStyle = color;
+        ctx.fillStyle = info.color;
         ctx.font = "bold 9px sans-serif";
-        const isRight = Math.sin(rad) >= 0;
+        var isRight = Math.sin(rad) >= 0;
         ctx.textAlign = isRight ? "left" : "right";
-        ctx.fillText(`${label} ${Math.round(azimuth)}°`, lx + (isRight ? 11 : -11), ly + 3);
+        ctx.fillText(info.label + " " + Math.round(az) + "°", lx + (isRight ? 11 : -11), ly + 3);
     }
 
-    const kAz = getWidget(node, "key_azimuth")?.value ?? 45;
-    const kEn = getWidget(node, "key_enabled")?.value ?? true;
-
-    const fAz = getWidget(node, "fill_azimuth")?.value ?? -30;
-    const fEn = getWidget(node, "fill_enabled")?.value ?? true;
-
-    const rAz = getWidget(node, "rim_azimuth")?.value ?? 160;
-    const rEn = getWidget(node, "rim_enabled")?.value ?? true;
-
-    // Draw active lights with distinct high-contrast neon palettes
-    drawLightHandle(kAz, "#ffaa00", "KEY", kEn);
-    drawLightHandle(fAz, "#00d4ff", "FILL", fEn);
-    drawLightHandle(rAz, "#ff2a85", "RIM", rEn);
-
     // Elevation readout in bottom corner
-    const kEl = getWidget(node, "key_elevation")?.value ?? 35;
-    const fEl = getWidget(node, "fill_elevation")?.value ?? 15;
-    const rEl = getWidget(node, "rim_elevation")?.value ?? 45;
     ctx.fillStyle = "#707084";
     ctx.font = "8px monospace";
     ctx.textAlign = "left";
-    ctx.fillText(`EL: K:${Math.round(kEl)}° F:${Math.round(fEl)}° R:${Math.round(rEl)}°`, 18, radarY + boxHeight - 5);
-
-    ctx.restore();
+    var kEl = Math.round(getWidgetValue(node, "key_elevation", 35));
+    var fEl = Math.round(getWidgetValue(node, "fill_elevation", 15));
+    var rEl = Math.round(getWidgetValue(node, "rim_elevation", 45));
+    ctx.fillText("EL  K:" + kEl + "°  F:" + fEl + "°  R:" + rEl + "°", m.boxX + 8, m.boxY + m.boxH - 5);
 }
 
-function handleRadarMouse(event, localPos, node) {
-    if (node.flags?.collapsed || !node._radarMetrics) return false;
 
-    const { cx, cy, radius, radarY, boxHeight } = node._radarMetrics;
-    const mx = localPos[0];
-    const my = localPos[1];
-    const dist = Math.hypot(mx - cx, my - cy);
+// ─── Mouse interaction ──────────────────────────────────────────────────────
 
-    const type = event.type || "";
+function hitTestRadar(node, localX, localY) {
+    var m = radarMetrics(node);
 
-    if (type === "pointerdown" || type === "mousedown") {
-        if (dist <= radius + 22 && my >= radarY && my <= radarY + boxHeight) {
-            const lights = [
-                { id: "key", widget: "key_azimuth" },
-                { id: "fill", widget: "fill_azimuth" },
-                { id: "rim", widget: "rim_azimuth" },
-            ];
+    // Must be inside the radar box
+    if (localY < m.boxY || localY > m.boxY + m.boxH) return null;
+    if (localX < m.boxX || localX > m.boxX + m.boxW) return null;
 
-            for (const l of lights) {
-                const w = getWidget(node, l.widget);
-                if (!w) continue;
-                const az = (w.value) * (Math.PI / 180);
-                const lx = cx + radius * Math.sin(az);
-                const ly = cy + radius * Math.cos(az);
-                if (Math.hypot(mx - lx, my - ly) <= 22) {
-                    node._draggingLight = l.widget;
-                    updateLightAngle(node, mx - cx, my - cy, node._draggingLight);
-                    return true;
-                }
-            }
+    var lights = [
+        { azName: "key_azimuth", enName: "key_enabled", defAz: 45 },
+        { azName: "fill_azimuth", enName: "fill_enabled", defAz: -30 },
+        { azName: "rim_azimuth", enName: "rim_enabled", defAz: 160 },
+    ];
 
-            // Clicked inside radar ring -> aim closest or default Key
-            node._draggingLight = "key_azimuth";
-            updateLightAngle(node, mx - cx, my - cy, node._draggingLight);
-            return true;
-        }
-    } else if (type === "pointermove" || type === "mousemove") {
-        if (node._draggingLight) {
-            updateLightAngle(node, mx - cx, my - cy, node._draggingLight);
-            return true;
-        }
-    } else if (type === "pointerup" || type === "mouseup") {
-        if (node._draggingLight) {
-            node._draggingLight = null;
-            return true;
+    var bestDist = 999;
+    var bestWidget = null;
+
+    for (var i = 0; i < lights.length; i++) {
+        var info = lights[i];
+        if (!getWidgetValue(node, info.enName, true)) continue;
+        var az = getWidgetValue(node, info.azName, info.defAz);
+        var rad = az * (Math.PI / 180);
+        var lx = m.cx + m.radius * Math.sin(rad);
+        var ly = m.cy + m.radius * Math.cos(rad);
+        var dist = Math.hypot(localX - lx, localY - ly);
+        if (dist < 24 && dist < bestDist) {
+            bestDist = dist;
+            bestWidget = info.azName;
         }
     }
 
-    return false;
+    // If no handle was directly clicked but click is inside the circular arena, default to Key
+    if (!bestWidget) {
+        var distFromCenter = Math.hypot(localX - m.cx, localY - m.cy);
+        if (distFromCenter <= m.radius + 15) {
+            bestWidget = "key_azimuth";
+        }
+    }
+
+    return bestWidget;
 }
 
-function setupRadarWidget(node) {
-    if (!node || node._studio_widget_installed) return;
-    node._studio_widget_installed = true;
-
-    // Hook preset widget callback
-    const presetWidget = getWidget(node, "preset");
-    if (presetWidget && !presetWidget._studio_hooked) {
-        presetWidget._studio_hooked = true;
-        const origPresetCb = presetWidget.callback;
-        presetWidget.callback = function (val) {
-            if (origPresetCb) origPresetCb.apply(this, arguments);
-            const currentVal = typeof val === "string" ? val : this.value;
-            applyPresetValues(node, currentVal);
-        };
-    }
-
-    // Add dedicated custom widget to node.widgets if not already present
-    if (!node.widgets?.some((w) => w.name === "studio_radar")) {
-        const radarWidget = {
-            name: "studio_radar",
-            type: "custom",
-            value: "",
-            options: { serialize: false },
-            draw(ctx, targetNode, widget_width, y, widget_height) {
-                drawRadar(targetNode, ctx, y, widget_height, widget_width);
-            },
-            mouse(event, pos, targetNode) {
-                return handleRadarMouse(event, pos, targetNode);
-            },
-            computeSize(width) {
-                return [width || 380, RADAR_HEIGHT];
-            }
-        };
-
-        if (typeof node.addCustomWidget === "function") {
-            node.addCustomWidget(radarWidget);
-        } else {
-            node.widgets = node.widgets || [];
-            node.widgets.push(radarWidget);
-        }
-    }
-
-    // Ensure node computeSize accounts for radar widget
-    const origComputeSize = node.computeSize?.bind(node);
-    node.computeSize = function () {
-        const s = origComputeSize ? origComputeSize.apply(this, arguments) : [380, 880];
-        s[0] = Math.max(s[0] || 0, 380);
-        s[1] = Math.max(s[1] || 0, 880);
-        return s;
-    };
-
-    // Ensure node size fits
-    if (node.size) {
-        node.size[0] = Math.max(node.size[0], 380);
-        node.size[1] = Math.max(node.size[1], 880);
-    }
+function aimLight(node, localX, localY, widgetName) {
+    var m = radarMetrics(node);
+    var dx = localX - m.cx;
+    var dy = localY - m.cy;
+    // Camera at bottom (0°): dy > 0 is bottom (0°), dx > 0 is right (+90°), dy < 0 is top (+/-180°)
+    var deg = Math.round(Math.atan2(dx, dy) * (180 / Math.PI));
+    setWidgetValue(node, widgetName, deg);
+    flipToCustom(node);
+    node.setDirtyCanvas(true, true);
+    if (app.canvas) app.canvas.setDirty(true, true);
 }
+
+
+// ─── Extension registration ─────────────────────────────────────────────────
 
 app.registerExtension({
     name: "ComfyUI.StudioLight.Radar",
 
-    beforeRegisterNodeDef(nodeType, nodeData) {
-        if (nodeData.name !== "StudioLightRig" && nodeType.comfyClass !== "StudioLightRig") {
-            return;
-        }
+    beforeRegisterNodeDef: function (nodeType, nodeData) {
+        if (nodeData.name !== "StudioLightRig" && nodeType.comfyClass !== "StudioLightRig") return;
 
-        // Prototype configure hook
-        const origConfigure = nodeType.prototype.onConfigure;
-        nodeType.prototype.onConfigure = function () {
-            if (origConfigure) origConfigure.apply(this, arguments);
-            setupRadarWidget(this);
+        // ── Allocate layout space on prototype computeSize (ONCE, zero closure nesting) ──
+        var origComputeSize = nodeType.prototype.computeSize;
+        nodeType.prototype.computeSize = function (out) {
+            var s = origComputeSize ? origComputeSize.apply(this, arguments) : [MIN_NODE_WIDTH, 700];
+            var res = out || s;
+            res[0] = Math.max(res[0] || 0, MIN_NODE_WIDTH);
+            res[1] = Math.max(res[1] || 0, (s[1] || 700) + RADAR_BOX_HEIGHT + 24);
+            return res;
         };
 
-        // Prototype onDrawForeground fallback
-        const origDrawFg = nodeType.prototype.onDrawForeground;
+        // ── Draw the radar below all widgets in foreground pass ──
+        var origDrawFg = nodeType.prototype.onDrawForeground;
         nodeType.prototype.onDrawForeground = function (ctx) {
-            if (origDrawFg) origDrawFg.apply(this, arguments);
-            setupRadarWidget(this);
-            // If the custom widget didn't draw, draw directly as fallback
-            if (!this.widgets?.some((w) => w.name === "studio_radar")) {
+            if (origDrawFg) origDrawFg.call(this, ctx);
+            if (this.flags && this.flags.collapsed) return;
+
+            // Ensure node size accounts for the radar box
+            if (!this._sl_sized) {
+                this._sl_sized = true;
+                var baseSize = (typeof this.computeSize === "function") ? this.computeSize() : [MIN_NODE_WIDTH, 750];
+                if (!this.size) this.size = [MIN_NODE_WIDTH, baseSize[1]];
+                if (this.size[0] < MIN_NODE_WIDTH) this.size[0] = MIN_NODE_WIDTH;
+                if (this.size[1] < baseSize[1]) this.size[1] = baseSize[1];
+            }
+
+            try {
+                ctx.save();
                 drawRadar(this, ctx);
+                ctx.restore();
+            } catch (e) {
+                try { ctx.restore(); } catch (err) {}
+                console.warn("[StudioLight Radar] draw error:", e);
             }
         };
 
-        // Prototype mouse handlers as robust fallback
-        const origMouseDown = nodeType.prototype.onMouseDown;
-        nodeType.prototype.onMouseDown = function (e, localPos) {
-            if (handleRadarMouse(e, localPos, this)) return true;
-            return origMouseDown ? origMouseDown.apply(this, arguments) : false;
+        // ── Mouse down: start interactive aiming drag ──
+        var origMouseDown = nodeType.prototype.onMouseDown;
+        nodeType.prototype.onMouseDown = function (e, localPos, graphCanvas) {
+            var hit = hitTestRadar(this, localPos[0], localPos[1]);
+            if (hit) {
+                this._sl_drag = hit;
+                aimLight(this, localPos[0], localPos[1], hit);
+                this.captureInput = true;
+                if (graphCanvas) graphCanvas.node_capturing_input = this;
+                return true;
+            }
+            return origMouseDown ? origMouseDown.call(this, e, localPos, graphCanvas) : false;
         };
 
-        const origMouseMove = nodeType.prototype.onMouseMove;
-        nodeType.prototype.onMouseMove = function (e, localPos) {
-            if (handleRadarMouse(e, localPos, this)) return true;
-            return origMouseMove ? origMouseMove.apply(this, arguments) : false;
+        // ── Mouse move: drag to rotate light vector in real-time ──
+        var origMouseMove = nodeType.prototype.onMouseMove;
+        nodeType.prototype.onMouseMove = function (e, localPos, graphCanvas) {
+            if (this._sl_drag) {
+                aimLight(this, localPos[0], localPos[1], this._sl_drag);
+                return true;
+            }
+            return origMouseMove ? origMouseMove.call(this, e, localPos, graphCanvas) : false;
         };
 
-        const origMouseUp = nodeType.prototype.onMouseUp;
-        nodeType.prototype.onMouseUp = function (e, localPos) {
-            if (handleRadarMouse(e, localPos, this)) return true;
-            return origMouseUp ? origMouseUp.apply(this, arguments) : false;
+        // ── Mouse up: release drag cleanly ──
+        var origMouseUp = nodeType.prototype.onMouseUp;
+        nodeType.prototype.onMouseUp = function (e, localPos, graphCanvas) {
+            if (this._sl_drag) {
+                this._sl_drag = null;
+                this.captureInput = false;
+                if (graphCanvas && graphCanvas.node_capturing_input === this) {
+                    graphCanvas.node_capturing_input = null;
+                }
+                return true;
+            }
+            return origMouseUp ? origMouseUp.call(this, e, localPos, graphCanvas) : false;
         };
 
-        // onWidgetChanged: If ANY widget is adjusted, immediately flip preset to "Custom"
-        const origWidgetChanged = nodeType.prototype.onWidgetChanged;
+        // ── Widget changed: immediately auto-flip preset dropdown to "Custom" ──
+        var origWidgetChanged = nodeType.prototype.onWidgetChanged;
         nodeType.prototype.onWidgetChanged = function (name, value, old_value, widget) {
-            if (origWidgetChanged) origWidgetChanged.apply(this, arguments);
-            if (name !== "preset" && name !== "framing" && name !== "studio_radar") {
-                setPresetToCustom(this);
+            if (origWidgetChanged) origWidgetChanged.call(this, name, value, old_value, widget);
+            if (name !== "preset" && name !== "framing") {
+                flipToCustom(this);
             }
         };
     },
 
-    nodeCreated(node) {
-        if (node.type === "StudioLightRig" || node.comfyClass === "StudioLightRig") {
-            setupRadarWidget(node);
+    nodeCreated: function (node) {
+        if (node.comfyClass === "StudioLightRig" || node.type === "StudioLightRig") {
+            hookPresetWidget(node);
         }
     },
 
-    loadedGraphNode(node) {
-        if (node.type === "StudioLightRig" || node.comfyClass === "StudioLightRig") {
-            setupRadarWidget(node);
+    loadedGraphNode: function (node) {
+        if (node.comfyClass === "StudioLightRig" || node.type === "StudioLightRig") {
+            hookPresetWidget(node);
         }
-    }
+    },
 });
