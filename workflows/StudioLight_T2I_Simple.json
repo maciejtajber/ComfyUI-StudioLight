@@ -22,7 +22,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            1
+            8
           ],
           "shape": 3,
           "slot_index": 0
@@ -57,9 +57,9 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
+            1,
             2,
-            3,
-            4
+            3
           ],
           "shape": 3,
           "slot_index": 0
@@ -95,7 +95,7 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            5
+            13
           ],
           "shape": 3,
           "slot_index": 0
@@ -127,7 +127,7 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 2
+          "link": 1
         },
         {
           "name": "conditioning_in",
@@ -145,7 +145,7 @@
           "name": "conditioning",
           "type": "CONDITIONING",
           "links": [
-            6
+            4
           ],
           "shape": 3,
           "slot_index": 0
@@ -184,7 +184,7 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 3
+          "link": 2
         },
         {
           "name": "conditioning_in",
@@ -202,7 +202,7 @@
           "name": "conditioning",
           "type": "CONDITIONING",
           "links": [
-            7
+            10
           ],
           "shape": 3,
           "slot_index": 0
@@ -251,12 +251,12 @@
         {
           "name": "clip_optional",
           "type": "CLIP",
-          "link": 4
+          "link": 3
         },
         {
           "name": "conditioning_in",
           "type": "CONDITIONING",
-          "link": 6
+          "link": 4
         },
         {
           "name": "prompt_text_optional",
@@ -269,7 +269,7 @@
           "name": "relighting_map",
           "type": "IMAGE",
           "links": [
-            8
+            6
           ],
           "shape": 3,
           "slot_index": 0
@@ -278,7 +278,7 @@
           "name": "probe_preview",
           "type": "IMAGE",
           "links": [
-            9
+            5
           ],
           "shape": 3,
           "slot_index": 1
@@ -287,7 +287,7 @@
           "name": "conditioning",
           "type": "CONDITIONING",
           "links": [
-            10
+            7
           ],
           "shape": 3,
           "slot_index": 2
@@ -351,7 +351,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 9
+          "link": 5
         }
       ],
       "outputs": [],
@@ -379,7 +379,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 8
+          "link": 6
         }
       ],
       "outputs": [],
@@ -407,7 +407,7 @@
         {
           "name": "conditioning",
           "type": "CONDITIONING",
-          "link": 10
+          "link": 7
         }
       ],
       "outputs": [
@@ -415,7 +415,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            11
+            9
           ],
           "shape": 3,
           "slot_index": 0
@@ -449,7 +449,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            12
+            11
           ],
           "shape": 3,
           "slot_index": 0
@@ -483,22 +483,22 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 1
+          "link": 8
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 11
+          "link": 9
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 7
+          "link": 10
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 12
+          "link": 11
         }
       ],
       "outputs": [
@@ -506,7 +506,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            13
+            12
           ],
           "shape": 3,
           "slot_index": 0
@@ -544,12 +544,12 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 13
+          "link": 12
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 5
+          "link": 13
         }
       ],
       "outputs": [
