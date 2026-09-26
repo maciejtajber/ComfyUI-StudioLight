@@ -232,12 +232,19 @@ def render_studio_lighting(
 
     is_built_in_mannequin = (normals is None)
 
-    # 1. Relighting Map Computation: Select framing mannequin or volumetric cyc
+    # 1. Relighting Map Computation: Select framing mannequin, product asset, or volumetric cyc
+    asset_mask = None
     if normals is None:
         effective_framing = framing
         if "Auto" in framing and detected_prompt:
             p_low = detected_prompt.lower()
-            if any(w in p_low for w in ["full body", "full length", "standing", "gown", "dress", "shoes", "heels", "head to toe"]):
+            if any(w in p_low for w in ["car", "vehicle", "automobile", "porsche", "ferrari", "bmw", "mercedes", "motor", "hood", "windshield"]):
+                effective_framing = "Automotive Cove (Car / Large Vehicle)"
+            elif any(w in p_low for w in ["perfume", "bottle", "cosmetics", "serum", "watch", "jewelry", "flacon", "tabletop", "scent", "glass"]):
+                effective_framing = "Tabletop / Luxury (Perfume Bottle / Small Product)"
+            elif any(w in p_low for w in ["chair", "furniture", "sofa", "armchair", "lamp", "stool", "table", "product design"]):
+                effective_framing = "Industrial Design (Chair / Medium Product)"
+            elif any(w in p_low for w in ["full body", "full length", "standing", "gown", "dress", "shoes", "heels", "head to toe"]):
                 effective_framing = "Full Body (Standing Lookbook)"
             elif any(w in p_low for w in ["american", "cowboy", "waist up", "hips", "mid-thigh", "jacket", "suit", "coat"]):
                 effective_framing = "American Plan (3/4 Shot)"
@@ -253,8 +260,12 @@ def render_studio_lighting(
             asset_file = "mannequin_medium_normal.png"
         elif "Full Body" in effective_framing:
             asset_file = "mannequin_full_normal.png"
+        elif "Tabletop" in effective_framing or "Perfume" in effective_framing:
+            asset_file = "product_perfume_normal.png"
+        elif "Industrial" in effective_framing or "Chair" in effective_framing:
+            asset_file = "product_chair_normal.png"
         else:
-            # Volumetric Cyc / Scene probe
+            # Volumetric Cyc or Automotive Cove (rendered procedurally)
             asset_file = None
 
         if asset_file:
@@ -262,9 +273,16 @@ def render_studio_lighting(
             if not os.path.exists(asset_path):
                 asset_path = os.path.join(assets_dir, "studio_head_normal.png")
             if os.path.exists(asset_path):
-                img_asset = Image.open(asset_path).convert("RGB")
-                arr_asset = np.array(img_asset).astype(np.float32) / 255.0
-                normals = torch.from_numpy(arr_asset).unsqueeze(0).to(device)
+                img_asset = Image.open(asset_path)
+                if img_asset.mode == "RGBA":
+                    arr_asset = np.array(img_asset).astype(np.float32) / 255.0
+                    normals = torch.from_numpy(arr_asset[..., :3]).unsqueeze(0).to(device)
+                    asset_mask = torch.from_numpy(arr_asset[..., 3:4]).unsqueeze(0).to(device)
+                else:
+                    img_asset = img_asset.convert("RGB")
+                    arr_asset = np.array(img_asset).astype(np.float32) / 255.0
+                    normals = torch.from_numpy(arr_asset).unsqueeze(0).to(device)
+                    asset_mask = None
 
     if normals is not None:
         n = normals.clone()
@@ -278,8 +296,10 @@ def render_studio_lighting(
         norm_len = torch.norm(norm_unpacked, dim=-1, keepdim=True) + 1e-7
         norm_unit = norm_unpacked / norm_len
 
-        # Detect background in studio bust (flat normal facing camera)
-        if is_built_in_mannequin:
+        # Precise solid alpha mask (eliminates holes 100%)
+        if asset_mask is not None:
+            subject_mask = asset_mask
+        elif is_built_in_mannequin:
             corner_val = norm_unit[:, :6, :6, :].mean(dim=(1, 2), keepdim=True)
             diff_from_corner = torch.norm(norm_unit - corner_val, dim=-1, keepdim=True)
             subject_mask = (diff_from_corner > 0.04).float()
@@ -308,8 +328,41 @@ def render_studio_lighting(
         bg_backdrop = torch.full_like(total_shading, max(float(ambient_intensity), 0.03))
         relighting_map = (total_shading + float(ambient_intensity)) * subject_mask + bg_backdrop * (1.0 - subject_mask)
         relighting_map = torch.clamp(relighting_map, 0.0, 1.0)
+    elif "Automotive" in framing or ("Auto" in framing and "Automotive" in effective_framing):
+        # Commercial Automotive Infinity Cove (1280 x 768)
+        # Giant curved cyclorama cove with dual overhead stripbox light banks
+        res_h = 768
+        res_w = 1280
+        y, x = torch.meshgrid(
+            torch.linspace(-1.0, 1.0, res_h, device=device),
+            torch.linspace(-1.0, 1.0, res_w, device=device),
+            indexing="ij"
+        )
+        # Parabolic cyclorama wall & floor perspective
+        floor_grad = torch.clamp((y - 0.15) / 0.85, 0.0, 1.0)
+        cove_curve = torch.clamp(1.0 - torch.abs(y - 0.15) * 1.2, 0.0, 1.0)
+
+        # Key & Fill directional washes
+        lx = key_vec[0].to(device)
+        flx = fill_vec[0].to(device)
+        key_wash = torch.clamp((x * lx + 0.6) / 1.4, 0.0, 1.0) * key_params["intensity"]
+        fill_wash = torch.clamp((x * flx + 0.5) / 1.5, 0.0, 1.0) * fill_params["intensity"] * 0.45
+
+        # Dual overhead elongated stripbox reflection banks
+        strip1 = torch.exp(-((x - 0.28) / 0.14)**4) * torch.exp(-((y + 0.50) / 0.12)**2) * key_params["intensity"] * 1.2
+        strip2 = torch.exp(-((x + 0.32) / 0.18)**4) * torch.exp(-((y + 0.48) / 0.10)**2) * fill_params["intensity"] * 0.8
+
+        c_k = torch.tensor(key_col, device=device).view(1, 1, 3)
+        c_f = torch.tensor(fill_col, device=device).view(1, 1, 3)
+        overhead_white = torch.tensor([1.0, 1.0, 1.0], device=device).view(1, 1, 3)
+
+        cove = (key_wash.unsqueeze(-1) * c_k + fill_wash.unsqueeze(-1) * c_f) * (0.45 + cove_curve.unsqueeze(-1) * 0.55)
+        cove = cove + (strip1 + strip2).unsqueeze(-1) * overhead_white * 0.85
+        cove = cove * (1.0 - (x**2).unsqueeze(-1) * 0.15)
+        cove = cove + float(ambient_intensity)
+        relighting_map = torch.clamp(cove.unsqueeze(0), 0.0, 1.0)
     else:
-        # Volumetric Studio Cyc environment (curved wall + floor room gradient)
+        # Volumetric Studio Cyc environment (curved wall + floor room gradient, 1152 x 896)
         res_h = 1152
         res_w = 896
         y, x = torch.meshgrid(

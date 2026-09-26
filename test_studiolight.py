@@ -106,7 +106,19 @@ def test_shader_engine():
     relight_cyc, _ = render_studio_lighting(None, None, key, fill, rim, framing="Volumetric Cyc (Crowds / Dynamic)")
     assert relight_cyc.shape == (1, 1152, 896, 3)
 
-    # 8. Studio lighting with mock normals
+    # 8. Studio lighting with Tabletop / Luxury (Perfume)
+    relight_perfume, _ = render_studio_lighting(None, None, key, fill, rim, framing="Tabletop / Luxury (Perfume Bottle / Small Product)")
+    assert relight_perfume.shape == (1, 1024, 1024, 3)
+
+    # 9. Studio lighting with Industrial Design (Chair)
+    relight_chair, _ = render_studio_lighting(None, None, key, fill, rim, framing="Industrial Design (Chair / Medium Product)")
+    assert relight_chair.shape == (1, 1024, 1024, 3)
+
+    # 10. Studio lighting with Automotive Cove
+    relight_auto, _ = render_studio_lighting(None, None, key, fill, rim, framing="Automotive Cove (Car / Large Vehicle)")
+    assert relight_auto.shape == (1, 768, 1280, 3)
+
+    # 11. Studio lighting with mock normals
     mock_normals = torch.zeros(1, 128, 128, 3)
     mock_normals[..., 2] = 1.0  # Facing front
     mock_relight, _ = render_studio_lighting(mock_normals, None, key, fill, rim, preview_resolution=128)
@@ -120,11 +132,19 @@ def test_prompt_synthesizer():
     fill = {"enabled": True, "azimuth": -30.0, "elevation": 15.0, "intensity": 0.35, "kelvin": 4800, "modifier": "Octabox (Soft)"}
     rim = {"enabled": True, "azimuth": 160.0, "elevation": 45.0, "intensity": 1.1, "kelvin": 6500, "modifier": "Stripbox"}
 
-    prompt = synthesize_high_signal_prompt(key, fill, rim)
-    assert "studio portrait" in prompt
-    assert "Rembrandt" in prompt
-    assert "tungsten" in prompt
-    print(f"Generated prompt: '{prompt}'")
+    prompt_port = synthesize_high_signal_prompt(key, fill, rim, framing="Portrait (Classical Bust)")
+    assert "studio portrait" in prompt_port
+    assert "Rembrandt" in prompt_port
+    assert "tungsten" in prompt_port
+
+    prompt_prod = synthesize_high_signal_prompt(key, fill, rim, framing="Tabletop / Luxury (Perfume Bottle / Small Product)")
+    assert "commercial product photography" in prompt_prod
+
+    prompt_chair = synthesize_high_signal_prompt(key, fill, rim, framing="Industrial Design (Chair / Medium Product)")
+    assert "industrial design" in prompt_chair
+
+    prompt_car = synthesize_high_signal_prompt(key, fill, rim, framing="Automotive Cove (Car / Large Vehicle)")
+    assert "commercial automotive photography" in prompt_car
     print("✓ prompt_synthesizer passed!")
 
 

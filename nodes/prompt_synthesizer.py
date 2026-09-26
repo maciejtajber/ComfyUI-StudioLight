@@ -37,10 +37,12 @@ def synthesize_high_signal_prompt(
     key_params: Dict[str, Any],
     fill_params: Dict[str, Any],
     rim_params: Dict[str, Any],
+    framing: str = "Portrait (Classical Bust)",
 ) -> str:
     """
     Synthesizes a curated 15-25 word high-signal photographic prompt.
     Eliminates verbose prompt pollution so Flux/SDXL attention focuses on key features.
+    Adapts context for fashion portraits, tabletop luxury products, industrial design, and cars.
     """
     phrases = []
 
@@ -62,12 +64,17 @@ def synthesize_high_signal_prompt(
         r_mood = kelvin_to_mood(rim_params["kelvin"])
         phrases.append(f"crisp {r_mood} rim kicker from {r_dir}")
 
-    if not phrases:
-        return "studio portrait lighting, clean volumetric shadow falloff"
+    lighting_body = ", ".join(phrases) if phrases else "clean volumetric studio shadow falloff"
 
-    # Concise photographic finishing anchor
-    lighting_body = ", ".join(phrases)
-    return f"studio portrait, {lighting_body}, calibrated dynamic range, editorial photography."
+    # Genre-aware photographic finishing anchor
+    if "Tabletop" in framing or "Perfume" in framing:
+        return f"commercial product photography, luxury tabletop lighting, {lighting_body}, calibrated dynamic range, editorial advertising photography."
+    elif "Industrial" in framing or "Chair" in framing:
+        return f"industrial design photography, studio furniture showcase, {lighting_body}, calibrated dynamic range, architectural digest photography."
+    elif "Automotive" in framing or "Car" in framing:
+        return f"commercial automotive photography, car studio lighting, infinity cove reflections, {lighting_body}, calibrated dynamic range, editorial automotive photography."
+    else:
+        return f"studio portrait, {lighting_body}, calibrated dynamic range, editorial fashion photography."
 
 
 def encode_scheduled_conditioning(

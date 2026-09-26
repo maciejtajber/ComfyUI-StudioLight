@@ -125,6 +125,17 @@ app.registerExtension({
         }
 
         // 2. If user adjusts any light slider manually, switch preset dropdown to "Custom"
+        const origOnWidgetChanged = node.onWidgetChanged;
+        node.onWidgetChanged = function (name, value, old_value, widget) {
+            if (origOnWidgetChanged) origOnWidgetChanged.apply(this, arguments);
+            if (!isApplyingPreset && name !== "preset" && name !== "framing" && presetWidget && presetWidget.value !== "Custom") {
+                presetWidget.value = "Custom";
+                if (presetWidget.inputEl) presetWidget.inputEl.value = "Custom";
+                node.setDirtyCanvas(true, true);
+                app.canvas?.setDirty(true, true);
+            }
+        };
+
         const monitoredSliders = [
             "ambient_intensity",
             "key_enabled", "key_azimuth", "key_elevation", "key_intensity", "key_kelvin", "key_modifier",
@@ -248,6 +259,10 @@ app.registerExtension({
             deg = Math.round(deg);
             w.value = deg;
             if (w.inputEl) w.inputEl.value = deg;
+            if (presetWidget && presetWidget.value !== "Custom") {
+                presetWidget.value = "Custom";
+                if (presetWidget.inputEl) presetWidget.inputEl.value = "Custom";
+            }
             if (w.callback) {
                 w.callback(w.value);
             }

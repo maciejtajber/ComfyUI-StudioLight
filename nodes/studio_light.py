@@ -20,6 +20,9 @@ FRAMING_OPTIONS = [
     "Portrait (Classical Bust)",
     "American Plan (3/4 Shot)",
     "Full Body (Standing Lookbook)",
+    "Tabletop / Luxury (Perfume Bottle / Small Product)",
+    "Industrial Design (Chair / Medium Product)",
+    "Automotive Cove (Car / Large Vehicle)",
     "Volumetric Cyc (Crowds / Dynamic)",
     "Auto (Detect from Prompt)",
 ]
@@ -246,35 +249,7 @@ class StudioLightRig:
         extra_pnginfo: Optional[Dict] = None,
         **kwargs,
     ):
-        # 1. Preset Synchronization: If a preset is selected, load its values
-        if preset != "Custom":
-            p_data = load_preset_data(preset)
-            if p_data:
-                ambient_intensity = p_data.get("ambient_intensity", ambient_intensity)
-                k = p_data.get("key", {})
-                key_enabled = k.get("enabled", key_enabled)
-                key_azimuth = k.get("azimuth", key_azimuth)
-                key_elevation = k.get("elevation", key_elevation)
-                key_intensity = k.get("intensity", key_intensity)
-                key_kelvin = k.get("kelvin", key_kelvin)
-                key_modifier = k.get("modifier", key_modifier)
-
-                f = p_data.get("fill", {})
-                fill_enabled = f.get("enabled", fill_enabled)
-                fill_azimuth = f.get("azimuth", fill_azimuth)
-                fill_elevation = f.get("elevation", fill_elevation)
-                fill_intensity = f.get("intensity", fill_intensity)
-                fill_kelvin = f.get("kelvin", fill_kelvin)
-                fill_modifier = f.get("modifier", fill_modifier)
-
-                r = p_data.get("rim", {})
-                rim_enabled = r.get("enabled", rim_enabled)
-                rim_azimuth = r.get("azimuth", rim_azimuth)
-                rim_elevation = r.get("elevation", rim_elevation)
-                rim_intensity = r.get("intensity", rim_intensity)
-                rim_kelvin = r.get("kelvin", rim_kelvin)
-                rim_modifier = r.get("modifier", rim_modifier)
-
+        # Direct parameter pass-through: Any adjustments made on the node face take immediate effect
         key_params = {
             "enabled": key_enabled,
             "azimuth": key_azimuth,
@@ -346,7 +321,7 @@ class StudioLightRig:
         )
 
         # 3. Synthesize High-Signal Photographic Prompt Tokens
-        lighting_prompt = synthesize_high_signal_prompt(key_params, fill_params, rim_params)
+        lighting_prompt = synthesize_high_signal_prompt(key_params, fill_params, rim_params, framing=framing)
 
         # 4. Encode Step-Scheduled Conditioning (PromptBlock integration)
         conditioning_out = encode_scheduled_conditioning(
