@@ -483,6 +483,7 @@ class StudioLightRig:
                         s_fallback = s_fallback + s_sub
                 d_resized = d_fallback
                 s_resized = s_fallback
+                relighting_map = torch.clamp(d_fallback + s_fallback + ambient_intensity, 0.0, 1.0)
 
             lit_composite = composite_photometric_relight(
                 base_image_srgb=comp_img,
