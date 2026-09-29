@@ -251,3 +251,21 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Studio3DStage": "Studio 3D Stage (Mannequin & Pose Controller)",
 }
+
+# Register ComfyUI Server API route so frontend can fetch 3D meshes directly from assets/
+try:
+    from server import PromptServer
+    from aiohttp import web
+
+    @PromptServer.instance.routes.get("/studiolight/assets/{filename}")
+    async def get_studiolight_asset_route(request):
+        filename = request.match_info.get("filename", "")
+        safe_filename = os.path.basename(filename)
+        cur_dir = os.path.dirname(os.path.abspath(__file__))
+        asset_path = os.path.join(os.path.dirname(cur_dir), "assets", safe_filename)
+        if os.path.exists(asset_path):
+            return web.FileResponse(asset_path)
+        return web.Response(status=404, text="Asset not found")
+except Exception:
+    pass
+
