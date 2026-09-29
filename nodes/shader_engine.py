@@ -307,6 +307,11 @@ def render_studio_lighting(
         # Precise solid alpha mask (eliminates holes 100%)
         if asset_mask is not None:
             subject_mask = asset_mask
+        elif depth is not None:
+            d_mask = depth.to(device=norm_unit.device, dtype=norm_unit.dtype)
+            if d_mask.shape[-1] != 1 and len(d_mask.shape) == 4:
+                d_mask = d_mask[..., 0:1]
+            subject_mask = (d_mask > 0.02).float()
         elif is_built_in_mannequin:
             corner_val = norm_unit[:, :6, :6, :].mean(dim=(1, 2), keepdim=True)
             diff_from_corner = torch.norm(norm_unit - corner_val, dim=-1, keepdim=True)
@@ -446,3 +451,26 @@ def render_studio_lighting(
         spec_out = (total_specular * subject_mask).cpu() if "total_specular" in locals() else torch.zeros_like(relighting_map).cpu()
         return relighting_map.cpu(), probe_preview.cpu(), diff_out, spec_out
     return relighting_map.cpu(), probe_preview.cpu()
+
+
+def extract_photometric_carrier(flat_render: torch.Tensor, lit_render: torch.Tensor, epsilon: float = 1e-5) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Calculates Linear RGB Photometric Ratio Division Map (L) and derives isolated Shadow/Highlight maps.
+    
+    Formula:
+        L = (Lit_Render + eps) / (Flat_Render + eps)
+        Shadow = max(0, 1 - L)
+        Highlight = max(0, L - 1)
+    """
+    flat = flat_render.float()
+    lit = lit_render.float()
+    
+    # Calculate lighting ratio map L
+    ratio_map = (lit + epsilon) / (flat + epsilon)
+    
+    # Derive pure Shadow and Highlight maps
+    shadow_map = torch.clamp(1.0 - ratio_map, min=0.0, max=1.0)
+    highlight_map = torch.clamp(ratio_map - 1.0, min=0.0, max=1.0)
+    
+    return ratio_map, shadow_map, highlight_map
+

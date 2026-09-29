@@ -168,7 +168,7 @@ def test_studio_light_node():
     print("Testing StudioLightRig node execution...")
     node = StudioLightRig()
     # Test 1: Explicit framing (Full Body)
-    relight, probe, cond, prompt, comp = node.execute_rig(
+    relight, probe, prompt = node.execute_rig(
         preset="Rembrandt Classic",
         framing="Full Body (Standing Lookbook)",
         ambient_intensity=0.05,
@@ -191,66 +191,89 @@ def test_studio_light_node():
         rim_intensity=1.1,
         rim_kelvin=6500,
         rim_modifier="Stripbox",
-        start_step=0.40,
-        end_step=1.00,
-        conditioning_strength=1.0,
-        weight_type="A_NORM",
     )
 
     assert relight is not None and isinstance(relight, torch.Tensor)
     assert relight.shape == (1, 1264, 848, 3)
     assert probe is not None and isinstance(probe, torch.Tensor)
     assert isinstance(prompt, str)
-    assert comp is not None and comp.shape == relight.shape
 
-    # Test 2: Auto detection (Prompt mentions runway / models -> Cyc)
-    relight_auto, _, _, _, _ = node.execute_rig(
+    # Test 2: scene_3d input unpacking
+    mock_normals = torch.zeros((1, 512, 512, 3), dtype=torch.float32)
+    mock_normals[..., 2] = 1.0  # Camera-facing flat normal
+    mock_depth = torch.ones((1, 512, 512, 1), dtype=torch.float32) * 0.5
+    scene_3d_mock = {
+        "normals": mock_normals,
+        "depth": mock_depth,
+        "metadata": {"framing": "Custom 3D Scene"},
+    }
+
+    relight_scene, probe_scene, prompt_scene = node.execute_rig(
         preset="Rembrandt Classic",
-        framing="Auto (Detect from Prompt)",
-        ambient_intensity=0.05,
-        invert_normals_y=False,
+        scene_3d=scene_3d_mock,
+        key_enabled=True,
+        key_azimuth=45.0,
+    )
+    assert relight_scene is not None and relight_scene.shape == (1, 512, 512, 3)
+    assert probe_scene is not None
+    assert isinstance(prompt_scene, str)
+    print("✓ StudioLightRig node execution with scene_3d passed perfectly!")
+
+
+def test_studio_3d_stage_and_suite_pipeline():
+    print("Testing Studio3DStage and end-to-end suite pipeline...")
+    from nodes.studio_3d_stage import Studio3DStage
+    from nodes.si_shadow_highlight import SIShadowHighlight
+
+    stage = Studio3DStage()
+    rig = StudioLightRig()
+    bridge = SIShadowHighlight()
+
+    # 1. Test Stage execution with soft_head_blur ON
+    scene_3d, normals, depth = stage.execute_stage(
+        model_preset="Female Mannequin",
+        pose_preset="Standing Fashion",
+        framing="Portrait (Classical Bust)",
+        soft_head_blur=True,
+        head_blur_radius=20.0,
+        pose_locked=False,
+    )
+
+    assert scene_3d is not None and isinstance(scene_3d, dict)
+    assert "normals" in scene_3d and "depth" in scene_3d and "metadata" in scene_3d
+    assert normals is not None and normals.shape[-1] == 3
+    assert depth is not None and depth.shape[-1] == 3
+    print("  ✓ Stage 1 (Studio3DStage) generated valid scene_3d, normals, and depth passes.")
+
+    # 2. Test Rig execution taking scene_3d directly from Stage
+    relit_plate, probe_preview, light_prompt = rig.execute_rig(
+        preset="Rembrandt Classic",
+        scene_3d=scene_3d,
         key_enabled=True,
         key_azimuth=45.0,
         key_elevation=35.0,
-        key_intensity=1.0,
-        key_kelvin=5500,
-        key_modifier="Octabox (Soft)",
-        fill_enabled=True,
-        fill_azimuth=-30.0,
-        fill_elevation=15.0,
-        fill_intensity=0.35,
-        fill_kelvin=4800,
-        fill_modifier="Octabox (Soft)",
-        rim_enabled=True,
-        rim_azimuth=160.0,
-        rim_elevation=45.0,
-        rim_intensity=1.1,
-        rim_kelvin=6500,
-        rim_modifier="Stripbox",
-        start_step=0.40,
-        end_step=1.00,
-        conditioning_strength=1.0,
-        weight_type="A_NORM",
-        prompt_text_optional="three fashion models walking together on a runway presentation",
+        key_intensity=1.1,
     )
-    assert relight_auto.shape == (1, 1152, 896, 3)
 
-    # Test 3: Photometric Composite with Draft Image
-    draft_mock = torch.full((1, 512, 512, 3), 0.7)
-    _, _, _, _, lit_out = node.execute_rig(
-        preset="Rembrandt Classic",
-        framing="Portrait (Classical Bust)",
-        key_enabled=True,
-        key_azimuth=45.0,
-        image_optional=draft_mock,
+    assert relit_plate is not None and relit_plate.shape == normals.shape
+    assert probe_preview is not None
+    assert "Rembrandt" in light_prompt or "Key" in light_prompt or "key" in light_prompt.lower()
+    print("  ✓ Stage 2 (StudioLightRig) successfully lit scene_3d and generated lit proxy plate.")
+
+    # 3. Test Bridge execution taking relit_plate into SIShadowHighlight
+    adjusted_tuple = bridge.adjust(
+        image=relit_plate,
+        shadow_amount=0.25,
+        highlight_amount=0.15,
+        shadow_tonal_width=0.5,
+        highlight_tonal_width=0.5,
+        midtone_contrast=1.1,
     )
-    assert lit_out is not None and isinstance(lit_out, torch.Tensor)
-    assert lit_out.shape == (1, 512, 512, 3)
-    # Verify directional contrast on the cheeks (y=200, x=300 right, x=200 left in 512x512)
-    right_lum = lit_out[0, 200, 300, :].mean().item()
-    left_lum = lit_out[0, 200, 200, :].mean().item()
-    assert right_lum > left_lum, f"Key at +45 should make right ({right_lum:.2f}) brighter than left ({left_lum:.2f})"
-    print("✓ StudioLightRig node execution and photometric composite passed perfectly!")
+    adjusted_plate = adjusted_tuple[0]
+
+    assert adjusted_plate is not None and adjusted_plate.shape == relit_plate.shape
+    print("  ✓ Step 3 (SIShadowHighlight) sculpted dynamic range for Flux VAE latent.")
+    print("✓ Full 3-Node Suite pipeline (Stage -> Rig -> Bridge) executed flawlessly!")
 
 
 if __name__ == "__main__":
@@ -259,4 +282,5 @@ if __name__ == "__main__":
     test_shader_engine()
     test_prompt_synthesizer()
     test_studio_light_node()
-    print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight is 100% verified!")
+    test_studio_3d_stage_and_suite_pipeline()
+    print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified!")

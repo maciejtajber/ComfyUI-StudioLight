@@ -97,19 +97,217 @@ function hookNodePresets(node) {
             }
         };
     }
+
+    // 3. Decorate Light Headers (Key, Fill, Rim section tag banners)
+    decorateLightHeader(node, "key_enabled", "KEY LIGHT", "#FFA000", "rgba(255, 160, 0, 0.14)", "rgba(255, 160, 0, 0.45)", "#FFB300");
+    decorateLightHeader(node, "fill_enabled", "FILL LIGHT", "#00B4D8", "rgba(0, 180, 216, 0.14)", "rgba(0, 180, 216, 0.45)", "#48CAE4");
+    decorateLightHeader(node, "rim_enabled", "RIM / KICKER LIGHT", "#C77DFF", "rgba(199, 125, 255, 0.14)", "rgba(199, 125, 255, 0.45)", "#E0AAFF");
+
+    const sz = node.computeSize();
+    if (node.size && node.size[1] < sz[1]) {
+        node.setSize([node.size[0], sz[1]]);
+    }
+}
+
+function decorateLightHeader(node, widgetName, badgeTitle, badgeColor, bgColor, borderColor, textColor) {
+    const w = node.widgets.find((x) => x.name === widgetName);
+    if (!w || w._sl_header_decorated) return;
+    w._sl_header_decorated = true;
+
+    // Total widget height: 14px top separation margin + 24px header pill = 38px
+    const TOP_MARGIN = 14;
+    const PILL_H = 22;
+    const TOTAL_H = TOP_MARGIN + PILL_H + 2;
+
+    w.computeSize = function (width) {
+        return [width, TOTAL_H];
+    };
+
+    w.draw = function (ctx, n, width, y, height) {
+        ctx.save();
+        const margin = 8;
+        const pillX = margin;
+        const pillW = width - margin * 2;
+        // Align pill to lower section by placing top margin above it
+        const pillY = y + TOP_MARGIN;
+        const isEnabled = Boolean(w.value);
+
+        // 1. Sleek badge container pill
+        ctx.fillStyle = isEnabled ? bgColor : "rgba(255, 255, 255, 0.03)";
+        ctx.strokeStyle = isEnabled ? borderColor : "rgba(255, 255, 255, 0.12)";
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(pillX, pillY, pillW, PILL_H, 4);
+        } else {
+            ctx.rect(pillX, pillY, pillW, PILL_H);
+        }
+        ctx.fill();
+        ctx.stroke();
+
+        // 2. LED Status Dot
+        ctx.fillStyle = isEnabled ? badgeColor : "#555555";
+        ctx.beginPath();
+        ctx.arc(pillX + 12, pillY + PILL_H / 2, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (isEnabled) {
+            ctx.fillStyle = badgeColor + "44";
+            ctx.beginPath();
+            ctx.arc(pillX + 12, pillY + PILL_H / 2, 6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 3. Section Tag Title
+        ctx.font = "bold 10px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif";
+        ctx.fillStyle = isEnabled ? textColor : "#777777";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText(badgeTitle, pillX + 22, pillY + PILL_H / 2);
+
+        // 4. Integrated ON / OFF Toggle Pill Button (Right side)
+        const btnW = 38;
+        const btnH = 15;
+        const btnX = pillX + pillW - btnW - 4;
+        const btnY = pillY + (PILL_H - btnH) / 2;
+
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(btnX, btnY, btnW, btnH, 3);
+        } else {
+            ctx.rect(btnX, btnY, btnW, btnH);
+        }
+
+        if (isEnabled) {
+            ctx.fillStyle = badgeColor;
+            ctx.fill();
+            ctx.fillStyle = "#111111";
+            ctx.font = "bold 9px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("ON", btnX + btnW / 2, btnY + btnH / 2);
+        } else {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = "#888888";
+            ctx.font = "bold 9px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("OFF", btnX + btnW / 2, btnY + btnH / 2);
+        }
+
+        ctx.restore();
+    };
+
+    // Toggle on click
+    w.mouse = function (event, pos, n) {
+        if (event.type !== "pointerdown" && event.type !== "mousedown") return false;
+        const localY = pos[1] - (this.last_y || 0);
+        // Only trigger if clicked inside the pill (not in the top separation margin)
+        if (localY >= TOP_MARGIN && localY <= TOP_MARGIN + PILL_H + 2) {
+            w.value = !w.value;
+            if (w.callback) {
+                w.callback(w.value);
+            }
+            n.setDirtyCanvas(true, true);
+            return true;
+        }
+        return false;
+    };
+}
+
+function cleanObsoleteSlots(node) {
+    if (!node) return;
+
+    const VALID_INPUTS = new Set(["scene_3d", "normals_optional", "depth_optional"]);
+    const VALID_OUTPUTS = new Set(["relighting_map", "probe_preview", "lighting_prompt"]);
+    const OBSOLETE_WIDGETS = new Set(["start_step", "end_step", "conditioning_strength", "weight_type"]);
+
+    let changed = false;
+
+    // 1. Remove obsolete inputs (backward loop)
+    if (node.inputs) {
+        for (let i = node.inputs.length - 1; i >= 0; i--) {
+            const inp = node.inputs[i];
+            if (!VALID_INPUTS.has(inp.name)) {
+                if (typeof node.removeInput === "function") {
+                    node.removeInput(i);
+                } else {
+                    node.inputs.splice(i, 1);
+                }
+                changed = true;
+            }
+        }
+    }
+
+    // 2. Remove obsolete outputs (backward loop)
+    if (node.outputs) {
+        for (let i = node.outputs.length - 1; i >= 0; i--) {
+            const out = node.outputs[i];
+            if (!VALID_OUTPUTS.has(out.name)) {
+                if (typeof node.removeOutput === "function") {
+                    node.removeOutput(i);
+                } else {
+                    node.outputs.splice(i, 1);
+                }
+                changed = true;
+            }
+        }
+    }
+
+    // 3. Remove obsolete widgets (backward loop)
+    if (node.widgets) {
+        for (let i = node.widgets.length - 1; i >= 0; i--) {
+            const w = node.widgets[i];
+            if (OBSOLETE_WIDGETS.has(w.name)) {
+                node.widgets.splice(i, 1);
+                changed = true;
+            }
+        }
+    }
+
+    // 4. Ensure scene_3d input is present
+    if (node.inputs && !node.inputs.some((inp) => inp.name === "scene_3d")) {
+        if (typeof node.addInput === "function") {
+            node.addInput("scene_3d", "SCENE_3D");
+            const lastIdx = node.inputs.length - 1;
+            const sceneInp = node.inputs.splice(lastIdx, 1)[0];
+            node.inputs.unshift(sceneInp);
+            changed = true;
+        }
+    }
+
+    if (changed) {
+        const sz = node.computeSize();
+        node.setSize([node.size[0], sz[1]]);
+        node.setDirtyCanvas(true, true);
+    }
 }
 
 app.registerExtension({
     name: "ComfyUI.StudioLight.UI",
 
+    async setup() {
+        if (app.graph && app.graph._nodes) {
+            for (const n of app.graph._nodes) {
+                if (n.comfyClass === "StudioLightRig" || n.type === "StudioLightRig") {
+                    cleanObsoleteSlots(n);
+                    hookNodePresets(n);
+                }
+            }
+        }
+    },
+
     nodeCreated(node) {
         if (node.comfyClass === "StudioLightRig" || node.type === "StudioLightRig") {
+            cleanObsoleteSlots(node);
             hookNodePresets(node);
         }
     },
 
     loadedGraphNode(node) {
         if (node.comfyClass === "StudioLightRig" || node.type === "StudioLightRig") {
+            cleanObsoleteSlots(node);
             hookNodePresets(node);
         }
     }
