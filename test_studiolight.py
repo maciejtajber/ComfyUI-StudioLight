@@ -276,6 +276,30 @@ def test_studio_3d_stage_and_suite_pipeline():
     print("✓ Full 3-Node Suite pipeline (Stage -> Rig -> Bridge) executed flawlessly!")
 
 
+def test_photometric_composite():
+    print("Testing StudioPhotometricComposite...")
+    from nodes.photometric_composite import StudioPhotometricComposite
+
+    comp = StudioPhotometricComposite()
+    dummy_image = torch.full((1, 256, 256, 3), 0.5, dtype=torch.float32)
+    dummy_light = torch.full((1, 256, 256, 3), 0.8, dtype=torch.float32)
+
+    lit_tuple = comp.composite(
+        image=dummy_image,
+        lighting_map=dummy_light,
+        lighting_strength=1.2,
+        ambient_floor=0.05,
+        specular_kick=1.5,
+        chroma_bleed=0.4,
+        filmic_white_point=3.5,
+    )
+    lit_img = lit_tuple[0]
+    assert lit_img is not None
+    assert lit_img.shape == (1, 256, 256, 3)
+    assert 0.0 <= lit_img.min() and lit_img.max() <= 1.0
+    print("✓ StudioPhotometricComposite passed flawlessly!")
+
+
 if __name__ == "__main__":
     test_color_utils()
     test_presets()
@@ -283,4 +307,6 @@ if __name__ == "__main__":
     test_prompt_synthesizer()
     test_studio_light_node()
     test_studio_3d_stage_and_suite_pipeline()
+    test_photometric_composite()
     print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified!")
+
