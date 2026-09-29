@@ -1,6 +1,6 @@
 {
   "last_node_id": 31,
-  "last_link_id": 41,
+  "last_link_id": 46,
   "nodes": [
     {
       "id": 1,
@@ -23,10 +23,10 @@
           "type": "MODEL",
           "links": [
             3,
-            18,
-            24,
-            30,
-            36
+            19,
+            26,
+            33,
+            40
           ],
           "shape": 3,
           "slot_index": 0
@@ -98,12 +98,12 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            7,
-            17,
-            22,
-            28,
-            34,
-            40
+            8,
+            18,
+            24,
+            31,
+            38,
+            45
           ],
           "shape": 3,
           "slot_index": 0
@@ -184,10 +184,15 @@
           "type": "CONDITIONING",
           "links": [
             4,
-            19,
-            25,
-            31,
-            37
+            5,
+            20,
+            21,
+            27,
+            28,
+            34,
+            35,
+            41,
+            42
           ],
           "shape": 3,
           "slot_index": 0
@@ -221,7 +226,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            5
+            6
           ],
           "shape": 3,
           "slot_index": 0
@@ -265,12 +270,12 @@
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": null
+          "link": 5
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 5
+          "link": 6
         }
       ],
       "outputs": [
@@ -278,7 +283,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            6
+            7
           ],
           "shape": 3,
           "slot_index": 0
@@ -319,12 +324,12 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 6
+          "link": 7
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 7
+          "link": 8
         }
       ],
       "outputs": [
@@ -332,9 +337,9 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            8,
             9,
-            12
+            10,
+            13
           ],
           "shape": 3,
           "slot_index": 0
@@ -364,7 +369,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 8
+          "link": 9
         }
       ],
       "outputs": [],
@@ -392,7 +397,7 @@
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 9
+          "link": 10
         }
       ],
       "outputs": [
@@ -400,7 +405,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            10
+            11
           ],
           "shape": 3,
           "slot_index": 0
@@ -410,7 +415,8 @@
         "Node name for S&R": "DSINE-NormalMapPreprocessor"
       },
       "widgets_values": [
-        0.05,
+        60.0,
+        5,
         1024
       ],
       "title": "Extract 3D Normals (DSINE)"
@@ -438,7 +444,7 @@
         {
           "name": "normals_optional",
           "type": "IMAGE",
-          "link": 10
+          "link": 11
         },
         {
           "name": "depth_optional",
@@ -451,7 +457,7 @@
           "name": "relighting_map",
           "type": "IMAGE",
           "links": [
-            13
+            14
           ],
           "shape": 3,
           "slot_index": 0
@@ -460,7 +466,7 @@
           "name": "probe_preview",
           "type": "IMAGE",
           "links": [
-            11
+            12
           ],
           "shape": 3,
           "slot_index": 1
@@ -520,7 +526,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 11
+          "link": 12
         }
       ],
       "outputs": [],
@@ -548,12 +554,12 @@
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 12
+          "link": 13
         },
         {
           "name": "lighting_map",
           "type": "IMAGE",
-          "link": 13
+          "link": 14
         }
       ],
       "outputs": [
@@ -561,7 +567,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            14
+            15
           ],
           "shape": 3,
           "slot_index": 0
@@ -597,7 +603,7 @@
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 14
+          "link": 15
         }
       ],
       "outputs": [
@@ -605,8 +611,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            15,
-            16
+            16,
+            17
           ],
           "shape": 3,
           "slot_index": 0
@@ -642,7 +648,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 15
+          "link": 16
         }
       ],
       "outputs": [],
@@ -670,12 +676,12 @@
         {
           "name": "pixels",
           "type": "IMAGE",
-          "link": 16
+          "link": 17
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 17
+          "link": 18
         }
       ],
       "outputs": [
@@ -683,10 +689,10 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            20,
-            26,
-            32,
-            38
+            22,
+            29,
+            36,
+            43
           ],
           "shape": 3,
           "slot_index": 0
@@ -716,22 +722,22 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 18
+          "link": 19
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 19
+          "link": 20
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": null
+          "link": 21
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 20
+          "link": 22
         }
       ],
       "outputs": [
@@ -739,7 +745,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            21
+            23
           ],
           "shape": 3,
           "slot_index": 0
@@ -777,12 +783,12 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 21
+          "link": 23
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 22
+          "link": 24
         }
       ],
       "outputs": [
@@ -790,7 +796,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            23
+            25
           ],
           "shape": 3,
           "slot_index": 0
@@ -820,7 +826,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 23
+          "link": 25
         }
       ],
       "outputs": [],
@@ -848,22 +854,22 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 24
+          "link": 26
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 25
+          "link": 27
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": null
+          "link": 28
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 26
+          "link": 29
         }
       ],
       "outputs": [
@@ -871,7 +877,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            27
+            30
           ],
           "shape": 3,
           "slot_index": 0
@@ -909,12 +915,12 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 27
+          "link": 30
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 28
+          "link": 31
         }
       ],
       "outputs": [
@@ -922,7 +928,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            29
+            32
           ],
           "shape": 3,
           "slot_index": 0
@@ -952,7 +958,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 29
+          "link": 32
         }
       ],
       "outputs": [],
@@ -980,22 +986,22 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 30
+          "link": 33
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 31
+          "link": 34
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": null
+          "link": 35
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 32
+          "link": 36
         }
       ],
       "outputs": [
@@ -1003,7 +1009,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            33
+            37
           ],
           "shape": 3,
           "slot_index": 0
@@ -1041,12 +1047,12 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 33
+          "link": 37
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 34
+          "link": 38
         }
       ],
       "outputs": [
@@ -1054,7 +1060,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            35
+            39
           ],
           "shape": 3,
           "slot_index": 0
@@ -1084,7 +1090,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 35
+          "link": 39
         }
       ],
       "outputs": [],
@@ -1112,22 +1118,22 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 36
+          "link": 40
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 37
+          "link": 41
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": null
+          "link": 42
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 38
+          "link": 43
         }
       ],
       "outputs": [
@@ -1135,7 +1141,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            39
+            44
           ],
           "shape": 3,
           "slot_index": 0
@@ -1173,12 +1179,12 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 39
+          "link": 44
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 40
+          "link": 45
         }
       ],
       "outputs": [
@@ -1186,7 +1192,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            41
+            46
           ],
           "shape": 3,
           "slot_index": 0
@@ -1216,7 +1222,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 41
+          "link": 46
         }
       ],
       "outputs": [],
@@ -1262,6 +1268,14 @@
     ],
     [
       5,
+      5,
+      0,
+      7,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      6,
       6,
       0,
       7,
@@ -1269,7 +1283,7 @@
       "LATENT"
     ],
     [
-      6,
+      7,
       7,
       0,
       8,
@@ -1277,7 +1291,7 @@
       "LATENT"
     ],
     [
-      7,
+      8,
       3,
       0,
       8,
@@ -1285,7 +1299,7 @@
       "VAE"
     ],
     [
-      8,
+      9,
       8,
       0,
       9,
@@ -1293,7 +1307,7 @@
       "IMAGE"
     ],
     [
-      9,
+      10,
       8,
       0,
       10,
@@ -1301,7 +1315,7 @@
       "IMAGE"
     ],
     [
-      10,
+      11,
       10,
       0,
       11,
@@ -1309,7 +1323,7 @@
       "IMAGE"
     ],
     [
-      11,
+      12,
       11,
       1,
       12,
@@ -1317,7 +1331,7 @@
       "IMAGE"
     ],
     [
-      12,
+      13,
       8,
       0,
       13,
@@ -1325,7 +1339,7 @@
       "IMAGE"
     ],
     [
-      13,
+      14,
       11,
       0,
       13,
@@ -1333,7 +1347,7 @@
       "IMAGE"
     ],
     [
-      14,
+      15,
       13,
       0,
       14,
@@ -1341,39 +1355,39 @@
       "IMAGE"
     ],
     [
-      15,
-      14,
-      0,
-      15,
-      0,
-      "IMAGE"
-    ],
-    [
       16,
       14,
       0,
-      16,
+      15,
       0,
       "IMAGE"
     ],
     [
       17,
-      3,
+      14,
       0,
       16,
-      1,
-      "VAE"
+      0,
+      "IMAGE"
     ],
     [
       18,
+      3,
+      0,
+      16,
       1,
-      0,
-      20,
-      0,
-      "MODEL"
+      "VAE"
     ],
     [
       19,
+      1,
+      0,
+      20,
+      0,
+      "MODEL"
+    ],
+    [
+      20,
       5,
       0,
       20,
@@ -1381,7 +1395,15 @@
       "CONDITIONING"
     ],
     [
+      21,
+      5,
+      0,
       20,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      22,
       16,
       0,
       20,
@@ -1389,7 +1411,7 @@
       "LATENT"
     ],
     [
-      21,
+      23,
       20,
       0,
       21,
@@ -1397,7 +1419,7 @@
       "LATENT"
     ],
     [
-      22,
+      24,
       3,
       0,
       21,
@@ -1405,7 +1427,7 @@
       "VAE"
     ],
     [
-      23,
+      25,
       21,
       0,
       22,
@@ -1413,63 +1435,71 @@
       "IMAGE"
     ],
     [
-      24,
+      26,
       1,
       0,
       23,
       0,
       "MODEL"
-    ],
-    [
-      25,
-      5,
-      0,
-      23,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      26,
-      16,
-      0,
-      23,
-      3,
-      "LATENT"
     ],
     [
       27,
+      5,
+      0,
+      23,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      28,
+      5,
+      0,
+      23,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      29,
+      16,
+      0,
+      23,
+      3,
+      "LATENT"
+    ],
+    [
+      30,
       23,
       0,
       24,
       0,
       "LATENT"
-    ],
-    [
-      28,
-      3,
-      0,
-      24,
-      1,
-      "VAE"
-    ],
-    [
-      29,
-      24,
-      0,
-      25,
-      0,
-      "IMAGE"
-    ],
-    [
-      30,
-      1,
-      0,
-      26,
-      0,
-      "MODEL"
     ],
     [
       31,
+      3,
+      0,
+      24,
+      1,
+      "VAE"
+    ],
+    [
+      32,
+      24,
+      0,
+      25,
+      0,
+      "IMAGE"
+    ],
+    [
+      33,
+      1,
+      0,
+      26,
+      0,
+      "MODEL"
+    ],
+    [
+      34,
       5,
       0,
       26,
@@ -1477,7 +1507,15 @@
       "CONDITIONING"
     ],
     [
-      32,
+      35,
+      5,
+      0,
+      26,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      36,
       16,
       0,
       26,
@@ -1485,7 +1523,7 @@
       "LATENT"
     ],
     [
-      33,
+      37,
       26,
       0,
       27,
@@ -1493,7 +1531,7 @@
       "LATENT"
     ],
     [
-      34,
+      38,
       3,
       0,
       27,
@@ -1501,7 +1539,7 @@
       "VAE"
     ],
     [
-      35,
+      39,
       27,
       0,
       28,
@@ -1509,7 +1547,7 @@
       "IMAGE"
     ],
     [
-      36,
+      40,
       1,
       0,
       29,
@@ -1517,7 +1555,7 @@
       "MODEL"
     ],
     [
-      37,
+      41,
       5,
       0,
       29,
@@ -1525,7 +1563,15 @@
       "CONDITIONING"
     ],
     [
-      38,
+      42,
+      5,
+      0,
+      29,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      43,
       16,
       0,
       29,
@@ -1533,7 +1579,7 @@
       "LATENT"
     ],
     [
-      39,
+      44,
       29,
       0,
       30,
@@ -1541,7 +1587,7 @@
       "LATENT"
     ],
     [
-      40,
+      45,
       3,
       0,
       30,
@@ -1549,7 +1595,7 @@
       "VAE"
     ],
     [
-      41,
+      46,
       30,
       0,
       31,

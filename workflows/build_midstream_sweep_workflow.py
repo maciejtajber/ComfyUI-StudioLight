@@ -205,10 +205,11 @@ def generate_workflow():
         title="Extract 3D Normals (DSINE)",
         pos=[80, -200],
         size=[280, 140],
-        widgets_values=[0.05, 1024],
+        widgets_values=[60.0, 5, 1024],
         input_names=[("image", "IMAGE")],
         output_defs=[("IMAGE", "IMAGE")],
     )
+
 
     # 11. StudioLightRig (Our Photographic Console)
     wb.add_node(
@@ -382,6 +383,7 @@ def generate_workflow():
     wb.connect(4, 0, 5, 0, "CONDITIONING")  # Prompt -> Guidance
     wb.connect(1, 0, 7, 0, "MODEL")         # UNET -> KSampler 1
     wb.connect(5, 0, 7, 1, "CONDITIONING")  # Guidance -> KSampler 1 positive
+    wb.connect(5, 0, 7, 2, "CONDITIONING")  # Guidance -> KSampler 1 negative
     wb.connect(6, 0, 7, 3, "LATENT")        # EmptyLatent -> KSampler 1
 
     # Pass 1 Decode & Normal extraction
@@ -408,10 +410,12 @@ def generate_workflow():
 
         wb.connect(1, 0, ks_id, 0, "MODEL")         # Model -> KSampler
         wb.connect(5, 0, ks_id, 1, "CONDITIONING")  # Positive -> KSampler
+        wb.connect(5, 0, ks_id, 2, "CONDITIONING")  # Negative -> KSampler
         wb.connect(16, 0, ks_id, 3, "LATENT")       # VAE Encode (Lit Plate) -> KSampler
         wb.connect(ks_id, 0, vd_id, 0, "LATENT")    # KSampler -> VAEDecode
         wb.connect(3, 0, vd_id, 1, "VAE")           # VAE -> VAEDecode
         wb.connect(vd_id, 0, pv_id, 0, "IMAGE")     # VAEDecode -> PreviewImage
+
 
     # Groups
     groups = [
