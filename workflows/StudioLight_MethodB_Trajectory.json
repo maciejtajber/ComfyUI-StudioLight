@@ -24,7 +24,8 @@
             4,
             23
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -57,7 +58,8 @@
             1,
             2
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -66,8 +68,7 @@
       "widgets_values": [
         "clip_l.safetensors",
         "t5xxl_fp16.safetensors",
-        "flux",
-        "default"
+        "flux"
       ]
     },
     {
@@ -93,7 +94,8 @@
             19,
             28
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -131,7 +133,8 @@
           "links": [
             3
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "title": "Albedo Positive Prompt (Flat / Diffuse)",
@@ -171,7 +174,8 @@
             6,
             25
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "title": "Negative Prompt",
@@ -211,7 +215,8 @@
             5,
             24
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -242,7 +247,8 @@
           "links": [
             7
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -298,7 +304,8 @@
             8,
             21
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         },
         {
           "name": "noisy_xt",
@@ -306,7 +313,8 @@
           "links": [
             20
           ],
-          "slot_index": 1
+          "slot_index": 1,
+          "shape": 3
         }
       ],
       "title": "ZONE 1: Pass 1 Trajectory Splitter (0 -> 10)",
@@ -315,6 +323,7 @@
       },
       "widgets_values": [
         42,
+        "fixed",
         30,
         10,
         1.0,
@@ -358,7 +367,8 @@
             11,
             15
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "title": "Decode Clean x0 Estimate",
@@ -424,7 +434,8 @@
             12,
             13
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "title": "ZONE 2: 3D Surface Normals (DSINE)",
@@ -501,7 +512,8 @@
           "links": [
             16
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         },
         {
           "name": "probe_preview",
@@ -509,13 +521,15 @@
           "links": [
             14
           ],
-          "slot_index": 1
+          "slot_index": 1,
+          "shape": 3
         },
         {
           "name": "lighting_prompt",
           "type": "STRING",
           "links": [],
-          "slot_index": 2
+          "slot_index": 2,
+          "shape": 3
         }
       ],
       "title": "ZONE 3: StudioLightRig (Haute Couture)",
@@ -532,7 +546,7 @@
         15,
         1,
         5500,
-        "Beauty Dish",
+        "Beauty Dish (Silver)",
         true,
         -45,
         15,
@@ -607,7 +621,8 @@
             17,
             18
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "title": "Photometric Composite",
@@ -684,7 +699,8 @@
           "links": [
             22
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "title": "Encode Relit x0",
@@ -730,7 +746,8 @@
           "links": [
             26
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "title": "ZONE 4: Trajectory Delta Recombine",
@@ -784,7 +801,8 @@
           "links": [
             27
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "title": "Pass 2: True Trajectory Continuation (10 -> 30)",
@@ -837,7 +855,8 @@
           "links": [
             29
           ],
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "title": "Final Decode",
@@ -1108,5 +1127,62 @@
       0,
       "IMAGE"
     ]
+  ],
+  "version": 0.4,
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [
+        1400,
+        200
+      ]
+    }
+  },
+  "groups": [
+    {
+      "title": "ZONE 1: FLUX Base Genesis & True Trajectory Split (0 -> 10)",
+      "bounding": [
+        -1450,
+        -280,
+        1580,
+        520
+      ],
+      "color": "#3f789e",
+      "font_size": 24
+    },
+    {
+      "title": "ZONE 2: 3D Surface Reconstruction & Normal Extraction",
+      "bounding": [
+        160,
+        -480,
+        560,
+        540
+      ],
+      "color": "#8A3B29",
+      "font_size": 24
+    },
+    {
+      "title": "ZONE 3: StudioLight Physical Console & Photometric Composite",
+      "bounding": [
+        720,
+        -480,
+        990,
+        1050
+      ],
+      "color": "#6c3b8a",
+      "font_size": 24
+    },
+    {
+      "title": "ZONE 4: True Continuous Trajectory Continuation (10 -> 30)",
+      "bounding": [
+        1720,
+        -180,
+        1450,
+        800
+      ],
+      "color": "#2a6a3b",
+      "font_size": 24
+    }
   ]
 }
