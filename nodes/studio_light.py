@@ -59,6 +59,18 @@ class StudioLightRig:
                     "label_on": "Invert Y (DirectX)",
                     "label_off": "Standard (OpenGL)",
                 }),
+                "normal_boost": ("FLOAT", {
+                    "default": 2.0,
+                    "min": 1.0,
+                    "max": 4.0,
+                    "step": 0.1,
+                }),
+                "ao_anchoring": ("FLOAT", {
+                    "default": 0.60,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.05,
+                }),
 
                 # --- KEY LIGHT ---
                 "key_enabled": ("BOOLEAN", {
@@ -191,6 +203,8 @@ class StudioLightRig:
         framing: str = "Portrait (Classical Bust)",
         ambient_intensity: float = 0.05,
         invert_normals_y: bool = False,
+        normal_boost: float = 2.0,
+        ao_anchoring: float = 0.60,
         key_enabled: bool = True,
         key_azimuth: float = 45.0,
         key_elevation: float = 35.0,
@@ -262,6 +276,8 @@ class StudioLightRig:
             rim_params=rim_params,
             ambient_intensity=ambient_intensity,
             invert_normals_y=invert_normals_y,
+            normal_boost=normal_boost,
+            ao_anchoring=ao_anchoring,
             preview_resolution=512,
             framing=framing,
             detected_prompt="",

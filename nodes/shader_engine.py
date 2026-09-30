@@ -11,6 +11,7 @@ import os
 
 import math
 import torch
+import torch.nn.functional as F
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from typing import Dict, Any, Optional, Tuple
@@ -55,6 +56,89 @@ def azimuth_elevation_to_vector(azimuth_deg: float, elevation_deg: float) -> tor
     if norm > 1e-6:
         return vec / norm
     return torch.tensor([0.0, 0.0, 1.0], dtype=torch.float32)
+
+
+def compute_cavity_ao_map(normals: torch.Tensor, strength: float = 1.5) -> torch.Tensor:
+    """
+    Derives Ambient Occlusion / Cavity map directly from normal field divergence.
+    Detects concave folds, creases under chin/jaw, and seam boundaries.
+    normals: [B, H, W, 3] in [-1, 1] range.
+    returns: [B, H, W, 1] cavity multiplier (1.0 = open surface, 0.0 = deep crevice/seam)
+    """
+    B, H, W, _ = normals.shape
+    device = normals.device
+    dtype = normals.dtype
+
+    kx = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=dtype, device=device).view(1, 1, 3, 3) / 8.0
+    ky = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=dtype, device=device).view(1, 1, 3, 3) / 8.0
+
+    nx = normals[..., 0:1].permute(0, 3, 1, 2)
+    ny = normals[..., 1:2].permute(0, 3, 1, 2)
+
+    dnx_dx = F.conv2d(nx, kx, padding=1)
+    dny_dy = F.conv2d(ny, ky, padding=1)
+
+    # Negative divergence indicates a concave valley / seam
+    curvature = (dnx_dx + dny_dy).permute(0, 2, 3, 1)
+
+    # Crevices: curvature < 0 (normals point inward towards each other)
+    cavity = torch.clamp(1.0 + curvature * float(strength), min=0.0, max=1.0)
+    return cavity
+
+
+def screen_space_directional_shadow(
+    depth: torch.Tensor,
+    light_vec: torch.Tensor,
+    steps: int = 16,
+    max_dist: float = 0.08
+) -> torch.Tensor:
+    """
+    Calculates directional cast shadow from screen-space depth raymarching.
+    depth: [B, H, W, 1]
+    light_vec: [3]
+    """
+    B, H, W = depth.shape[0], depth.shape[1], depth.shape[2]
+    device = depth.device
+    dtype = depth.dtype
+
+    lx = float(light_vec[0].item() if isinstance(light_vec, torch.Tensor) else light_vec[0])
+    ly = -float(light_vec[1].item() if isinstance(light_vec, torch.Tensor) else light_vec[1])
+    norm_2d = (lx**2 + ly**2)**0.5
+    if norm_2d < 1e-4:
+        return torch.ones_like(depth[..., :1])
+
+    dx = (lx / norm_2d) * (max_dist / steps)
+    dy = (ly / norm_2d) * (max_dist / steps)
+
+    d_in = depth if depth.shape[-1] == 1 else depth[..., 0:1]
+    d_perm = d_in.permute(0, 3, 1, 2)
+
+    y_coords, x_coords = torch.meshgrid(
+        torch.linspace(-1, 1, H, device=device, dtype=dtype),
+        torch.linspace(-1, 1, W, device=device, dtype=dtype),
+        indexing="ij"
+    )
+    base_grid = torch.stack([x_coords, y_coords], dim=-1).unsqueeze(0).expand(B, -1, -1, -1)
+
+    shadow = torch.ones_like(d_in)
+    bias = 0.005
+
+    for s in range(1, steps + 1):
+        offset_x = dx * s * 2.0
+        offset_y = dy * s * 2.0
+
+        sample_grid = base_grid.clone()
+        sample_grid[..., 0] += offset_x
+        sample_grid[..., 1] += offset_y
+
+        sampled_d = F.grid_sample(d_perm, sample_grid, mode="bilinear", padding_mode="border", align_corners=True).permute(0, 2, 3, 1)
+
+        is_closer = (d_in - sampled_d) > bias
+        weight = 1.0 - (s / (steps + 1))
+        occlusion = torch.clamp((d_in - sampled_d - bias) * 15.0, 0.0, 1.0) * is_closer.float() * weight
+        shadow = shadow - occlusion * 0.25
+
+    return torch.clamp(shadow, 0.0, 1.0)
 
 
 def render_sphere_normals(resolution: int = 256, device: Optional[torch.device] = None) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -131,8 +215,9 @@ def compute_light_shading(
         if d.shape[-1] != 1 and len(d.shape) == 4:
             d = d[..., 0:1]
         attenuation = torch.clamp(1.0 - (d * 0.35), min=0.25, max=1.0)
-        diffuse_rgb = diffuse_rgb * attenuation
-        specular_rgb = specular_rgb * attenuation
+        cast_sh = screen_space_directional_shadow(d, light_vec)
+        diffuse_rgb = diffuse_rgb * attenuation * cast_sh
+        specular_rgb = specular_rgb * attenuation * cast_sh
 
     if return_separate:
         return (diffuse_rgb, specular_rgb)
@@ -214,6 +299,8 @@ def render_studio_lighting(
     rim_params: Dict[str, Any],
     ambient_intensity: float = 0.05,
     invert_normals_y: bool = False,
+    normal_boost: float = 2.0,
+    ao_anchoring: float = 0.60,
     preview_resolution: int = 512,
     framing: str = "Portrait (Classical Bust)",
     detected_prompt: str = "",
@@ -301,6 +388,12 @@ def render_studio_lighting(
         if invert_normals_y:
             norm_unpacked[..., 1] = -norm_unpacked[..., 1]
 
+        # 1. Normal Amplification (Curvature Boost for shallow 2.5D diffusion drafts)
+        if float(normal_boost) != 1.0:
+            boost = max(float(normal_boost), 0.5)
+            norm_unpacked[..., 0] = norm_unpacked[..., 0] * boost
+            norm_unpacked[..., 1] = norm_unpacked[..., 1] * boost
+
         norm_len = torch.norm(norm_unpacked, dim=-1, keepdim=True) + 1e-7
         norm_unit = norm_unpacked / norm_len
 
@@ -336,6 +429,11 @@ def render_studio_lighting(
                 total_specular = total_specular + s_rgb
 
         total_shading = total_diffuse + total_specular
+
+        # 2. Ambient Occlusion / Cavity Anchoring from Normal Field Divergence
+        if float(ao_anchoring) > 0.0:
+            cavity_ao = compute_cavity_ao_map(norm_unit, strength=float(ao_anchoring) * 2.5)
+            total_shading = total_shading * cavity_ao
 
         # Composite subject with dark studio cyc backdrop
         bg_backdrop = torch.full_like(total_shading, max(float(ambient_intensity), 0.03))
