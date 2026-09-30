@@ -632,7 +632,7 @@
       "widgets_values": [
         1.0,
         0.05,
-        1.15,
+        0.0,
         0.4,
         3.5
       ]
@@ -755,7 +755,7 @@
         "Node name for S&R": "StudioLightTrajectoryInject"
       },
       "widgets_values": [
-        1.0
+        0.8
       ]
     },
     {

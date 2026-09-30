@@ -74,7 +74,7 @@ class StudioPhotometricComposite:
                     "step": 0.01,
                 }),
                 "specular_kick": ("FLOAT", {
-                    "default": 1.15,
+                    "default": 0.0,
                     "min": 0.0,
                     "max": 3.0,
                     "step": 0.05,
@@ -146,9 +146,13 @@ class StudioPhotometricComposite:
         lit_diffuse = base_linear * colorized_gain
 
         # 6. Extract Specular Highlights & Add Dielectric Specular Catchlights
-        spec_peak = torch.clamp((light_linear - 0.65) / 0.35, 0.0, 1.0)
-        specular_component = spec_peak * float(specular_kick) * 0.4
-        lit_hdr = lit_diffuse + specular_component
+        # Gated by base reflectivity to prevent milky washout on dark/black materials
+        if float(specular_kick) > 0.0:
+            spec_peak = torch.clamp((light_linear - 0.75) / 0.25, 0.0, 1.0)
+            specular_component = spec_peak * float(specular_kick) * 0.25 * torch.clamp(base_linear * 2.0, 0.0, 1.0)
+            lit_hdr = lit_diffuse + specular_component
+        else:
+            lit_hdr = lit_diffuse
 
         # 7. Filmic Tone Reproduction (Extended Reinhard)
         lit_toned = filmic_reinhard_tonemap(lit_hdr, white_point=float(filmic_white_point))
