@@ -22,7 +22,7 @@
           "type": "MODEL",
           "links": [
             4,
-            19
+            23
           ],
           "slot_index": 0
         }
@@ -90,7 +90,7 @@
           "type": "VAE",
           "links": [
             9,
-            17,
+            19,
             28
           ],
           "slot_index": 0
@@ -169,7 +169,7 @@
           "type": "CONDITIONING",
           "links": [
             6,
-            21
+            25
           ],
           "slot_index": 0
         }
@@ -209,7 +209,7 @@
           "type": "CONDITIONING",
           "links": [
             5,
-            20
+            24
           ],
           "slot_index": 0
         }
@@ -295,8 +295,8 @@
           "name": "clean_x0",
           "type": "LATENT",
           "links": [
-            10,
-            24
+            8,
+            21
           ],
           "slot_index": 0
         },
@@ -304,7 +304,7 @@
           "name": "noisy_xt",
           "type": "LATENT",
           "links": [
-            25
+            20
           ],
           "slot_index": 1
         }
@@ -341,7 +341,7 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 10
+          "link": 8
         },
         {
           "name": "vae",
@@ -354,9 +354,9 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
+            10,
             11,
-            12,
-            13
+            15
           ],
           "slot_index": 0
         }
@@ -384,7 +384,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 12
+          "link": 10
         }
       ],
       "title": "01: Draft Geometry Raw (Pass 1 x0)",
@@ -421,8 +421,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            14,
-            15
+            12,
+            13
           ],
           "slot_index": 0
         }
@@ -455,7 +455,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 15
+          "link": 12
         }
       ],
       "title": "02: DSINE Surface Normals Map",
@@ -486,7 +486,7 @@
         {
           "name": "normals_optional",
           "type": "IMAGE",
-          "link": 14
+          "link": 13
         },
         {
           "name": "depth_optional",
@@ -499,15 +499,16 @@
           "name": "relighting_map",
           "type": "IMAGE",
           "links": [
-            16,
-            17
+            16
           ],
           "slot_index": 0
         },
         {
           "name": "probe_preview",
           "type": "IMAGE",
-          "links": [],
+          "links": [
+            14
+          ],
           "slot_index": 1
         },
         {
@@ -564,7 +565,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 17
+          "link": 14
         }
       ],
       "title": "03: StudioLight Shading Map",
@@ -590,7 +591,7 @@
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 13
+          "link": 15
         },
         {
           "name": "lighting_map",
@@ -603,8 +604,8 @@
           "name": "lit_image",
           "type": "IMAGE",
           "links": [
-            18,
-            22
+            17,
+            18
           ],
           "slot_index": 0
         }
@@ -639,7 +640,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 22
+          "link": 17
         }
       ],
       "title": "04: Composite Relit Image (Pixel Domain)",
@@ -673,7 +674,7 @@
         {
           "name": "vae",
           "type": "VAE",
-          "link": 17
+          "link": 19
         }
       ],
       "outputs": [
@@ -681,7 +682,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            26
+            22
           ],
           "slot_index": 0
         }
@@ -709,17 +710,17 @@
         {
           "name": "noisy_xt",
           "type": "LATENT",
-          "link": 25
+          "link": 20
         },
         {
           "name": "clean_x0",
           "type": "LATENT",
-          "link": 24
+          "link": 21
         },
         {
           "name": "relit_x0",
           "type": "LATENT",
-          "link": 26
+          "link": 22
         }
       ],
       "outputs": [
@@ -727,7 +728,7 @@
           "name": "injected_latent",
           "type": "LATENT",
           "links": [
-            27
+            26
           ],
           "slot_index": 0
         }
@@ -758,22 +759,22 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 19
+          "link": 23
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 20
+          "link": 24
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 21
+          "link": 25
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 27
+          "link": 26
         }
       ],
       "outputs": [
@@ -781,7 +782,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            23
+            27
           ],
           "slot_index": 0
         }
@@ -821,7 +822,7 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 23
+          "link": 27
         },
         {
           "name": "vae",
@@ -932,6 +933,14 @@
       "LATENT"
     ],
     [
+      8,
+      8,
+      0,
+      9,
+      0,
+      "LATENT"
+    ],
+    [
       9,
       3,
       0,
@@ -941,22 +950,6 @@
     ],
     [
       10,
-      8,
-      0,
-      9,
-      0,
-      "LATENT"
-    ],
-    [
-      11,
-      9,
-      0,
-      11,
-      0,
-      "IMAGE"
-    ],
-    [
-      12,
       9,
       0,
       10,
@@ -964,23 +957,15 @@
       "IMAGE"
     ],
     [
-      13,
+      11,
       9,
       0,
-      15,
-      0,
-      "IMAGE"
-    ],
-    [
-      14,
       11,
       0,
-      13,
-      1,
       "IMAGE"
     ],
     [
-      15,
+      12,
       11,
       0,
       12,
@@ -988,6 +973,30 @@
       "IMAGE"
     ],
     [
+      13,
+      11,
+      0,
+      13,
+      1,
+      "IMAGE"
+    ],
+    [
+      14,
+      13,
+      1,
+      14,
+      0,
+      "IMAGE"
+    ],
+    [
+      15,
+      9,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
       16,
       13,
       0,
@@ -997,9 +1006,9 @@
     ],
     [
       17,
-      13,
+      15,
       0,
-      14,
+      16,
       0,
       "IMAGE"
     ],
@@ -1013,6 +1022,38 @@
     ],
     [
       19,
+      3,
+      0,
+      17,
+      1,
+      "VAE"
+    ],
+    [
+      20,
+      8,
+      1,
+      18,
+      0,
+      "LATENT"
+    ],
+    [
+      21,
+      8,
+      0,
+      18,
+      1,
+      "LATENT"
+    ],
+    [
+      22,
+      17,
+      0,
+      18,
+      2,
+      "LATENT"
+    ],
+    [
+      23,
       1,
       0,
       19,
@@ -1020,7 +1061,7 @@
       "MODEL"
     ],
     [
-      20,
+      24,
       6,
       0,
       19,
@@ -1028,7 +1069,7 @@
       "CONDITIONING"
     ],
     [
-      21,
+      25,
       5,
       0,
       19,
@@ -1036,51 +1077,19 @@
       "CONDITIONING"
     ],
     [
-      22,
-      15,
-      0,
-      16,
-      0,
-      "IMAGE"
-    ],
-    [
-      23,
-      19,
-      0,
-      20,
-      0,
-      "LATENT"
-    ],
-    [
-      24,
-      8,
-      0,
-      18,
-      1,
-      "LATENT"
-    ],
-    [
-      25,
-      8,
-      1,
-      18,
-      0,
-      "LATENT"
-    ],
-    [
       26,
-      17,
-      0,
-      18,
-      2,
-      "LATENT"
-    ],
-    [
-      27,
       18,
       0,
       19,
       3,
+      "LATENT"
+    ],
+    [
+      27,
+      19,
+      0,
+      20,
+      0,
       "LATENT"
     ],
     [
