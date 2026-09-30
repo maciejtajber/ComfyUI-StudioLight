@@ -181,7 +181,49 @@ def compute_light_shading(
 
     device = normals.device
     dtype = normals.dtype
-    l_vec = light_vec.to(device=device, dtype=dtype).view(1, 1, 1, 3)
+    l_vec_dir = light_vec.to(device=device, dtype=dtype).view(1, 1, 1, 3)
+
+    if depth is not None:
+        d = depth.to(device=device, dtype=dtype)
+        if d.shape[-1] != 1 and len(d.shape) == 4:
+            d = d[..., 0:1]
+
+        # 3D Camera-Space Back-Projection (FOV = 40 deg, standard portrait / 50mm lens)
+        B, H, W, _ = normals.shape
+        tan_half_fov = 0.364  # math.tan(math.radians(20.0))
+        y_coords, x_coords = torch.meshgrid(
+            torch.linspace(1.0, -1.0, H, device=device, dtype=dtype),
+            torch.linspace(-1.0, 1.0, W, device=device, dtype=dtype),
+            indexing="ij"
+        )
+        x_grid = x_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
+        y_grid = y_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
+
+        # Scale relative depth d to camera space Z (subject anchored at 2.0m, range 1.5m to 4.5m)
+        d_min = torch.min(d)
+        d_max = torch.max(d)
+        d_norm = (d - d_min) / (d_max - d_min + 1e-6)
+        z_pos = 1.5 + (1.0 - d_norm) * 3.0
+        x_pos = x_grid * tan_half_fov * z_pos
+        y_pos = y_grid * tan_half_fov * z_pos
+        p_surf = torch.cat([x_pos, y_pos, z_pos], dim=-1)
+
+        # Light head position relative to subject center (0, 0, 2.0m) at stand radius 1.8m
+        r_stand = 1.8
+        p_light = torch.tensor([0.0, 0.0, 2.0], device=device, dtype=dtype).view(1, 1, 1, 3) + r_stand * l_vec_dir
+
+        # True per-pixel divergent light vector & Euclidean distance
+        v_to_light = p_light - p_surf
+        dist_to_light = torch.norm(v_to_light, dim=-1, keepdim=True) + 1e-6
+        l_vec = v_to_light / dist_to_light
+
+        # Photographic inverse-square falloff normalized to stand distance
+        attenuation = torch.clamp((r_stand ** 2) / (dist_to_light ** 2), min=0.15, max=1.8)
+        cast_sh = screen_space_directional_shadow(d, light_vec)
+    else:
+        l_vec = l_vec_dir
+        attenuation = 1.0
+        cast_sh = 1.0
 
     # Dot product N . L
     n_dot_l = torch.sum(normals * l_vec, dim=-1, keepdim=True)
@@ -205,19 +247,9 @@ def compute_light_shading(
     n_dot_h = torch.clamp(torch.sum(normals * h_vec, dim=-1, keepdim=True), min=0.0, max=1.0)
     specular = torch.pow(n_dot_h, spec_power) * spec_strength * 0.35
 
-    shading = (diffuse + specular) * float(intensity)
     c_tensor = torch.tensor(light_color, device=device, dtype=dtype).view(1, 1, 1, 3)
-    diffuse_rgb = diffuse * float(intensity) * c_tensor
-    specular_rgb = specular * float(intensity) * c_tensor
-
-    if depth is not None:
-        d = depth.to(device=device, dtype=dtype)
-        if d.shape[-1] != 1 and len(d.shape) == 4:
-            d = d[..., 0:1]
-        attenuation = torch.clamp(1.0 - (d * 0.35), min=0.25, max=1.0)
-        cast_sh = screen_space_directional_shadow(d, light_vec)
-        diffuse_rgb = diffuse_rgb * attenuation * cast_sh
-        specular_rgb = specular_rgb * attenuation * cast_sh
+    diffuse_rgb = diffuse * float(intensity) * c_tensor * attenuation * cast_sh
+    specular_rgb = specular * float(intensity) * c_tensor * attenuation * cast_sh
 
     if return_separate:
         return (diffuse_rgb, specular_rgb)
