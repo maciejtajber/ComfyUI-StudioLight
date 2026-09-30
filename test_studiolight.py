@@ -9,6 +9,8 @@ import torch
 
 # Ensure package is on sys.path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+COMFY_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
+sys.path.insert(0, COMFY_DIR)
 sys.path.insert(0, BASE_DIR)
 
 from nodes.color_utils import kelvin_to_rgb, kelvin_to_mood, MODIFIER_PRESETS
@@ -300,6 +302,43 @@ def test_photometric_composite():
     print("✓ StudioPhotometricComposite passed flawlessly!")
 
 
+def test_trajectory_nodes():
+    print("Testing StudioLight Trajectory Nodes (Method B)...")
+    from nodes.trajectory_nodes import StudioLightTrajectoryInject, StudioLightTrajectorySplitter
+    
+    # 1. Verify Node registration
+    assert StudioLightTrajectorySplitter is not None
+    assert StudioLightTrajectoryInject is not None
+
+    # 2. Verify Mathematical Delta Invariant
+    sigma = 0.863338
+    x0 = torch.randn(1, 16, 64, 64)
+    x0_prime = x0 + torch.randn(1, 16, 64, 64) * 0.15
+    eps = torch.randn(1, 16, 64, 64)
+
+    # True ODE target states
+    x_t = (1.0 - sigma) * x0 + sigma * eps
+    x_prime_t = (1.0 - sigma) * x0_prime + sigma * eps
+
+    # In ComfyUI scaled latent space:
+    L_t = x_t / (1.0 - sigma)
+
+    inject_node = StudioLightTrajectoryInject()
+    noisy_dict = {"samples": L_t}
+    clean_dict = {"samples": x0}
+    relit_dict = {"samples": x0_prime}
+
+    injected_dict = inject_node.inject(noisy_dict, clean_dict, relit_dict, strength=1.0)[0]
+    injected_samples = injected_dict["samples"]
+
+    # When Pass 2 sampler applies CONST noise_scaling with noise=0:
+    ode_start = (1.0 - sigma) * injected_samples
+    diff = torch.max(torch.abs(ode_start - x_prime_t)).item()
+    assert diff < 1e-5, f"Delta injection math error too high: {diff}"
+    print(f"  ✓ Delta invariant mathematically exact: max error = {diff:.2e}")
+    print("✓ StudioLight Trajectory Nodes passed flawlessly!")
+
+
 if __name__ == "__main__":
     test_color_utils()
     test_presets()
@@ -308,5 +347,7 @@ if __name__ == "__main__":
     test_studio_light_node()
     test_studio_3d_stage_and_suite_pipeline()
     test_photometric_composite()
+    test_trajectory_nodes()
     print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified!")
+
 
