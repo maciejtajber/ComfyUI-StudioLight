@@ -634,8 +634,6 @@
         "American Plan (3/4 Shot)",
         0.04,
         false,
-        2.5,
-        0.65,
         true,
         45.0,
         30.0,
@@ -653,7 +651,9 @@
         40.0,
         1.2,
         6800,
-        "Stripbox"
+        "Stripbox",
+        2.5,
+        0.65
       ],
       "title": "StudioLightRig (3-Point Photographic Console)"
     },

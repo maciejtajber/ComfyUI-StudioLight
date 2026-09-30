@@ -260,11 +260,11 @@ def build_method_a():
             "American Plan (3/4 Shot)",
             0.04,
             False,
-            2.5,  # normal_boost (Expands shallow 2.5D draft normals into sculpted 3D relief)
-            0.65, # ao_anchoring (Divergence cavity shadows in folds and under jawline)
             True, 45.0, 30.0, 1.25, 5500, "Beauty Dish (Silver)",   # Key
             True, -45.0, 15.0, 0.35, 4800, "Octabox (Soft)",        # Fill
             True, 140.0, 40.0, 1.20, 6800, "Stripbox",               # Rim
+            2.50, # normal_boost (Expands shallow 2.5D draft normals into sculpted 3D relief)
+            0.65, # ao_anchoring (Divergence cavity shadows in folds and under jawline)
         ],
         input_names=[
             ("scene_3d", "SCENE_3D"),

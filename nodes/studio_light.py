@@ -59,18 +59,6 @@ class StudioLightRig:
                     "label_on": "Invert Y (DirectX)",
                     "label_off": "Standard (OpenGL)",
                 }),
-                "normal_boost": ("FLOAT", {
-                    "default": 2.0,
-                    "min": 1.0,
-                    "max": 4.0,
-                    "step": 0.1,
-                }),
-                "ao_anchoring": ("FLOAT", {
-                    "default": 0.60,
-                    "min": 0.0,
-                    "max": 1.0,
-                    "step": 0.05,
-                }),
 
                 # --- KEY LIGHT ---
                 "key_enabled": ("BOOLEAN", {
@@ -173,6 +161,20 @@ class StudioLightRig:
                 "rim_modifier": (modifier_list, {
                     "default": "Stripbox",
                 }),
+
+                # --- 3D VOLUME & SHADOW SCULPTING (Intervention Engine) ---
+                "normal_boost": ("FLOAT", {
+                    "default": 2.50,
+                    "min": 1.0,
+                    "max": 4.0,
+                    "step": 0.1,
+                }),
+                "ao_anchoring": ("FLOAT", {
+                    "default": 0.65,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.05,
+                }),
             },
             "optional": {
                 "scene_3d": ("SCENE_3D",),
@@ -203,8 +205,6 @@ class StudioLightRig:
         framing: str = "Portrait (Classical Bust)",
         ambient_intensity: float = 0.05,
         invert_normals_y: bool = False,
-        normal_boost: float = 2.0,
-        ao_anchoring: float = 0.60,
         key_enabled: bool = True,
         key_azimuth: float = 45.0,
         key_elevation: float = 35.0,
@@ -223,6 +223,8 @@ class StudioLightRig:
         rim_intensity: float = 1.1,
         rim_kelvin: int = 6500,
         rim_modifier: str = "Stripbox",
+        normal_boost: float = 2.50,
+        ao_anchoring: float = 0.65,
         scene_3d: Optional[Dict[str, Any]] = None,
         normals_optional: Optional[torch.Tensor] = None,
         depth_optional: Optional[torch.Tensor] = None,
