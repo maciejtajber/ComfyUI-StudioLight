@@ -275,21 +275,21 @@ def generate_master_workflow():
         output_defs=[("LATENT", "LATENT")],
     )
 
-    # --- ZONE 4: PASS 2 PHOTOMETRIC POLISH (THE WINNING 0.75 DENOISE) ---
+    # --- ZONE 4: PASS 2 PHOTOMETRIC POLISH (THE PROVEN 28-STEP BETA FINISH) ---
     wb.add_node(
         node_id=16,
         node_type="KSampler",
-        title="Pass 2: Photometric Finish (Denoise 0.75)",
+        title="Pass 2: Photometric Finish (Denoise 0.72 - Beta)",
         pos=[1100, -200],
         size=[320, 280],
         widgets_values=[
             424242,
             "fixed",
-            20,
+            28,        # 28 STEPS FOR 100% PRODUCTION FINISH!
             1.0,
             "euler",
-            "simple",
-            0.75,  # THE WINNING 0.75 DENOISE!
+            "beta",    # BETA SCHEDULER!
+            0.72,      # 0.72 OPTIMAL BONDING!
         ],
         input_names=[
             ("model", "MODEL"),
@@ -299,6 +299,7 @@ def generate_master_workflow():
         ],
         output_defs=[("LATENT", "LATENT")],
     )
+
 
     wb.add_node(
         node_id=17,

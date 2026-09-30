@@ -713,13 +713,13 @@
       "widgets_values": [
         424242,
         "fixed",
-        20,
+        28,
         1.0,
         "euler",
-        "simple",
-        0.75
+        "beta",
+        0.72
       ],
-      "title": "Pass 2: Photometric Finish (Denoise 0.75)"
+      "title": "Pass 2: Photometric Finish (Denoise 0.72 - Beta)"
     },
     {
       "id": 17,
