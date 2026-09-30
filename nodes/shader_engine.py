@@ -170,9 +170,10 @@ def compute_light_shading(
     intensity: float,
     modifier_name: str,
     depth: Optional[torch.Tensor] = None,
+    distance: float = 1.8,
     return_separate: bool = False,
 ) -> torch.Tensor:
-    """Computes diffuse and Blinn-Phong specular contribution for a single light."""
+    """Computes diffuse and Blinn-Phong specular contribution for a single light with 3D distance falloff."""
     preset = MODIFIER_PRESETS.get(modifier_name, MODIFIER_PRESETS["Octabox (Soft)"])
     wrap = min(preset.get("wrap_factor", 0.0), 0.45)
     spec_power = preset["specular_power"]
@@ -208,8 +209,8 @@ def compute_light_shading(
         y_pos = y_grid * tan_half_fov * z_pos
         p_surf = torch.cat([x_pos, y_pos, z_pos], dim=-1)
 
-        # Light head position relative to subject center (0, 0, 2.0m) at stand radius 1.8m
-        r_stand = 1.8
+        # Light head position relative to subject center (0, 0, 2.0m) at specified stand radius (distance in meters)
+        r_stand = max(float(distance), 0.3)
         p_light = torch.tensor([0.0, 0.0, 2.0], device=device, dtype=dtype).view(1, 1, 1, 3) + r_stand * l_vec_dir
 
         # True per-pixel divergent light vector & Euclidean distance
@@ -218,7 +219,7 @@ def compute_light_shading(
         l_vec = v_to_light / dist_to_light
 
         # Photographic inverse-square falloff normalized to stand distance
-        attenuation = torch.clamp((r_stand ** 2) / (dist_to_light ** 2), min=0.15, max=1.8)
+        attenuation = torch.clamp((r_stand ** 2) / (dist_to_light ** 2), min=0.10, max=2.5)
         cast_sh = screen_space_directional_shadow(d, light_vec)
     else:
         l_vec = l_vec_dir
@@ -296,28 +297,30 @@ def draw_studio_radar_diagram(
     draw.rectangle([cx - 24, cam_y - 8, cx + 24, cam_y + 8], fill=(30, 30, 36), outline=(90, 90, 100), width=1)
     draw.text((cx - 19, cam_y - 6), "CAMERA", fill=(200, 200, 210))
 
-    # Helper to draw light vector
-    def draw_vector(azimuth: float, elevation: float, color_rgb: Tuple[int, int, int], label: str, enabled: bool):
+    # Helper to draw light vector with distance-scaled radius
+    def draw_vector(azimuth: float, elevation: float, color_rgb: Tuple[int, int, int], label: str, enabled: bool, distance: float = 1.8):
         if not enabled:
             return
         # Azimuth: 0° is bottom (camera), +45° is camera-right (screen right), +/-180° is top (backlight)
         ang_rad = math.radians(azimuth)
-        lx = cx + int(radius * math.sin(ang_rad))
-        ly = cy + int(radius * math.cos(ang_rad))
+        dist_factor = min(max(float(distance) / 3.2, 0.32), 1.0)
+        actual_r = int(radius * dist_factor)
+        lx = cx + int(actual_r * math.sin(ang_rad))
+        ly = cy + int(actual_r * math.cos(ang_rad))
 
         # Ray line
         draw.line([cx, cy, lx, ly], fill=color_rgb, width=3)
         # Light head node
         draw.ellipse([lx - 9, ly - 9, lx + 9, ly + 9], fill=color_rgb, outline=(255, 255, 255), width=2)
-        # Degree label
-        tx = lx + (10 if math.sin(ang_rad) >= 0 else -56)
+        # Degree and distance label
+        tx = lx + (10 if math.sin(ang_rad) >= 0 else -68)
         ty = ly + (6 if math.cos(ang_rad) >= 0 else -14)
-        draw.text((tx, ty), f"{label} {int(azimuth)}°", fill=color_rgb)
+        draw.text((tx, ty), f"{label} {int(azimuth)}° ({distance:.1f}m)", fill=color_rgb)
 
     # Draw Key (Amber), Fill (Cyan), Rim (Magenta)
-    draw_vector(key_params["azimuth"], key_params["elevation"], (255, 185, 45), "KEY", key_params.get("enabled", True))
-    draw_vector(fill_params["azimuth"], fill_params["elevation"], (65, 205, 255), "FILL", fill_params.get("enabled", True))
-    draw_vector(rim_params["azimuth"], rim_params["elevation"], (245, 75, 175), "RIM", rim_params.get("enabled", True))
+    draw_vector(key_params["azimuth"], key_params["elevation"], (255, 185, 45), "KEY", key_params.get("enabled", True), key_params.get("distance", 1.8))
+    draw_vector(fill_params["azimuth"], fill_params["elevation"], (65, 205, 255), "FILL", fill_params.get("enabled", True), fill_params.get("distance", 2.5))
+    draw_vector(rim_params["azimuth"], rim_params["elevation"], (245, 75, 175), "RIM", rim_params.get("enabled", True), rim_params.get("distance", 1.5))
 
     arr = np.array(img).astype(np.float32) / 255.0
     return torch.from_numpy(arr).unsqueeze(0)
@@ -455,7 +458,9 @@ def render_studio_lighting(
         ]:
             if p_dict.get("enabled", True):
                 d_rgb, s_rgb = compute_light_shading(
-                    norm_unit, p_vec, p_col, p_dict["intensity"], p_dict["modifier"], depth, return_separate=True
+                    norm_unit, p_vec, p_col, p_dict["intensity"], p_dict["modifier"], depth,
+                    distance=p_dict.get("distance", 1.8),
+                    return_separate=True
                 )
                 total_diffuse = total_diffuse + d_rgb
                 total_specular = total_specular + s_rgb

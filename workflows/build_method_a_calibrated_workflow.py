@@ -260,9 +260,9 @@ def build_method_a():
             "American Plan (3/4 Shot)",
             0.04,
             False,
-            True, 45.0, 30.0, 1.25, 5500, "Beauty Dish (Silver)",   # Key
-            True, -45.0, 15.0, 0.35, 4800, "Octabox (Soft)",        # Fill
-            True, 140.0, 40.0, 1.20, 6800, "Stripbox",               # Rim
+            True, 45.0, 30.0, 1.8, 1.25, 5500, "Beauty Dish (Silver)",   # Key: enabled, az, el, dist, int, kelvin, mod
+            True, -45.0, 15.0, 2.5, 0.35, 4800, "Octabox (Soft)",        # Fill: enabled, az, el, dist, int, kelvin, mod
+            True, 140.0, 40.0, 1.5, 1.20, 6800, "Stripbox",               # Rim: enabled, az, el, dist, int, kelvin, mod
             2.50, # normal_boost (Expands shallow 2.5D draft normals into sculpted 3D relief)
             0.65, # ao_anchoring (Divergence cavity shadows in folds and under jawline)
         ],
@@ -445,6 +445,29 @@ def build_method_a():
         output_defs=[],
     )
 
+    # Zone 3: Depth Extraction (Depth Anything V2)
+    wb.add_node(
+        node_id=29,
+        node_type="DepthAnythingV2Preprocessor",
+        title="Extract Depth (Depth Anything V2)",
+        pos=[-320, 690],
+        size=[340, 120],
+        widgets_values=["depth_anything_v2_vitl.pth", 1024],
+        input_names=[("image", "IMAGE")],
+        output_defs=[("IMAGE", "IMAGE")],
+    )
+
+    wb.add_node(
+        node_id=30,
+        node_type="PreviewImage",
+        title="Preview: Depth Map",
+        pos=[-320, 830],
+        size=[340, 240],
+        widgets_values=[],
+        input_names=[("images", "IMAGE")],
+        output_defs=[],
+    )
+
     # --- WIRING LINKS ---
     # Zone 1 Loaders
     wb.connect(2, 0, 5, 0, "CLIP")      # DualCLIP -> Negative
@@ -468,9 +491,12 @@ def build_method_a():
     wb.connect(3, 0, 12, 1, "VAE")      # VAE -> VAEDecode
     wb.connect(12, 0, 13, 0, "IMAGE")   # Draft Image -> Preview
 
-    # Zone 3: DSINE & StudioLightRig
+    # Zone 3: DSINE, Depth & StudioLightRig
     wb.connect(12, 0, 14, 0, "IMAGE")   # Draft Image -> DSINE
     wb.connect(14, 0, 15, 1, "IMAGE")   # DSINE Normals -> StudioLightRig normals_optional
+    wb.connect(12, 0, 29, 0, "IMAGE")   # Draft Image -> DepthAnythingV2
+    wb.connect(29, 0, 15, 2, "IMAGE")   # Depth -> StudioLightRig depth_optional (3D Falloff!)
+    wb.connect(29, 0, 30, 0, "IMAGE")   # Depth -> Depth Preview
     wb.connect(15, 1, 16, 0, "IMAGE")   # Probe Preview -> PreviewImage
 
     # Zone 3: Photometric Composite & Sculptor
@@ -504,7 +530,7 @@ def build_method_a():
     groups = [
         {"title": "ZONE 1: FLUX LOADERS & PROMPT SEPARATION", "bounding": [-1420, -320, 720, 700], "color": "#1f2937"},
         {"title": "ZONE 2: PASS 1 DRAFT GENERATION (STEPS 0 -> 10)", "bounding": [-700, -320, 360, 840], "color": "#1e3a8a"},
-        {"title": "ZONE 3: 3D NORMALS & LINEAR PHOTOMETRIC COMPOSITING", "bounding": [-340, -320, 720, 1020], "color": "#065f46"},
+        {"title": "ZONE 3: 3D NORMALS, DEPTH & PHOTOMETRIC COMPOSITING", "bounding": [-340, -320, 720, 1420], "color": "#065f46"},
         {"title": "ZONE 4: DUAL-CONDITIONING PROMPT SYNTHESIS", "bounding": [380, -320, 340, 530], "color": "#4c1d95"},
         {"title": "ZONE 5: PASS 2 STOCHASTIC RE-DIFFUSION (THE CALIBRATION LEVER)", "bounding": [720, -320, 780, 720], "color": "#831843"},
     ]
@@ -517,3 +543,4 @@ if __name__ == "__main__":
     with open(out_path, "w") as f:
         json.dump(wf, f, indent=2)
     print(f"Successfully generated {out_path} with {len(wf['nodes'])} nodes and {len(wf['links'])} links.")
+

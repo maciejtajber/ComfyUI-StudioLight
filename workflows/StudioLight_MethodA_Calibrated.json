@@ -1,6 +1,6 @@
 {
-  "last_node_id": 28,
-  "last_link_id": 36,
+  "last_node_id": 30,
+  "last_link_id": 39,
   "nodes": [
     {
       "id": 1,
@@ -23,7 +23,7 @@
           "type": "MODEL",
           "links": [
             8,
-            29
+            32
           ],
           "shape": 3,
           "slot_index": 0
@@ -98,8 +98,8 @@
           "type": "VAE",
           "links": [
             13,
-            23,
-            34
+            26,
+            37
           ],
           "shape": 3,
           "slot_index": 0
@@ -176,7 +176,7 @@
           "type": "CONDITIONING",
           "links": [
             10,
-            31
+            34
           ],
           "shape": 3,
           "slot_index": 0
@@ -211,7 +211,7 @@
           "type": "STRING",
           "links": [
             4,
-            24
+            27
           ],
           "shape": 3,
           "slot_index": 0
@@ -484,7 +484,8 @@
           "links": [
             14,
             15,
-            18
+            17,
+            21
           ],
           "shape": 3,
           "slot_index": 0
@@ -594,7 +595,7 @@
         {
           "name": "depth_optional",
           "type": "IMAGE",
-          "link": null
+          "link": 18
         }
       ],
       "outputs": [
@@ -602,7 +603,7 @@
           "name": "relighting_map",
           "type": "IMAGE",
           "links": [
-            19
+            22
           ],
           "shape": 3,
           "slot_index": 0
@@ -611,7 +612,7 @@
           "name": "probe_preview",
           "type": "IMAGE",
           "links": [
-            17
+            20
           ],
           "shape": 3,
           "slot_index": 1
@@ -620,7 +621,7 @@
           "name": "lighting_prompt",
           "type": "STRING",
           "links": [
-            25
+            28
           ],
           "shape": 3,
           "slot_index": 2
@@ -637,18 +638,21 @@
         true,
         45.0,
         30.0,
+        1.8,
         1.25,
         5500,
         "Beauty Dish (Silver)",
         true,
         -45.0,
         15.0,
+        2.5,
         0.35,
         4800,
         "Octabox (Soft)",
         true,
         140.0,
         40.0,
+        1.5,
         1.2,
         6800,
         "Stripbox",
@@ -675,7 +679,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 17
+          "link": 20
         }
       ],
       "outputs": [],
@@ -703,12 +707,12 @@
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 18
+          "link": 21
         },
         {
           "name": "lighting_map",
           "type": "IMAGE",
-          "link": 19
+          "link": 22
         }
       ],
       "outputs": [
@@ -716,7 +720,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            20
+            23
           ],
           "shape": 3,
           "slot_index": 0
@@ -752,7 +756,7 @@
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 20
+          "link": 23
         }
       ],
       "outputs": [
@@ -760,8 +764,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            21,
-            22
+            24,
+            25
           ],
           "shape": 3,
           "slot_index": 0
@@ -797,7 +801,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 21
+          "link": 24
         }
       ],
       "outputs": [],
@@ -825,12 +829,12 @@
         {
           "name": "pixels",
           "type": "IMAGE",
-          "link": 22
+          "link": 25
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 23
+          "link": 26
         }
       ],
       "outputs": [
@@ -838,7 +842,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            32
+            35
           ],
           "shape": 3,
           "slot_index": 0
@@ -868,12 +872,12 @@
         {
           "name": "string_a",
           "type": "STRING",
-          "link": 24
+          "link": 27
         },
         {
           "name": "string_b",
           "type": "STRING",
-          "link": 25
+          "link": 28
         }
       ],
       "outputs": [
@@ -881,8 +885,8 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            26,
-            27
+            29,
+            30
           ],
           "shape": 3,
           "slot_index": 0
@@ -912,7 +916,7 @@
         {
           "name": "source",
           "type": "STRING",
-          "link": 26
+          "link": 29
         }
       ],
       "outputs": [
@@ -953,7 +957,7 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 27
+          "link": 30
         }
       ],
       "outputs": [
@@ -961,7 +965,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            28
+            31
           ],
           "shape": 3,
           "slot_index": 0
@@ -993,7 +997,7 @@
         {
           "name": "conditioning",
           "type": "CONDITIONING",
-          "link": 28
+          "link": 31
         }
       ],
       "outputs": [
@@ -1001,7 +1005,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            30
+            33
           ],
           "shape": 3,
           "slot_index": 0
@@ -1033,22 +1037,22 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 29
+          "link": 32
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 30
+          "link": 33
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 31
+          "link": 34
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 32
+          "link": 35
         }
       ],
       "outputs": [
@@ -1056,7 +1060,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            33
+            36
           ],
           "shape": 3,
           "slot_index": 0
@@ -1094,12 +1098,12 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 33
+          "link": 36
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 34
+          "link": 37
         }
       ],
       "outputs": [
@@ -1107,8 +1111,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            35,
-            36
+            38,
+            39
           ],
           "shape": 3,
           "slot_index": 0
@@ -1138,7 +1142,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 35
+          "link": 38
         }
       ],
       "outputs": [],
@@ -1168,7 +1172,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 36
+          "link": 39
         }
       ],
       "outputs": [],
@@ -1177,6 +1181,76 @@
       },
       "widgets_values": [],
       "title": "Preview: Final Lit Result"
+    },
+    {
+      "id": 29,
+      "type": "DepthAnythingV2Preprocessor",
+      "pos": [
+        -320,
+        690
+      ],
+      "size": [
+        340,
+        120
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            18,
+            19
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DepthAnythingV2Preprocessor"
+      },
+      "widgets_values": [
+        "depth_anything_v2_vitl.pth",
+        1024
+      ],
+      "title": "Extract Depth (Depth Anything V2)"
+    },
+    {
+      "id": 30,
+      "type": "PreviewImage",
+      "pos": [
+        -320,
+        830
+      ],
+      "size": [
+        340,
+        240
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 19
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Preview: Depth Map"
     }
   ],
   "links": [
@@ -1310,6 +1384,30 @@
     ],
     [
       17,
+      12,
+      0,
+      29,
+      0,
+      "IMAGE"
+    ],
+    [
+      18,
+      29,
+      0,
+      15,
+      2,
+      "IMAGE"
+    ],
+    [
+      19,
+      29,
+      0,
+      30,
+      0,
+      "IMAGE"
+    ],
+    [
+      20,
       15,
       1,
       16,
@@ -1317,7 +1415,7 @@
       "IMAGE"
     ],
     [
-      18,
+      21,
       12,
       0,
       17,
@@ -1325,7 +1423,7 @@
       "IMAGE"
     ],
     [
-      19,
+      22,
       15,
       0,
       17,
@@ -1333,7 +1431,7 @@
       "IMAGE"
     ],
     [
-      20,
+      23,
       17,
       0,
       18,
@@ -1341,7 +1439,7 @@
       "IMAGE"
     ],
     [
-      21,
+      24,
       18,
       0,
       19,
@@ -1349,7 +1447,7 @@
       "IMAGE"
     ],
     [
-      22,
+      25,
       18,
       0,
       20,
@@ -1357,7 +1455,7 @@
       "IMAGE"
     ],
     [
-      23,
+      26,
       3,
       0,
       20,
@@ -1365,7 +1463,7 @@
       "VAE"
     ],
     [
-      24,
+      27,
       6,
       0,
       21,
@@ -1373,7 +1471,7 @@
       "STRING"
     ],
     [
-      25,
+      28,
       15,
       2,
       21,
@@ -1381,7 +1479,7 @@
       "STRING"
     ],
     [
-      26,
+      29,
       21,
       0,
       22,
@@ -1389,7 +1487,7 @@
       "STRING"
     ],
     [
-      27,
+      30,
       21,
       0,
       23,
@@ -1397,7 +1495,7 @@
       "STRING"
     ],
     [
-      28,
+      31,
       23,
       0,
       24,
@@ -1405,7 +1503,7 @@
       "CONDITIONING"
     ],
     [
-      29,
+      32,
       1,
       0,
       25,
@@ -1413,7 +1511,7 @@
       "MODEL"
     ],
     [
-      30,
+      33,
       24,
       0,
       25,
@@ -1421,7 +1519,7 @@
       "CONDITIONING"
     ],
     [
-      31,
+      34,
       5,
       0,
       25,
@@ -1429,7 +1527,7 @@
       "CONDITIONING"
     ],
     [
-      32,
+      35,
       20,
       0,
       25,
@@ -1437,7 +1535,7 @@
       "LATENT"
     ],
     [
-      33,
+      36,
       25,
       0,
       26,
@@ -1445,7 +1543,7 @@
       "LATENT"
     ],
     [
-      34,
+      37,
       3,
       0,
       26,
@@ -1453,7 +1551,7 @@
       "VAE"
     ],
     [
-      35,
+      38,
       26,
       0,
       27,
@@ -1461,7 +1559,7 @@
       "IMAGE"
     ],
     [
-      36,
+      39,
       26,
       0,
       28,
@@ -1491,12 +1589,12 @@
       "color": "#1e3a8a"
     },
     {
-      "title": "ZONE 3: 3D NORMALS & LINEAR PHOTOMETRIC COMPOSITING",
+      "title": "ZONE 3: 3D NORMALS, DEPTH & PHOTOMETRIC COMPOSITING",
       "bounding": [
         -340,
         -320,
         720,
-        1020
+        1420
       ],
       "color": "#065f46"
     },

@@ -78,6 +78,12 @@ class StudioLightRig:
                     "max": 90.0,
                     "step": 1.0,
                 }),
+                "key_distance": ("FLOAT", {
+                    "default": 1.8,
+                    "min": 0.5,
+                    "max": 10.0,
+                    "step": 0.1,
+                }),
                 "key_intensity": ("FLOAT", {
                     "default": 1.0,
                     "min": 0.0,
@@ -112,6 +118,12 @@ class StudioLightRig:
                     "max": 90.0,
                     "step": 1.0,
                 }),
+                "fill_distance": ("FLOAT", {
+                    "default": 2.5,
+                    "min": 0.5,
+                    "max": 10.0,
+                    "step": 0.1,
+                }),
                 "fill_intensity": ("FLOAT", {
                     "default": 0.35,
                     "min": 0.0,
@@ -145,6 +157,12 @@ class StudioLightRig:
                     "min": -30.0,
                     "max": 90.0,
                     "step": 1.0,
+                }),
+                "rim_distance": ("FLOAT", {
+                    "default": 1.5,
+                    "min": 0.5,
+                    "max": 10.0,
+                    "step": 0.1,
                 }),
                 "rim_intensity": ("FLOAT", {
                     "default": 1.10,
@@ -225,6 +243,9 @@ class StudioLightRig:
         rim_modifier: str = "Stripbox",
         normal_boost: float = 2.50,
         ao_anchoring: float = 0.65,
+        key_distance: float = 1.8,
+        fill_distance: float = 2.5,
+        rim_distance: float = 1.5,
         scene_3d: Optional[Dict[str, Any]] = None,
         normals_optional: Optional[torch.Tensor] = None,
         depth_optional: Optional[torch.Tensor] = None,
@@ -251,6 +272,7 @@ class StudioLightRig:
             "intensity": key_intensity,
             "kelvin": key_kelvin,
             "modifier": key_modifier,
+            "distance": float(key_distance),
         }
         fill_params = {
             "enabled": fill_enabled,
@@ -259,6 +281,7 @@ class StudioLightRig:
             "intensity": fill_intensity,
             "kelvin": fill_kelvin,
             "modifier": fill_modifier,
+            "distance": float(fill_distance),
         }
         rim_params = {
             "enabled": rim_enabled,
@@ -267,6 +290,7 @@ class StudioLightRig:
             "intensity": rim_intensity,
             "kelvin": rim_kelvin,
             "modifier": rim_modifier,
+            "distance": float(rim_distance),
         }
 
         # 2. Render Physical Relighting Map (Lit proxy plate) and Dual-Sphere VFX Probe
