@@ -1,6 +1,6 @@
 {
-  "last_node_id": 30,
-  "last_link_id": 39,
+  "last_node_id": 32,
+  "last_link_id": 41,
   "nodes": [
     {
       "id": 1,
@@ -23,7 +23,7 @@
           "type": "MODEL",
           "links": [
             8,
-            32
+            34
           ],
           "shape": 3,
           "slot_index": 0
@@ -98,8 +98,8 @@
           "type": "VAE",
           "links": [
             13,
-            26,
-            37
+            28,
+            39
           ],
           "shape": 3,
           "slot_index": 0
@@ -176,7 +176,7 @@
           "type": "CONDITIONING",
           "links": [
             10,
-            34
+            36
           ],
           "shape": 3,
           "slot_index": 0
@@ -211,7 +211,7 @@
           "type": "STRING",
           "links": [
             4,
-            27
+            29
           ],
           "shape": 3,
           "slot_index": 0
@@ -484,8 +484,8 @@
           "links": [
             14,
             15,
-            17,
-            21
+            18,
+            24
           ],
           "shape": 3,
           "slot_index": 0
@@ -533,8 +533,8 @@
         -260
       ],
       "size": [
-        280,
-        140
+        320,
+        120
       ],
       "flags": {},
       "order": 14,
@@ -551,7 +551,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            16
+            16,
+            17
           ],
           "shape": 3,
           "slot_index": 0
@@ -568,18 +569,116 @@
       "title": "Extract 3D Normals (DSINE)"
     },
     {
+      "id": 29,
+      "type": "DepthAnythingV2Preprocessor",
+      "pos": [
+        40,
+        -260
+      ],
+      "size": [
+        320,
+        120
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            19,
+            20
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DepthAnythingV2Preprocessor"
+      },
+      "widgets_values": [
+        "depth_anything_v2_vitl.pth",
+        1024
+      ],
+      "title": "Extract Depth (Depth Anything V2)"
+    },
+    {
+      "id": 31,
+      "type": "PreviewImage",
+      "pos": [
+        -320,
+        -110
+      ],
+      "size": [
+        320,
+        310
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 16
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Preview: DSINE 3D Normals"
+    },
+    {
+      "id": 30,
+      "type": "PreviewImage",
+      "pos": [
+        40,
+        -110
+      ],
+      "size": [
+        320,
+        310
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 19
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Preview: Depth Map"
+    },
+    {
       "id": 15,
       "type": "StudioLightRig",
       "pos": [
         -320,
-        -90
+        230
       ],
       "size": [
         340,
-        520
+        530
       ],
       "flags": {},
-      "order": 15,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -590,12 +689,12 @@
         {
           "name": "normals_optional",
           "type": "IMAGE",
-          "link": 16
+          "link": 17
         },
         {
           "name": "depth_optional",
           "type": "IMAGE",
-          "link": 18
+          "link": 20
         }
       ],
       "outputs": [
@@ -603,7 +702,8 @@
           "name": "relighting_map",
           "type": "IMAGE",
           "links": [
-            22
+            21,
+            23
           ],
           "shape": 3,
           "slot_index": 0
@@ -612,7 +712,7 @@
           "name": "probe_preview",
           "type": "IMAGE",
           "links": [
-            20
+            22
           ],
           "shape": 3,
           "slot_index": 1
@@ -621,7 +721,7 @@
           "name": "lighting_prompt",
           "type": "STRING",
           "links": [
-            28
+            30
           ],
           "shape": 3,
           "slot_index": 2
@@ -665,21 +765,21 @@
       "id": 16,
       "type": "PreviewImage",
       "pos": [
-        -320,
-        460
+        40,
+        230
       ],
       "size": [
-        340,
-        220
+        320,
+        230
       ],
       "flags": {},
-      "order": 16,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 20
+          "link": 22
         }
       ],
       "outputs": [],
@@ -690,29 +790,57 @@
       "title": "VFX Probes & Studio Radar"
     },
     {
+      "id": 32,
+      "type": "PreviewImage",
+      "pos": [
+        40,
+        490
+      ],
+      "size": [
+        320,
+        270
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 21
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Preview: Pure Relighting Field (VFX Isolation)"
+    },
+    {
       "id": 17,
       "type": "StudioPhotometricComposite",
       "pos": [
-        60,
-        -260
+        -320,
+        790
       ],
       "size": [
-        300,
+        340,
         220
       ],
       "flags": {},
-      "order": 17,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 21
+          "link": 24
         },
         {
           "name": "lighting_map",
           "type": "IMAGE",
-          "link": 22
+          "link": 23
         }
       ],
       "outputs": [
@@ -720,7 +848,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            23
+            25
           ],
           "shape": 3,
           "slot_index": 0
@@ -742,21 +870,21 @@
       "id": 18,
       "type": "SIShadowHighlight",
       "pos": [
-        60,
-        0
+        -320,
+        1040
       ],
       "size": [
-        300,
+        340,
         180
       ],
       "flags": {},
-      "order": 18,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 23
+          "link": 25
         }
       ],
       "outputs": [
@@ -764,8 +892,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            24,
-            25
+            26,
+            27
           ],
           "shape": 3,
           "slot_index": 0
@@ -787,21 +915,21 @@
       "id": 19,
       "type": "PreviewImage",
       "pos": [
-        60,
-        220
+        40,
+        790
       ],
       "size": [
-        300,
-        300
+        320,
+        320
       ],
       "flags": {},
-      "order": 19,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 24
+          "link": 26
         }
       ],
       "outputs": [],
@@ -815,26 +943,26 @@
       "id": 20,
       "type": "VAEEncode",
       "pos": [
-        60,
-        550
+        40,
+        1140
       ],
       "size": [
-        200,
-        60
+        320,
+        80
       ],
       "flags": {},
-      "order": 20,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
           "name": "pixels",
           "type": "IMAGE",
-          "link": 25
+          "link": 27
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 26
+          "link": 28
         }
       ],
       "outputs": [
@@ -842,7 +970,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            35
+            37
           ],
           "shape": 3,
           "slot_index": 0
@@ -866,18 +994,18 @@
         80
       ],
       "flags": {},
-      "order": 21,
+      "order": 25,
       "mode": 0,
       "inputs": [
         {
           "name": "string_a",
           "type": "STRING",
-          "link": 27
+          "link": 29
         },
         {
           "name": "string_b",
           "type": "STRING",
-          "link": 28
+          "link": 30
         }
       ],
       "outputs": [
@@ -885,8 +1013,8 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            29,
-            30
+            31,
+            32
           ],
           "shape": 3,
           "slot_index": 0
@@ -910,13 +1038,13 @@
         120
       ],
       "flags": {},
-      "order": 22,
+      "order": 26,
       "mode": 0,
       "inputs": [
         {
           "name": "source",
           "type": "STRING",
-          "link": 29
+          "link": 31
         }
       ],
       "outputs": [
@@ -946,7 +1074,7 @@
         100
       ],
       "flags": {},
-      "order": 23,
+      "order": 27,
       "mode": 0,
       "inputs": [
         {
@@ -957,7 +1085,7 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 30
+          "link": 32
         }
       ],
       "outputs": [
@@ -965,7 +1093,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            31
+            33
           ],
           "shape": 3,
           "slot_index": 0
@@ -991,13 +1119,13 @@
         58
       ],
       "flags": {},
-      "order": 24,
+      "order": 28,
       "mode": 0,
       "inputs": [
         {
           "name": "conditioning",
           "type": "CONDITIONING",
-          "link": 31
+          "link": 33
         }
       ],
       "outputs": [
@@ -1005,7 +1133,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            33
+            35
           ],
           "shape": 3,
           "slot_index": 0
@@ -1031,28 +1159,28 @@
         300
       ],
       "flags": {},
-      "order": 25,
+      "order": 29,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 32
+          "link": 34
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 33
+          "link": 35
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 34
+          "link": 36
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 35
+          "link": 37
         }
       ],
       "outputs": [
@@ -1060,7 +1188,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            36
+            38
           ],
           "shape": 3,
           "slot_index": 0
@@ -1092,18 +1220,18 @@
         60
       ],
       "flags": {},
-      "order": 26,
+      "order": 30,
       "mode": 0,
       "inputs": [
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 36
+          "link": 38
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 37
+          "link": 39
         }
       ],
       "outputs": [
@@ -1111,8 +1239,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            38,
-            39
+            40,
+            41
           ],
           "shape": 3,
           "slot_index": 0
@@ -1136,13 +1264,13 @@
         100
       ],
       "flags": {},
-      "order": 27,
+      "order": 31,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 38
+          "link": 40
         }
       ],
       "outputs": [],
@@ -1166,13 +1294,13 @@
         400
       ],
       "flags": {},
-      "order": 28,
+      "order": 32,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 39
+          "link": 41
         }
       ],
       "outputs": [],
@@ -1181,76 +1309,6 @@
       },
       "widgets_values": [],
       "title": "Preview: Final Lit Result"
-    },
-    {
-      "id": 29,
-      "type": "DepthAnythingV2Preprocessor",
-      "pos": [
-        -320,
-        690
-      ],
-      "size": [
-        340,
-        120
-      ],
-      "flags": {},
-      "order": 29,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 17
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            18,
-            19
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "DepthAnythingV2Preprocessor"
-      },
-      "widgets_values": [
-        "depth_anything_v2_vitl.pth",
-        1024
-      ],
-      "title": "Extract Depth (Depth Anything V2)"
-    },
-    {
-      "id": 30,
-      "type": "PreviewImage",
-      "pos": [
-        -320,
-        830
-      ],
-      "size": [
-        340,
-        240
-      ],
-      "flags": {},
-      "order": 30,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 19
-        }
-      ],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "title": "Preview: Depth Map"
     }
   ],
   "links": [
@@ -1378,24 +1436,24 @@
       16,
       14,
       0,
+      31,
+      0,
+      "IMAGE"
+    ],
+    [
+      17,
+      14,
+      0,
       15,
       1,
       "IMAGE"
     ],
     [
-      17,
+      18,
       12,
       0,
       29,
       0,
-      "IMAGE"
-    ],
-    [
-      18,
-      29,
-      0,
-      15,
-      2,
       "IMAGE"
     ],
     [
@@ -1408,6 +1466,22 @@
     ],
     [
       20,
+      29,
+      0,
+      15,
+      2,
+      "IMAGE"
+    ],
+    [
+      21,
+      15,
+      0,
+      32,
+      0,
+      "IMAGE"
+    ],
+    [
+      22,
       15,
       1,
       16,
@@ -1415,7 +1489,15 @@
       "IMAGE"
     ],
     [
-      21,
+      23,
+      15,
+      0,
+      17,
+      1,
+      "IMAGE"
+    ],
+    [
+      24,
       12,
       0,
       17,
@@ -1423,15 +1505,7 @@
       "IMAGE"
     ],
     [
-      22,
-      15,
-      0,
-      17,
-      1,
-      "IMAGE"
-    ],
-    [
-      23,
+      25,
       17,
       0,
       18,
@@ -1439,7 +1513,7 @@
       "IMAGE"
     ],
     [
-      24,
+      26,
       18,
       0,
       19,
@@ -1447,7 +1521,7 @@
       "IMAGE"
     ],
     [
-      25,
+      27,
       18,
       0,
       20,
@@ -1455,7 +1529,7 @@
       "IMAGE"
     ],
     [
-      26,
+      28,
       3,
       0,
       20,
@@ -1463,7 +1537,7 @@
       "VAE"
     ],
     [
-      27,
+      29,
       6,
       0,
       21,
@@ -1471,7 +1545,7 @@
       "STRING"
     ],
     [
-      28,
+      30,
       15,
       2,
       21,
@@ -1479,7 +1553,7 @@
       "STRING"
     ],
     [
-      29,
+      31,
       21,
       0,
       22,
@@ -1487,7 +1561,7 @@
       "STRING"
     ],
     [
-      30,
+      32,
       21,
       0,
       23,
@@ -1495,7 +1569,7 @@
       "STRING"
     ],
     [
-      31,
+      33,
       23,
       0,
       24,
@@ -1503,7 +1577,7 @@
       "CONDITIONING"
     ],
     [
-      32,
+      34,
       1,
       0,
       25,
@@ -1511,7 +1585,7 @@
       "MODEL"
     ],
     [
-      33,
+      35,
       24,
       0,
       25,
@@ -1519,7 +1593,7 @@
       "CONDITIONING"
     ],
     [
-      34,
+      36,
       5,
       0,
       25,
@@ -1527,7 +1601,7 @@
       "CONDITIONING"
     ],
     [
-      35,
+      37,
       20,
       0,
       25,
@@ -1535,7 +1609,7 @@
       "LATENT"
     ],
     [
-      36,
+      38,
       25,
       0,
       26,
@@ -1543,7 +1617,7 @@
       "LATENT"
     ],
     [
-      37,
+      39,
       3,
       0,
       26,
@@ -1551,7 +1625,7 @@
       "VAE"
     ],
     [
-      38,
+      40,
       26,
       0,
       27,
@@ -1559,7 +1633,7 @@
       "IMAGE"
     ],
     [
-      39,
+      41,
       26,
       0,
       28,
@@ -1594,7 +1668,7 @@
         -340,
         -320,
         720,
-        1420
+        1600
       ],
       "color": "#065f46"
     },

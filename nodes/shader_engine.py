@@ -218,12 +218,16 @@ def compute_light_shading(
         dist_to_light = torch.norm(v_to_light, dim=-1, keepdim=True) + 1e-6
         l_vec = v_to_light / dist_to_light
 
-        # Photographic inverse-square falloff normalized to stand distance
-        attenuation = torch.clamp((r_stand ** 2) / (dist_to_light ** 2), min=0.10, max=2.5)
+        # Photographic inverse-square falloff referenced to standard 1.8m portrait stand
+        # d=0.8m -> ~2.2x power & high contrast; d=1.8m -> 1.0x; d=3.5m -> 0.40x; d=7.0m -> 0.12x
+        dist_ratio = 1.8 / dist_to_light
+        attenuation = torch.clamp(torch.pow(dist_ratio, 1.6), min=0.08, max=3.0)
         cast_sh = screen_space_directional_shadow(d, light_vec)
     else:
         l_vec = l_vec_dir
-        attenuation = 1.0
+        dist_val = max(float(distance), 0.3)
+        dist_ratio = 1.8 / dist_val
+        attenuation = float(torch.clamp(torch.tensor(dist_ratio) ** 1.6, min=0.08, max=3.0))
         cast_sh = 1.0
 
     # Dot product N . L
@@ -540,19 +544,45 @@ def render_studio_lighting(
 
     sphere_normals, sphere_mask = render_sphere_normals(half_h, device=device)
 
-    # Matte 18% Grey Ball
+    # 3D sphere surface geometry in probe space (standard 25cm VFX calibration sphere)
+    r_probe = 0.25
+    p_sphere = sphere_normals * r_probe
+
+    # Matte 18% Grey Ball with true 3D Euclidean distance falloff
     grey_shd = torch.zeros_like(sphere_normals)
-    if key_params.get("enabled", True):
-        grey_shd = grey_shd + compute_light_shading(sphere_normals, key_vec, key_col, key_params["intensity"], key_params["modifier"])
-    if fill_params.get("enabled", True):
-        grey_shd = grey_shd + compute_light_shading(sphere_normals, fill_vec, fill_col, fill_params["intensity"], fill_params["modifier"])
-    if rim_params.get("enabled", True):
-        grey_shd = grey_shd + compute_light_shading(sphere_normals, rim_vec, rim_col, rim_params["intensity"], rim_params["modifier"])
+    for p_dict, p_vec, p_col in [
+        (key_params, key_vec, key_col),
+        (fill_params, fill_vec, fill_col),
+        (rim_params, rim_vec, rim_col),
+    ]:
+        if p_dict.get("enabled", True):
+            d_val = max(float(p_dict.get("distance", 1.8)), 0.3)
+            lv_dir = p_vec.to(device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
+            p_light_probe = d_val * lv_dir
+            v_to_probe_light = p_light_probe - p_sphere
+            dist_probe = torch.norm(v_to_probe_light, dim=-1, keepdim=True) + 1e-6
+            l_probe_local = v_to_probe_light / dist_probe
+
+            # Physical inverse-square falloff on the sphere surface referenced to 1.8m standard
+            probe_dist_ratio = 1.8 / dist_probe
+            probe_attenuation = torch.clamp(torch.pow(probe_dist_ratio, 1.5), min=0.10, max=2.8)
+
+            n_dot_l_probe = torch.clamp(torch.sum(sphere_normals * l_probe_local, dim=-1, keepdim=True), min=0.0, max=1.0)
+            mod_preset = MODIFIER_PRESETS.get(p_dict.get("modifier", "Octabox (Soft)"), MODIFIER_PRESETS["Octabox (Soft)"])
+            wrap_p = min(mod_preset.get("wrap_factor", 0.0), 0.45)
+            if wrap_p > 0.0:
+                diff_p = torch.clamp((n_dot_l_probe + wrap_p) / (1.0 + wrap_p), min=0.0, max=1.0)
+            else:
+                diff_p = n_dot_l_probe
+
+            col_t = torch.tensor(p_col, device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
+            grey_shd = grey_shd + diff_p * probe_attenuation * float(p_dict["intensity"]) * col_t
+
     grey_ball = torch.clamp((grey_shd + ambient_intensity) * sphere_mask * 0.72, 0.0, 1.0)
 
-    # Mirror Chrome Ball
+    # Mirror Chrome Ball with distance-dependent specular spot size and intensity
     chrome_ball = torch.zeros_like(sphere_normals)
-    v_vec = torch.tensor([0.0, 0.0, 1.0], device=device).view(1, 1, 1, 3)
+    v_vec = torch.tensor([0.0, 0.0, 1.0], device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
     n_dot_v = torch.sum(sphere_normals * v_vec, dim=-1, keepdim=True)
     refl_rays = 2.0 * n_dot_v * sphere_normals - v_vec
     refl_rays = refl_rays / (torch.norm(refl_rays, dim=-1, keepdim=True) + 1e-7)
@@ -563,10 +593,22 @@ def render_studio_lighting(
         (rim_params, rim_vec, rim_col),
     ]:
         if p.get("enabled", True):
-            lv = vec.to(device=device).view(1, 1, 1, 3)
+            d_val = max(float(p.get("distance", 1.8)), 0.3)
+            lv_dir = vec.to(device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
+            p_light_probe = d_val * lv_dir
+            v_to_probe_light = p_light_probe - p_sphere
+            dist_probe = torch.norm(v_to_probe_light, dim=-1, keepdim=True) + 1e-6
+            lv = v_to_probe_light / dist_probe
+
             r_dot_l = torch.clamp(torch.sum(refl_rays * lv, dim=-1, keepdim=True), min=0.0, max=1.0)
-            spec_spot = torch.pow(r_dot_l, 100.0) * float(p["intensity"]) * 2.2
-            col_t = torch.tensor(col, device=device).view(1, 1, 1, 3)
+
+            # Distance governs apparent angular size of modifier in reflection:
+            # 0.8m -> broad softbox catchlight (exp=32); 1.8m -> exp=95; 5m -> exp=260; 7m -> exp=450 (pinpoint)
+            spec_exp = float(torch.clamp(torch.tensor(32.0 * (d_val / 0.8) ** 1.6), 25.0, 500.0))
+            dist_spec_gain = float(torch.clamp(torch.tensor((1.8 / d_val) ** 1.3), 0.15, 2.6))
+            spec_spot = torch.pow(r_dot_l, spec_exp) * float(p["intensity"]) * 2.2 * dist_spec_gain
+
+            col_t = torch.tensor(col, device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
             chrome_ball = chrome_ball + spec_spot * col_t
 
     chrome_ball = torch.clamp((chrome_ball + ambient_intensity * 0.12) * sphere_mask, 0.0, 1.0)

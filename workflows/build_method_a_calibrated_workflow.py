@@ -237,24 +237,60 @@ def build_method_a():
         output_defs=[],
     )
 
-    # --- ZONE 3: 3D NORMAL EXTRACTION & PHOTOMETRIC COMPOSITING ---
+    # --- ZONE 3: 3D NORMAL EXTRACTION, DEPTH & PHOTOMETRIC COMPOSITING ---
+    # Preprocessors: DSINE and Depth Anything V2
     wb.add_node(
         node_id=14,
         node_type="DSINE-NormalMapPreprocessor",
         title="Extract 3D Normals (DSINE)",
         pos=[-320, -260],
-        size=[280, 140],
+        size=[320, 120],
         widgets_values=[60.0, 5, 1024],
         input_names=[("image", "IMAGE")],
         output_defs=[("IMAGE", "IMAGE")],
     )
 
     wb.add_node(
+        node_id=29,
+        node_type="DepthAnythingV2Preprocessor",
+        title="Extract Depth (Depth Anything V2)",
+        pos=[40, -260],
+        size=[320, 120],
+        widgets_values=["depth_anything_v2_vitl.pth", 1024],
+        input_names=[("image", "IMAGE")],
+        output_defs=[("IMAGE", "IMAGE")],
+    )
+
+    # Side-by-Side Geometry Previews: DSINE Normals (Left) + Depth Map (Right)
+    wb.add_node(
+        node_id=31,
+        node_type="PreviewImage",
+        title="Preview: DSINE 3D Normals",
+        pos=[-320, -110],
+        size=[320, 310],
+        widgets_values=[],
+        input_names=[("images", "IMAGE")],
+        output_defs=[],
+    )
+
+    wb.add_node(
+        node_id=30,
+        node_type="PreviewImage",
+        title="Preview: Depth Map",
+        pos=[40, -110],
+        size=[320, 310],
+        widgets_values=[],
+        input_names=[("images", "IMAGE")],
+        output_defs=[],
+    )
+
+    # Photographic Rig & VFX Light Field Console
+    wb.add_node(
         node_id=15,
         node_type="StudioLightRig",
         title="StudioLightRig (3-Point Photographic Console)",
-        pos=[-320, -90],
-        size=[340, 520],
+        pos=[-320, 230],
+        size=[340, 530],
         widgets_values=[
             "Rembrandt Classic",
             "American Plan (3/4 Shot)",
@@ -282,19 +318,31 @@ def build_method_a():
         node_id=16,
         node_type="PreviewImage",
         title="VFX Probes & Studio Radar",
-        pos=[-320, 460],
-        size=[340, 220],
+        pos=[40, 230],
+        size=[320, 230],
         widgets_values=[],
         input_names=[("images", "IMAGE")],
         output_defs=[],
     )
 
     wb.add_node(
+        node_id=32,
+        node_type="PreviewImage",
+        title="Preview: Pure Relighting Field (VFX Isolation)",
+        pos=[40, 490],
+        size=[320, 270],
+        widgets_values=[],
+        input_names=[("images", "IMAGE")],
+        output_defs=[],
+    )
+
+    # Photometric Composite, Sculptor & Lit Plate Preview
+    wb.add_node(
         node_id=17,
         node_type="StudioPhotometricComposite",
         title="Studio Photometric Composite (Linear Rec.709)",
-        pos=[60, -260],
-        size=[300, 220],
+        pos=[-320, 790],
+        size=[340, 220],
         widgets_values=[
             1.0,    # lighting_strength
             0.05,   # ambient_floor
@@ -313,8 +361,8 @@ def build_method_a():
         node_id=18,
         node_type="SIShadowHighlight",
         title="SI Shadow & Highlight Sculptor",
-        pos=[60, 0],
-        size=[300, 180],
+        pos=[-320, 1040],
+        size=[340, 180],
         widgets_values=[0.20, 0.10, 0.50, 0.50, 1.05],
         input_names=[("image", "IMAGE")],
         output_defs=[("IMAGE", "IMAGE")],
@@ -324,8 +372,8 @@ def build_method_a():
         node_id=19,
         node_type="PreviewImage",
         title="Preview: 3D Lit Proxy Plate (Prior to FLUX)",
-        pos=[60, 220],
-        size=[300, 300],
+        pos=[40, 790],
+        size=[320, 320],
         widgets_values=[],
         input_names=[("images", "IMAGE")],
         output_defs=[],
@@ -335,8 +383,8 @@ def build_method_a():
         node_id=20,
         node_type="VAEEncode",
         title="VAE Encode Lit Plate",
-        pos=[60, 550],
-        size=[200, 60],
+        pos=[40, 1140],
+        size=[320, 80],
         widgets_values=[],
         input_names=[("pixels", "IMAGE"), ("vae", "VAE")],
         output_defs=[("LATENT", "LATENT")],
@@ -445,29 +493,6 @@ def build_method_a():
         output_defs=[],
     )
 
-    # Zone 3: Depth Extraction (Depth Anything V2)
-    wb.add_node(
-        node_id=29,
-        node_type="DepthAnythingV2Preprocessor",
-        title="Extract Depth (Depth Anything V2)",
-        pos=[-320, 690],
-        size=[340, 120],
-        widgets_values=["depth_anything_v2_vitl.pth", 1024],
-        input_names=[("image", "IMAGE")],
-        output_defs=[("IMAGE", "IMAGE")],
-    )
-
-    wb.add_node(
-        node_id=30,
-        node_type="PreviewImage",
-        title="Preview: Depth Map",
-        pos=[-320, 830],
-        size=[340, 240],
-        widgets_values=[],
-        input_names=[("images", "IMAGE")],
-        output_defs=[],
-    )
-
     # --- WIRING LINKS ---
     # Zone 1 Loaders
     wb.connect(2, 0, 5, 0, "CLIP")      # DualCLIP -> Negative
@@ -491,19 +516,23 @@ def build_method_a():
     wb.connect(3, 0, 12, 1, "VAE")      # VAE -> VAEDecode
     wb.connect(12, 0, 13, 0, "IMAGE")   # Draft Image -> Preview
 
-    # Zone 3: DSINE, Depth & StudioLightRig
+    # Zone 3: DSINE, Depth, Previews & StudioLightRig
     wb.connect(12, 0, 14, 0, "IMAGE")   # Draft Image -> DSINE
+    wb.connect(14, 0, 31, 0, "IMAGE")   # DSINE Normals -> Preview: DSINE 3D Normals (Side-by-Side!)
     wb.connect(14, 0, 15, 1, "IMAGE")   # DSINE Normals -> StudioLightRig normals_optional
+
     wb.connect(12, 0, 29, 0, "IMAGE")   # Draft Image -> DepthAnythingV2
+    wb.connect(29, 0, 30, 0, "IMAGE")   # Depth -> Preview: Depth Map (Side-by-Side!)
     wb.connect(29, 0, 15, 2, "IMAGE")   # Depth -> StudioLightRig depth_optional (3D Falloff!)
-    wb.connect(29, 0, 30, 0, "IMAGE")   # Depth -> Depth Preview
-    wb.connect(15, 1, 16, 0, "IMAGE")   # Probe Preview -> PreviewImage
+
+    wb.connect(15, 0, 32, 0, "IMAGE")   # Relighting Map -> Preview: Pure Relighting Field (VFX Isolation!)
+    wb.connect(15, 1, 16, 0, "IMAGE")   # Probe Preview -> VFX Probes & Studio Radar
+    wb.connect(15, 0, 17, 1, "IMAGE")   # Relighting Map -> Composite
 
     # Zone 3: Photometric Composite & Sculptor
     wb.connect(12, 0, 17, 0, "IMAGE")   # Draft Image -> Composite
-    wb.connect(15, 0, 17, 1, "IMAGE")   # Relighting Map -> Composite
     wb.connect(17, 0, 18, 0, "IMAGE")   # Composite -> SIShadowHighlight
-    wb.connect(18, 0, 19, 0, "IMAGE")   # Sculpted Lit Image -> Preview
+    wb.connect(18, 0, 19, 0, "IMAGE")   # Sculpted Lit Image -> Preview: 3D Lit Proxy Plate
     wb.connect(18, 0, 20, 0, "IMAGE")   # Sculpted Lit Image -> VAEEncode
     wb.connect(3, 0, 20, 1, "VAE")      # VAE -> VAEEncode
 
@@ -530,7 +559,7 @@ def build_method_a():
     groups = [
         {"title": "ZONE 1: FLUX LOADERS & PROMPT SEPARATION", "bounding": [-1420, -320, 720, 700], "color": "#1f2937"},
         {"title": "ZONE 2: PASS 1 DRAFT GENERATION (STEPS 0 -> 10)", "bounding": [-700, -320, 360, 840], "color": "#1e3a8a"},
-        {"title": "ZONE 3: 3D NORMALS, DEPTH & PHOTOMETRIC COMPOSITING", "bounding": [-340, -320, 720, 1420], "color": "#065f46"},
+        {"title": "ZONE 3: 3D NORMALS, DEPTH & PHOTOMETRIC COMPOSITING", "bounding": [-340, -320, 720, 1600], "color": "#065f46"},
         {"title": "ZONE 4: DUAL-CONDITIONING PROMPT SYNTHESIS", "bounding": [380, -320, 340, 530], "color": "#4c1d95"},
         {"title": "ZONE 5: PASS 2 STOCHASTIC RE-DIFFUSION (THE CALIBRATION LEVER)", "bounding": [720, -320, 780, 720], "color": "#831843"},
     ]
