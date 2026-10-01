@@ -38,23 +38,22 @@ def rgb_to_luminance(x: torch.Tensor) -> torch.Tensor:
 
 def filmic_reinhard_tonemap(x: torch.Tensor, white_point: float = 3.5) -> torch.Tensor:
     """
-    Luminance-governed photographic shoulder tone reproduction.
+    Photographic rational shoulder tone reproduction.
     Preserves 100% 1:1 linear contrast and saturation on standard values (<= 0.90),
-    gently rolling off specular overshoots and highlights without muddy midtone compression.
+    gently rolling off specular overshoots and highlights into display headroom without hard-clipping.
     """
-    lum_in = rgb_to_luminance(x)
-    max_lum = torch.max(lum_in)
-    if max_lum <= 0.90:
+    if torch.max(x) <= 0.90:
         return x
 
     threshold = 0.90
-    w2 = white_point * white_point
-    excess = torch.clamp(lum_in - threshold, min=0.0)
-    compressed_excess = (excess * (1.0 + (excess / w2))) / (1.0 + excess)
-    lum_out = torch.where(lum_in > threshold, threshold + compressed_excess, lum_in)
+    headroom = 1.0 - threshold  # 0.10
+    excess = torch.clamp(x - threshold, min=0.0)
 
-    scale = lum_out / torch.clamp(lum_in, min=1e-6)
-    return x * scale
+    # Rational shoulder: f(e) = (e * headroom) / (e + headroom)
+    # Derivative at excess=0 is exactly 1.0 (seamless C1 continuity with the linear segment).
+    # As e -> inf, f(e) -> headroom (0.10), so x_out strictly approaches 1.00 and NEVER clips.
+    compressed_excess = (excess * headroom) / (excess + headroom)
+    return torch.where(x > threshold, threshold + compressed_excess, x)
 
 
 class StudioPhotometricComposite:
@@ -157,10 +156,11 @@ class StudioPhotometricComposite:
         lit_diffuse = base_linear * colorized_gain
 
         # 6. Extract Specular Highlights & Add Dielectric Specular Catchlights
-        # Gated by base reflectivity to prevent milky washout on dark/black materials
+        # Gated by dielectric Fresnel base (0.12) to ensure black patent leather & metals pop
         if float(specular_kick) > 0.0:
-            spec_peak = torch.clamp((light_linear - 0.75) / 0.25, 0.0, 1.0)
-            specular_component = spec_peak * float(specular_kick) * 0.25 * torch.clamp(base_linear * 2.0, 0.0, 1.0)
+            spec_peak = torch.clamp((light_linear - 0.70) / 0.30, 0.0, 1.0)
+            reflectivity_gate = torch.clamp(0.12 + base_linear * 1.5, 0.0, 1.0)
+            specular_component = spec_peak * float(specular_kick) * 0.35 * reflectivity_gate
             lit_hdr = lit_diffuse + specular_component
         else:
             lit_hdr = lit_diffuse

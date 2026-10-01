@@ -133,10 +133,15 @@ def screen_space_directional_shadow(
 
         sampled_d = F.grid_sample(d_perm, sample_grid, mode="bilinear", padding_mode="border", align_corners=True).permute(0, 2, 3, 1)
 
-        is_closer = (d_in - sampled_d) > bias
+        is_closer = (sampled_d - d_in) > bias
         weight = 1.0 - (s / (steps + 1))
-        occlusion = torch.clamp((d_in - sampled_d - bias) * 15.0, 0.0, 1.0) * is_closer.float() * weight
+        occlusion = torch.clamp((sampled_d - d_in - bias) * 15.0, 0.0, 1.0) * is_closer.float() * weight
         shadow = shadow - occlusion * 0.25
+
+    # Attenuate screen shadow when light is grazing or behind the plane (lz <= 0)
+    lz_val = float(light_vec[2].item() if isinstance(light_vec, torch.Tensor) else light_vec[2])
+    front_factor = max(0.0, min(1.0, lz_val))
+    shadow = 1.0 - (1.0 - shadow) * front_factor
 
     return torch.clamp(shadow, 0.0, 1.0)
 
@@ -188,9 +193,16 @@ def compute_light_shading(
         d = depth.to(device=device, dtype=dtype)
         if d.shape[-1] != 1 and len(d.shape) == 4:
             d = d[..., 0:1]
+        elif len(d.shape) == 3:
+            d = d.unsqueeze(-1)
+        d = torch.nan_to_num(d, nan=0.0, posinf=1.0, neginf=0.0)
 
         # 3D Camera-Space Back-Projection (FOV = 40 deg, standard portrait / 50mm lens)
         B, H, W, _ = normals.shape
+        if d.shape[1] != H or d.shape[2] != W:
+            d_perm = d.permute(0, 3, 1, 2)
+            d = F.interpolate(d_perm, size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
+
         tan_half_fov = 0.364  # math.tan(math.radians(20.0))
         y_coords, x_coords = torch.meshgrid(
             torch.linspace(1.0, -1.0, H, device=device, dtype=dtype),
@@ -200,18 +212,22 @@ def compute_light_shading(
         x_grid = x_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
         y_grid = y_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
 
-        # Scale relative depth d to camera space Z (subject anchored at 2.0m, range 1.5m to 4.5m)
+        # Scale relative depth d to camera space Z in standard OpenGL convention:
+        # Camera is at (0, 0, 0) looking down -Z.
+        # Subject is centered at Z = -2.0m. Foreground nose (d_norm=1.0) is at Z = -1.5m.
+        # Background (d_norm=0.0) is at Z = -4.5m.
         d_min = torch.min(d)
         d_max = torch.max(d)
         d_norm = (d - d_min) / (d_max - d_min + 1e-6)
-        z_pos = 1.5 + (1.0 - d_norm) * 3.0
-        x_pos = x_grid * tan_half_fov * z_pos
-        y_pos = y_grid * tan_half_fov * z_pos
+        z_pos = -(1.5 + (1.0 - d_norm) * 3.0)
+        x_pos = x_grid * tan_half_fov * (-z_pos)
+        y_pos = y_grid * tan_half_fov * (-z_pos)
         p_surf = torch.cat([x_pos, y_pos, z_pos], dim=-1)
 
-        # Light head position relative to subject center (0, 0, 2.0m) at specified stand radius (distance in meters)
+        # Light head position relative to subject center (0, 0, -2.0m) at specified stand radius.
+        # For frontal key (lz > 0), light moves towards camera +Z to position (0, 0, -2.0 + distance).
         r_stand = max(float(distance), 0.3)
-        p_light = torch.tensor([0.0, 0.0, 2.0], device=device, dtype=dtype).view(1, 1, 1, 3) + r_stand * l_vec_dir
+        p_light = torch.tensor([0.0, 0.0, -2.0], device=device, dtype=dtype).view(1, 1, 1, 3) + r_stand * l_vec_dir
 
         # True per-pixel divergent light vector & Euclidean distance
         v_to_light = p_light - p_surf
@@ -606,8 +622,9 @@ def render_studio_lighting(
             r_dot_l = torch.clamp(torch.sum(refl_rays * lv, dim=-1, keepdim=True), min=0.0, max=1.0)
 
             # Distance governs apparent angular size of modifier in reflection:
-            # 0.8m -> broad softbox catchlight (exp=32); 1.8m -> exp=95; 5m -> exp=260; 7m -> exp=450 (pinpoint)
-            spec_exp = float(torch.clamp(torch.tensor(32.0 * (d_val / 0.8) ** 1.6), 25.0, 500.0))
+            mod_preset = MODIFIER_PRESETS.get(p.get("modifier", "Octabox (Soft)"), MODIFIER_PRESETS["Octabox (Soft)"])
+            base_power = mod_preset.get("specular_power", 32.0)
+            spec_exp = float(torch.clamp(torch.tensor(base_power * (d_val / 1.8) ** 1.5), 12.0, 600.0))
             dist_spec_gain = float(torch.clamp(torch.tensor((1.8 / d_val) ** 1.3), 0.15, 2.6))
             spec_spot = torch.pow(r_dot_l, spec_exp) * float(p["intensity"]) * 2.2 * dist_spec_gain
 

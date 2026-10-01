@@ -11,10 +11,15 @@ import math
 from typing import Tuple, Dict, Any
 
 
+def srgb_channel_to_linear(c: float) -> float:
+    """Converts a standard sRGB channel [0, 1] to linear Rec.709 photometric space."""
+    return c / 12.92 if c <= 0.04045 else math.pow((c + 0.055) / 1.055, 2.4)
+
+
 def kelvin_to_rgb(kelvin: float) -> Tuple[float, float, float]:
     """
     Converts a color temperature in Kelvin (1000K - 12000K) to linear normalized RGB (0.0 - 1.0).
-    Uses the analytical Tanner Helland Planckian locus approximation.
+    Uses Tanner Helland Planckian locus approximation converted to true linear Rec.709 radiance.
     """
     temp = max(1000.0, min(12000.0, float(kelvin))) / 100.0
 
@@ -42,7 +47,12 @@ def kelvin_to_rgb(kelvin: float) -> Tuple[float, float, float]:
         b = 138.5177312231 * math.log(temp - 10.0) - 305.0447927307
         b = max(0.0, min(255.0, b))
 
-    return (r / 255.0, g / 255.0, b / 255.0)
+    sr, sg, sb = r / 255.0, g / 255.0, b / 255.0
+    return (
+        srgb_channel_to_linear(sr),
+        srgb_channel_to_linear(sg),
+        srgb_channel_to_linear(sb),
+    )
 
 
 def kelvin_to_mood(kelvin: float) -> str:

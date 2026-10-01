@@ -59,11 +59,6 @@ class StudioLightRig:
                     "label_on": "Invert Y (DirectX)",
                     "label_off": "Standard (OpenGL)",
                 }),
-                "invert_normals_x": ("BOOLEAN", {
-                    "default": True,
-                    "label_on": "Invert X (DSINE / ControlNet)",
-                    "label_off": "Standard (OpenGL / Blender)",
-                }),
 
                 # --- KEY LIGHT ---
                 "key_enabled": ("BOOLEAN", {
@@ -228,30 +223,29 @@ class StudioLightRig:
         framing: str = "Portrait (Classical Bust)",
         ambient_intensity: float = 0.05,
         invert_normals_y: bool = False,
-        invert_normals_x: bool = True,
         key_enabled: bool = True,
         key_azimuth: float = 45.0,
         key_elevation: float = 35.0,
+        key_distance: float = 1.8,
         key_intensity: float = 1.0,
         key_kelvin: int = 5500,
         key_modifier: str = "Octabox (Soft)",
         fill_enabled: bool = True,
         fill_azimuth: float = -30.0,
         fill_elevation: float = 15.0,
+        fill_distance: float = 2.5,
         fill_intensity: float = 0.35,
         fill_kelvin: int = 4800,
         fill_modifier: str = "Octabox (Soft)",
         rim_enabled: bool = True,
         rim_azimuth: float = 160.0,
         rim_elevation: float = 45.0,
+        rim_distance: float = 1.5,
         rim_intensity: float = 1.1,
         rim_kelvin: int = 6500,
         rim_modifier: str = "Stripbox",
         normal_boost: float = 2.50,
         ao_anchoring: float = 0.65,
-        key_distance: float = 1.8,
-        fill_distance: float = 2.5,
-        rim_distance: float = 1.5,
         scene_3d: Optional[Dict[str, Any]] = None,
         normals_optional: Optional[torch.Tensor] = None,
         depth_optional: Optional[torch.Tensor] = None,
@@ -263,7 +257,7 @@ class StudioLightRig:
         # 1. Unpack scene_3d if provided
         active_normals = normals_optional
         active_depth = depth_optional
-        effective_invert_x = invert_normals_x
+        effective_invert_x = kwargs.get("invert_normals_x", True)
         if scene_3d is not None and isinstance(scene_3d, dict):
             if active_normals is None:
                 active_normals = scene_3d.get("normals")

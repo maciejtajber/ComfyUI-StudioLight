@@ -26,8 +26,8 @@ class SIShadowHighlight:
 
     def adjust(self, image, shadow_amount, highlight_amount, shadow_tonal_width, highlight_tonal_width, midtone_contrast):
         img = image.clone()
-        # Luminance L (batch, height, width, 1)
-        lum = 0.299 * img[..., 0:1] + 0.587 * img[..., 1:2] + 0.114 * img[..., 2:3]
+        # Luminance L (Rec.709)
+        lum = 0.2126 * img[..., 0:1] + 0.7152 * img[..., 1:2] + 0.0722 * img[..., 2:3]
         
         # Shadow mask (higher weight on dark pixels)
         shadow_mask = torch.pow(torch.clamp(1.0 - lum, 0.0, 1.0), shadow_tonal_width)
@@ -35,11 +35,11 @@ class SIShadowHighlight:
         # Highlight mask (higher weight on bright pixels)
         highlight_mask = torch.pow(torch.clamp(lum, 0.0, 1.0), highlight_tonal_width)
         
-        # Apply shadow lift/crush
-        img = img + shadow_mask * shadow_amount
-        
-        # Apply highlight lift/crush
-        img = img - highlight_mask * highlight_amount
+        # Multiplicative luminance gain preserves 100% color fidelity and saturation
+        # shadow_amount > 0 lifts shadows; < 0 deepens/crushes shadows
+        # highlight_amount > 0 boosts specular kicks; < 0 dims highlights
+        gain = 1.0 + shadow_mask * shadow_amount + highlight_mask * highlight_amount
+        img = img * torch.clamp(gain, min=0.0)
         
         # Midtone contrast
         if midtone_contrast != 1.0:

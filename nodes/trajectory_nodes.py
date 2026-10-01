@@ -144,12 +144,28 @@ class StudioLightTrajectoryInject:
     CATEGORY = "StudioLight/Trajectory"
 
     def inject(self, noisy_xt, clean_x0, relit_x0, strength=1.0):
+        if not isinstance(noisy_xt, dict) or "samples" not in noisy_xt:
+            raise ValueError("StudioLightTrajectoryInject: noisy_xt must be a valid LATENT dict with 'samples'")
+        if not isinstance(clean_x0, dict) or "samples" not in clean_x0:
+            raise ValueError("StudioLightTrajectoryInject: clean_x0 must be a valid LATENT dict with 'samples'")
+        if not isinstance(relit_x0, dict) or "samples" not in relit_x0:
+            raise ValueError("StudioLightTrajectoryInject: relit_x0 must be a valid LATENT dict with 'samples'")
+
         noisy_samples = noisy_xt["samples"]
-        clean_samples = clean_x0["samples"]
-        relit_samples = relit_x0["samples"]
+        target_device = noisy_samples.device
+        target_dtype = noisy_samples.dtype
+
+        clean_samples = clean_x0["samples"].to(device=target_device, dtype=target_dtype)
+        relit_samples = relit_x0["samples"].to(device=target_device, dtype=target_dtype)
+
+        if clean_samples.shape != noisy_samples.shape or relit_samples.shape != noisy_samples.shape:
+            raise ValueError(
+                f"StudioLightTrajectoryInject: Shape mismatch. noisy={noisy_samples.shape}, "
+                f"clean={clean_samples.shape}, relit={relit_samples.shape}."
+            )
 
         # Delta represents pure photometric lighting change
-        delta = (relit_samples - clean_samples) * strength
+        delta = (relit_samples - clean_samples) * float(strength)
         injected_samples = noisy_samples + delta
 
         out = noisy_xt.copy()

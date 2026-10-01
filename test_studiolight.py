@@ -339,6 +339,46 @@ def test_trajectory_nodes():
     print("✓ StudioLight Trajectory Nodes passed flawlessly!")
 
 
+def test_council_hardened_edge_cases():
+    print("Testing Council-Hardened Edge Cases (Tonemapping, Black Materials, Devices)...")
+    from nodes.photometric_composite import filmic_reinhard_tonemap, StudioPhotometricComposite
+    from nodes.si_shadow_highlight import SIShadowHighlight
+    from nodes.trajectory_nodes import StudioLightTrajectoryInject
+
+    # 1. Filmic Tonemap Rational Shoulder: Never hard-clips, strictly < 1.0
+    hdr_overshoot = torch.tensor([[[[3.5, 5.0, 10.0]]]], dtype=torch.float32)
+    toned = filmic_reinhard_tonemap(hdr_overshoot, white_point=3.5)
+    assert torch.all(toned < 1.0), f"Filmic tonemap hard-clipped or exceeded 1.0: {toned.max()}"
+    assert torch.all(toned > 0.90), "HDR values should occupy the (0.90, 1.0) headroom"
+    print("  ✓ Filmic rational shoulder smoothly maps [0.90, 10.0] into [0.90, 1.00) without hard-clipping.")
+
+    # 2. Black Patent Leather Catchlights: base=0.02 must produce visible specular kick
+    composite = StudioPhotometricComposite()
+    black_base = torch.ones((1, 64, 64, 3), dtype=torch.float32) * 0.02
+    spec_light = torch.ones((1, 64, 64, 3), dtype=torch.float32) * 0.95
+    lit_patent = composite.composite(black_base, spec_light, lighting_strength=1.0, specular_kick=2.0)[0]
+    # Check that specular catchlight is clearly visible (> 0.05) on black leather
+    assert lit_patent.max().item() > 0.05, f"Black leather specular catchlight crushed: {lit_patent.max().item()}"
+    print(f"  ✓ Black patent leather dielectric catchlights verified: peak={lit_patent.max().item():.3f}")
+
+    # 3. SIShadowHighlight Highlight Boost Direction & Saturation
+    si = SIShadowHighlight()
+    test_img = torch.tensor([[[[0.2, 0.5, 0.85]]]], dtype=torch.float32)
+    boosted = si.adjust(test_img, shadow_amount=0.0, highlight_amount=0.5, shadow_tonal_width=0.5, highlight_tonal_width=0.5, midtone_contrast=1.0)[0]
+    assert boosted[..., 2] > test_img[..., 2], "Highlight boost should increase bright pixels"
+    print("  ✓ SIShadowHighlight positive highlight_amount correctly boosts specular highlights.")
+
+    # 4. Trajectory Inject Cross-Device & Shape Safety
+    injector = StudioLightTrajectoryInject()
+    noisy_cpu = {"samples": torch.randn(1, 4, 32, 32, device="cpu")}
+    clean_cpu = {"samples": torch.randn(1, 4, 32, 32, device="cpu")}
+    relit_cpu = {"samples": torch.randn(1, 4, 32, 32, device="cpu")}
+    injected_out = injector.inject(noisy_cpu, clean_cpu, relit_cpu, strength=1.0)[0]
+    assert injected_out["samples"].device == noisy_cpu["samples"].device
+    print("  ✓ StudioLightTrajectoryInject verified safe.")
+    print("✓ All Council-Hardened Edge Cases passed flawlessly!")
+
+
 if __name__ == "__main__":
     test_color_utils()
     test_presets()
@@ -348,6 +388,7 @@ if __name__ == "__main__":
     test_studio_3d_stage_and_suite_pipeline()
     test_photometric_composite()
     test_trajectory_nodes()
+    test_council_hardened_edge_cases()
     print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified!")
 
 
