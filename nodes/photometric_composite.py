@@ -38,13 +38,21 @@ def rgb_to_luminance(x: torch.Tensor) -> torch.Tensor:
 
 def filmic_reinhard_tonemap(x: torch.Tensor, white_point: float = 3.5) -> torch.Tensor:
     """
-    Luminance-governed extended Reinhard tone reproduction.
-    Guarantees zero hue-shift clipping, preserves chromaticity ratios,
-    and maintains non-zero highlight derivative (C'(x) > 0).
+    Luminance-governed photographic shoulder tone reproduction.
+    Preserves 100% 1:1 linear contrast and saturation on standard values (<= 0.90),
+    gently rolling off specular overshoots and highlights without muddy midtone compression.
     """
     lum_in = rgb_to_luminance(x)
+    max_lum = torch.max(lum_in)
+    if max_lum <= 0.90:
+        return x
+
+    threshold = 0.90
     w2 = white_point * white_point
-    lum_out = (lum_in * (1.0 + (lum_in / w2))) / (1.0 + lum_in)
+    excess = torch.clamp(lum_in - threshold, min=0.0)
+    compressed_excess = (excess * (1.0 + (excess / w2))) / (1.0 + excess)
+    lum_out = torch.where(lum_in > threshold, threshold + compressed_excess, lum_in)
+
     scale = lum_out / torch.clamp(lum_in, min=1e-6)
     return x * scale
 
@@ -68,7 +76,7 @@ class StudioPhotometricComposite:
                     "step": 0.05,
                 }),
                 "ambient_floor": ("FLOAT", {
-                    "default": 0.05,
+                    "default": 0.0,
                     "min": 0.0,
                     "max": 0.50,
                     "step": 0.01,
@@ -108,8 +116,8 @@ class StudioPhotometricComposite:
         image: torch.Tensor,
         lighting_map: torch.Tensor,
         lighting_strength: float = 1.0,
-        ambient_floor: float = 0.05,
-        specular_kick: float = 1.15,
+        ambient_floor: float = 0.0,
+        specular_kick: float = 0.0,
         chroma_bleed: float = 0.40,
         filmic_white_point: float = 3.5,
     ):
@@ -133,9 +141,12 @@ class StudioPhotometricComposite:
         base_linear = srgb_to_linear(img)
         light_linear = srgb_to_linear(light_resized) * float(lighting_strength)
 
-        # 3. Dynamic Ambient Modulation
-        amb = max(float(ambient_floor), 0.01)
-        effective_gain = amb + (1.0 - amb) * light_linear
+        # 3. Dynamic Ambient Modulation (Zero double-flooring: physical ambient already exists in lighting_map)
+        amb = max(float(ambient_floor), 0.0)
+        if amb > 0.0:
+            effective_gain = amb + (1.0 - amb) * light_linear
+        else:
+            effective_gain = light_linear
 
         # 4. Luminance-Governed Kelvin Transfer
         diff_lum = rgb_to_luminance(effective_gain)

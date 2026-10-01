@@ -345,7 +345,7 @@ def build_method_a():
         size=[340, 220],
         widgets_values=[
             1.0,    # lighting_strength
-            0.05,   # ambient_floor
+            0.0,    # ambient_floor (LOCKED TO 0.0 - PREVENTS SHADOW LIFTING / MILKY MUD!)
             0.0,    # specular_kick (LOCKED TO 0.0 - PREVENTS MILKY LEATHER BLOWOUT!)
             0.40,   # chroma_bleed
             3.5,    # filmic_white_point
@@ -363,7 +363,7 @@ def build_method_a():
         title="SI Shadow & Highlight Sculptor",
         pos=[-320, 1040],
         size=[340, 180],
-        widgets_values=[0.20, 0.10, 0.50, 0.50, 1.05],
+        widgets_values=[0.0, 0.0, 0.50, 0.50, 1.0],  # neutral pass-through (shadow_amount: 0.0, highlight_amount: 0.0)
         input_names=[("image", "IMAGE")],
         output_defs=[("IMAGE", "IMAGE")],
     )
