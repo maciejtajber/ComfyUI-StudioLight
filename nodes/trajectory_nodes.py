@@ -5,10 +5,19 @@ for FLUX flow-matching and diffusion models in ComfyUI.
 """
 
 import torch
-import comfy.sample
-import comfy.samplers
-import comfy.utils
-import latent_preview
+
+try:
+    import comfy.sample
+    import comfy.samplers
+    import comfy.utils
+    import latent_preview
+    COMFY_AVAILABLE = True
+    SAMPLERS_LIST = comfy.samplers.KSampler.SAMPLERS
+    SCHEDULERS_LIST = comfy.samplers.KSampler.SCHEDULERS
+except (ImportError, ModuleNotFoundError):
+    COMFY_AVAILABLE = False
+    SAMPLERS_LIST = ["euler"]
+    SCHEDULERS_LIST = ["simple"]
 
 
 class StudioLightTrajectorySplitter:
@@ -31,8 +40,8 @@ class StudioLightTrajectorySplitter:
                 "steps": ("INT", {"default": 30, "min": 1, "max": 10000}),
                 "split_step": ("INT", {"default": 10, "min": 1, "max": 10000}),
                 "cfg": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 100.0, "step": 0.1}),
-                "sampler_name": (comfy.samplers.KSampler.SAMPLERS, {"default": "euler"}),
-                "scheduler": (comfy.samplers.KSampler.SCHEDULERS, {"default": "simple"}),
+                "sampler_name": (SAMPLERS_LIST, {"default": "euler"}),
+                "scheduler": (SCHEDULERS_LIST, {"default": "simple"}),
                 "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             }
         }
@@ -56,6 +65,8 @@ class StudioLightTrajectorySplitter:
         scheduler,
         denoise=1.0,
     ):
+        if not COMFY_AVAILABLE:
+            raise RuntimeError("StudioLightTrajectorySplitter requires ComfyUI to be installed and running.")
         latent_samples = latent_image["samples"]
         latent_samples = comfy.sample.fix_empty_latent_channels(model, latent_samples)
 

@@ -238,6 +238,8 @@ class Studio3DStage:
                 "head_blur_radius": head_blur_radius,
                 "pose_locked": pose_locked,
                 "custom_glb_path": custom_glb_path,
+                "is_stage_asset": True,
+                "is_built_in": (rendered_normals is None),
             }
         }
 

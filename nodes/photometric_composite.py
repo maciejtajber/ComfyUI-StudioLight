@@ -41,18 +41,18 @@ def filmic_reinhard_tonemap(x: torch.Tensor, white_point: float = 3.5) -> torch.
     Photographic rational shoulder tone reproduction.
     Preserves 100% 1:1 linear contrast and saturation on standard values (<= 0.90),
     gently rolling off specular overshoots and highlights into display headroom without hard-clipping.
+    Stiffness of shoulder is governed by filmic_white_point.
     """
-    if torch.max(x) <= 0.90:
-        return x
-
     threshold = 0.90
     headroom = 1.0 - threshold  # 0.10
     excess = torch.clamp(x - threshold, min=0.0)
 
-    # Rational shoulder: f(e) = (e * headroom) / (e + headroom)
-    # Derivative at excess=0 is exactly 1.0 (seamless C1 continuity with the linear segment).
-    # As e -> inf, f(e) -> headroom (0.10), so x_out strictly approaches 1.00 and NEVER clips.
-    compressed_excess = (excess * headroom) / (excess + headroom)
+    # Quadratic rational shoulder with C1 continuity at threshold
+    # f(0) = 0, f'(0) = 1.0, f(e) strictly < headroom for all e >= 0
+    # Higher white_point values keep highlights punchier before asymptotic roll-off
+    we = max(float(white_point) - threshold, 0.2)
+    term = excess / we
+    compressed_excess = headroom * (excess * (1.0 + term)) / (excess * (1.0 + term) + headroom)
     return torch.where(x > threshold, threshold + compressed_excess, x)
 
 
@@ -136,9 +136,9 @@ class StudioPhotometricComposite:
         else:
             light_resized = light
 
-        # 2. Linearize both plates to scene-referred linear float space
+        # 2. Linearize Base plate; Lighting map is already pure linear physical radiance from StudioLightRig
         base_linear = srgb_to_linear(img)
-        light_linear = srgb_to_linear(light_resized) * float(lighting_strength)
+        light_linear = light_resized * float(lighting_strength)
 
         # 3. Dynamic Ambient Modulation (Zero double-flooring: physical ambient already exists in lighting_map)
         amb = max(float(ambient_floor), 0.0)

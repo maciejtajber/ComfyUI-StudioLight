@@ -195,14 +195,15 @@ def compute_light_shading(
             d = d[..., 0:1]
         elif len(d.shape) == 3:
             d = d.unsqueeze(-1)
-        d = torch.nan_to_num(d, nan=0.0, posinf=1.0, neginf=0.0)
+        d = torch.nan_to_num(d, nan=0.0, posinf=0.0, neginf=0.0)
 
-        # 3D Camera-Space Back-Projection (FOV = 40 deg, standard portrait / 50mm lens)
+        # 3D Camera-Space Back-Projection (FOV = 40 deg vertical, standard portrait / 50mm lens)
         B, H, W, _ = normals.shape
         if d.shape[1] != H or d.shape[2] != W:
             d_perm = d.permute(0, 3, 1, 2)
             d = F.interpolate(d_perm, size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
 
+        aspect = float(W) / float(H)
         tan_half_fov = 0.364  # math.tan(math.radians(20.0))
         y_coords, x_coords = torch.meshgrid(
             torch.linspace(1.0, -1.0, H, device=device, dtype=dtype),
@@ -212,15 +213,28 @@ def compute_light_shading(
         x_grid = x_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
         y_grid = y_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
 
+        # Robust depth scaling using 1st and 99th percentiles (prevents single-pixel artifact compression)
+        d_flat = d.view(-1)
+        if d_flat.numel() > 1000:
+            d_min = torch.quantile(d_flat, 0.01)
+            d_max = torch.quantile(d_flat, 0.99)
+        else:
+            d_min = torch.min(d)
+            d_max = torch.max(d)
+        d_range = d_max - d_min
+
         # Scale relative depth d to camera space Z in standard OpenGL convention:
         # Camera is at (0, 0, 0) looking down -Z.
         # Subject is centered at Z = -2.0m. Foreground nose (d_norm=1.0) is at Z = -1.5m.
         # Background (d_norm=0.0) is at Z = -4.5m.
-        d_min = torch.min(d)
-        d_max = torch.max(d)
-        d_norm = (d - d_min) / (d_max - d_min + 1e-6)
-        z_pos = -(1.5 + (1.0 - d_norm) * 3.0)
-        x_pos = x_grid * tan_half_fov * (-z_pos)
+        # Guard: If depth map is degenerate/flat, anchor subject stably at Z = -2.0m rather than background.
+        if d_range < 1e-4:
+            z_pos = torch.full_like(d, -2.0)
+        else:
+            d_norm = torch.clamp((d - d_min) / (d_range + 1e-6), 0.0, 1.0)
+            z_pos = -(1.5 + (1.0 - d_norm) * 3.0)
+
+        x_pos = x_grid * tan_half_fov * aspect * (-z_pos)
         y_pos = y_grid * tan_half_fov * (-z_pos)
         p_surf = torch.cat([x_pos, y_pos, z_pos], dim=-1)
 

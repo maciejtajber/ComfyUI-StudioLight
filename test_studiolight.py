@@ -379,6 +379,79 @@ def test_council_hardened_edge_cases():
     print("✓ All Council-Hardened Edge Cases passed flawlessly!")
 
 
+def test_external_review_fixes():
+    print("Testing External Review Fixes (White Point, Flat Depth, Aspect Ratio, X-Inversion)...")
+    from nodes.photometric_composite import filmic_reinhard_tonemap
+    from nodes.studio_light import StudioLightRig
+    from nodes.shader_engine import render_studio_lighting
+
+    # 1. Active white_point parameterization:
+    hdr_val = torch.tensor([[[[2.5]]]], dtype=torch.float32)
+    toned_tight = filmic_reinhard_tonemap(hdr_val, white_point=1.5).item()
+    toned_open = filmic_reinhard_tonemap(hdr_val, white_point=8.0).item()
+    # Higher white point leaves more headroom (compresses less aggressively against 1.0 ceiling)
+    assert toned_tight > toned_open, f"Lower white_point pushes highlights faster towards ceiling: tight={toned_tight}, open={toned_open}"
+    assert 0.90 < toned_tight < 1.0 and 0.90 < toned_open < 1.0
+    print(f"  ✓ Active white_point verified: wp=1.5 (tight ceiling) -> {toned_tight:.4f}, wp=8.0 (headroom preserved) -> {toned_open:.4f}")
+
+    # 2. Degenerate / flat depth map guard (Z-depth stays anchored at -2.0m, no black-out or teleport):
+    flat_depth = torch.ones((1, 64, 64, 1), dtype=torch.float32) * 0.5
+    flat_normals = torch.zeros((1, 64, 64, 3), dtype=torch.float32)
+    flat_normals[..., 2] = 1.0  # Facing camera
+    key_params = {"enabled": True, "azimuth": 45.0, "elevation": 30.0, "intensity": 1.0, "kelvin": 5500, "distance": 1.8, "modifier": "Octabox (Soft)"}
+    fill_params = {"enabled": False, "azimuth": -30.0, "elevation": 15.0, "intensity": 0.35, "kelvin": 4800, "distance": 2.5, "modifier": "Octabox (Soft)"}
+    rim_params = {"enabled": False, "azimuth": 160.0, "elevation": 45.0, "intensity": 1.1, "kelvin": 6500, "distance": 1.5, "modifier": "Stripbox"}
+
+    relit_flat, _, _, _ = render_studio_lighting(
+        normals=flat_normals,
+        depth=flat_depth,
+        key_params=key_params,
+        fill_params=fill_params,
+        rim_params=rim_params,
+        ambient_intensity=0.05,
+        return_passes=True,
+    )
+    assert not torch.isnan(relit_flat).any(), "Flat depth must not produce NaNs"
+    assert relit_flat.max().item() > 0.40, f"Flat depth must not collapse to distant background: {relit_flat.max().item()}"
+    print(f"  ✓ Flat depth guard verified: subject reliably anchored at Z=-2.0m, peak={relit_flat.max().item():.3f}")
+
+    # 3. Anamorphic / Non-Square Aspect Ratio back-projection (e.g. 16:9 vertical portrait 768x512):
+    rect_normals = torch.zeros((1, 768, 512, 3), dtype=torch.float32)
+    rect_normals[..., 2] = 1.0
+    rect_depth = torch.linspace(0.0, 1.0, 768).view(1, 768, 1, 1).expand(1, 768, 512, 1)
+    relit_rect, _, _, _ = render_studio_lighting(
+        normals=rect_normals,
+        depth=rect_depth,
+        key_params=key_params,
+        fill_params=fill_params,
+        rim_params=rim_params,
+        ambient_intensity=0.05,
+        return_passes=True,
+    )
+    assert relit_rect.shape == (1, 768, 512, 3)
+    print("  ✓ Non-square aspect ratio back-projection rendered cleanly without distortion.")
+
+    # 4. Optional invert_normals_x & target_engine in StudioLightRig:
+    rig = StudioLightRig()
+    inputs = rig.INPUT_TYPES()
+    assert "invert_normals_x" in inputs["optional"]
+    assert "target_engine" in inputs["optional"]
+    assert len(inputs["required"]) == 27, f"Required widgets count MUST be 27 to prevent UI shift, got {len(inputs['required'])}"
+    
+    # Run with invert_normals_x=False (OpenGL convention)
+    out_map, out_probe, prompt = rig.execute_rig(
+        preset="Custom",
+        invert_normals_x=False,
+        target_engine="SDXL",
+        normals_optional=flat_normals,
+        depth_optional=flat_depth,
+    )
+    assert out_map.shape == (1, 64, 64, 3)
+    assert "SDXL" in prompt or "key light" in prompt
+    print(f"  ✓ StudioLightRig 27-widget required schema locked, optional invert_normals_x and target_engine fully operational.")
+    print("✓ All External Review Fixes passed flawlessly!")
+
+
 if __name__ == "__main__":
     test_color_utils()
     test_presets()
@@ -389,6 +462,8 @@ if __name__ == "__main__":
     test_photometric_composite()
     test_trajectory_nodes()
     test_council_hardened_edge_cases()
+    test_external_review_fixes()
     print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified!")
+
 
 

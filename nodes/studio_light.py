@@ -198,6 +198,14 @@ class StudioLightRig:
                 "scene_3d": ("SCENE_3D",),
                 "normals_optional": ("IMAGE",),
                 "depth_optional": ("IMAGE",),
+                "invert_normals_x": ("BOOLEAN", {
+                    "default": True,
+                    "label_on": "Invert X (DSINE / Vision)",
+                    "label_off": "Standard (OpenGL / Blender)",
+                }),
+                "target_engine": (["Flux.1 / Flux.2", "Video (Wan / MiniMax)", "SDXL"], {
+                    "default": "Flux.1 / Flux.2",
+                }),
             },
             "hidden": {
                 "prompt": "PROMPT",
@@ -249,6 +257,8 @@ class StudioLightRig:
         scene_3d: Optional[Dict[str, Any]] = None,
         normals_optional: Optional[torch.Tensor] = None,
         depth_optional: Optional[torch.Tensor] = None,
+        invert_normals_x: bool = True,
+        target_engine: str = "Flux.1 / Flux.2",
         prompt: Optional[Dict] = None,
         unique_id: Optional[str] = None,
         extra_pnginfo: Optional[Dict] = None,
@@ -257,7 +267,7 @@ class StudioLightRig:
         # 1. Unpack scene_3d if provided
         active_normals = normals_optional
         active_depth = depth_optional
-        effective_invert_x = kwargs.get("invert_normals_x", True)
+        effective_invert_x = invert_normals_x
         if scene_3d is not None and isinstance(scene_3d, dict):
             if active_normals is None:
                 active_normals = scene_3d.get("normals")
@@ -315,7 +325,6 @@ class StudioLightRig:
         )
 
         # 3. Synthesize High-Signal Photographic Prompt Tokens
-        target_engine = kwargs.get("target_engine", "Flux.1 / Flux.2")
         lighting_prompt = synthesize_high_signal_prompt(
             key_params, fill_params, rim_params, framing=framing, target_engine=target_engine
         )
