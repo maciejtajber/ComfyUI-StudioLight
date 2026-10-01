@@ -59,6 +59,11 @@ class StudioLightRig:
                     "label_on": "Invert Y (DirectX)",
                     "label_off": "Standard (OpenGL)",
                 }),
+                "invert_normals_x": ("BOOLEAN", {
+                    "default": True,
+                    "label_on": "Invert X (DSINE / ControlNet)",
+                    "label_off": "Standard (OpenGL / Blender)",
+                }),
 
                 # --- KEY LIGHT ---
                 "key_enabled": ("BOOLEAN", {
@@ -223,6 +228,7 @@ class StudioLightRig:
         framing: str = "Portrait (Classical Bust)",
         ambient_intensity: float = 0.05,
         invert_normals_y: bool = False,
+        invert_normals_x: bool = True,
         key_enabled: bool = True,
         key_azimuth: float = 45.0,
         key_elevation: float = 35.0,
@@ -257,6 +263,7 @@ class StudioLightRig:
         # 1. Unpack scene_3d if provided
         active_normals = normals_optional
         active_depth = depth_optional
+        effective_invert_x = invert_normals_x
         if scene_3d is not None and isinstance(scene_3d, dict):
             if active_normals is None:
                 active_normals = scene_3d.get("normals")
@@ -264,6 +271,8 @@ class StudioLightRig:
                 active_depth = scene_3d.get("depth")
             if "framing" in scene_3d.get("metadata", {}) and framing == "Portrait (Classical Bust)":
                 framing = scene_3d["metadata"]["framing"]
+            if scene_3d.get("metadata", {}).get("is_stage_asset", False) or scene_3d.get("metadata", {}).get("is_built_in", False):
+                effective_invert_x = False
 
         key_params = {
             "enabled": key_enabled,
@@ -308,6 +317,7 @@ class StudioLightRig:
             framing=framing,
             detected_prompt="",
             return_passes=True,
+            invert_normals_x=effective_invert_x,
         )
 
         # 3. Synthesize High-Signal Photographic Prompt Tokens

@@ -344,6 +344,7 @@ def render_studio_lighting(
     framing: str = "Portrait (Classical Bust)",
     detected_prompt: str = "",
     return_passes: bool = False,
+    invert_normals_x: bool = True,
 ) -> Tuple[torch.Tensor, ...]:
     """
     Renders the complete 3-point photographic studio lighting pass and dual-probe preview.
@@ -424,6 +425,8 @@ def render_studio_lighting(
             n = n.permute(0, 2, 3, 1)
 
         norm_unpacked = n * 2.0 - 1.0
+        if not is_built_in_mannequin and invert_normals_x:
+            norm_unpacked[..., 0] = -norm_unpacked[..., 0]
         if invert_normals_y:
             norm_unpacked[..., 1] = -norm_unpacked[..., 1]
 
