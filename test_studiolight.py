@@ -575,6 +575,30 @@ def test_specular_pass_wiring():
     print("✓ specular_pass wiring passed!")
 
 
+def test_prompt_sanitizer():
+    print("Testing StudioPromptSanitizer node execution...")
+    from nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+    assert "StudioPromptSanitizer" in NODE_CLASS_MAPPINGS
+    assert NODE_DISPLAY_NAME_MAPPINGS["StudioPromptSanitizer"] == "StudioLight Prompt Sanitizer (Auto-Albedo)"
+
+    sanitizer = NODE_CLASS_MAPPINGS["StudioPromptSanitizer"]()
+    test_prompt = "editorial portrait of a woman holding a glossy black patent leather handbag, liquid chrome jewelry, tailored wool coat"
+    p1, p2 = sanitizer.sanitize(test_prompt)
+
+    # Pass 1 checks
+    assert "smooth leather" in p1, "High-gloss leather must become smooth leather"
+    assert "matte brushed metal" in p1, "Chrome must become matte brushed metal"
+    for forbidden in ["glossy", "patent", "chrome"]:
+        assert forbidden not in p1.lower(), f"Forbidden token '{forbidden}' leaked into Pass 1"
+    assert "flat overcast diffuse daylight" in p1, "Default albedo suffix should be appended"
+
+    # Pass 2 checks
+    assert p2 == test_prompt, "Pass 2 must preserve 100% of user prompt verbatim"
+
+    print("  ✓ Decoupling verified: Pass 1 albedo prompt sanitizes high-specular terms; Pass 2 retains original prompt.")
+    print("✓ StudioPromptSanitizer passed!")
+
+
 if __name__ == "__main__":
     test_color_utils()
     test_presets()
@@ -589,6 +613,7 @@ if __name__ == "__main__":
     test_workflow_widget_schema()
     test_depth_polarity_toggle()
     test_specular_pass_wiring()
+    test_prompt_sanitizer()
     print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified!")
 
 
