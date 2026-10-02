@@ -178,7 +178,9 @@ def compute_light_shading(
     distance: float = 1.8,
     return_separate: bool = False,
 ) -> torch.Tensor:
-    """Computes diffuse and Blinn-Phong specular contribution for a single light with 3D distance falloff."""
+    """Computes diffuse and Blinn-Phong specular contribution for a single light.
+    Depth is relative and rescaled per image onto a fixed 3 m Z span (Z=-1.5 near .. -4.5 far); falloff is
+    therefore an art-directable approximation, not metric inverse-square."""
     preset = MODIFIER_PRESETS.get(modifier_name, MODIFIER_PRESETS["Octabox (Soft)"])
     wrap = min(preset.get("wrap_factor", 0.0), 0.45)
     spec_power = preset["specular_power"]
@@ -229,6 +231,7 @@ def compute_light_shading(
         # Background (d_norm=0.0) is at Z = -4.5m.
         # Guard: If depth map is degenerate/flat, anchor subject stably at Z = -2.0m rather than background.
         if d_range < 1e-4:
+            d_norm = torch.ones_like(d)
             z_pos = torch.full_like(d, -2.0)
         else:
             d_norm = torch.clamp((d - d_min) / (d_range + 1e-6), 0.0, 1.0)
@@ -248,16 +251,34 @@ def compute_light_shading(
         dist_to_light = torch.norm(v_to_light, dim=-1, keepdim=True) + 1e-6
         l_vec = v_to_light / dist_to_light
 
-        # Photographic inverse-square falloff referenced to standard 1.8m portrait stand
-        # d=0.8m -> ~2.2x power & high contrast; d=1.8m -> 1.0x; d=3.5m -> 0.40x; d=7.0m -> 0.12x
+        # Empirical (1/d)^1.6 falloff referenced to a 1.8 m portrait stand
         dist_ratio = 1.8 / dist_to_light
-        attenuation = torch.clamp(torch.pow(dist_ratio, 1.6), min=0.08, max=3.0)
+        # Direct point light attenuation: max 3.0 at close distance, 0.0 at infinite distance
+        attenuation = torch.clamp(torch.pow(dist_ratio, 1.6), min=0.0, max=3.0)
+
+        # Smooth distance taper: distant background elements (d_norm < 0.20) smoothly drop to 0% direct strobe light
+        # This keeps distant buildings/sky cold and dark while preserving full irradiance on the subject (d_norm > 0.20)
+        bg_taper = torch.clamp(d_norm / 0.20, 0.0, 1.0)
+        # Smooth Hermite curve: 3*t^2 - 2*t^3
+        bg_taper = bg_taper * bg_taper * (3.0 - 2.0 * bg_taper)
+        attenuation = attenuation * bg_taper
+
+        # Studio Optical Modifier Beam Cone:
+        # A studio modifier (stripbox, snoot, octabox) is aimed forward at the subject center (0, 0, -2.0m).
+        # It does NOT emit light backwards out of the rear of the fixture (e.g. at 166 deg off-axis onto background walls).
+        aim_axis = -l_vec_dir  # Points from light stand head directly towards the subject center
+        dir_from_light = -l_vec
+        cos_beam = torch.sum(dir_from_light * aim_axis, dim=-1, keepdim=True)
+        # Smoothly cut off light emitted past 90 degrees from the fixture's forward aim axis (hemispherical forward emission)
+        beam_gate = torch.clamp(cos_beam * 3.0, 0.0, 1.0)
+        attenuation = attenuation * beam_gate
+
         cast_sh = screen_space_directional_shadow(d, light_vec)
     else:
         l_vec = l_vec_dir
         dist_val = max(float(distance), 0.3)
         dist_ratio = 1.8 / dist_val
-        attenuation = float(torch.clamp(torch.tensor(dist_ratio) ** 1.6, min=0.08, max=3.0))
+        attenuation = float(torch.clamp(torch.tensor(dist_ratio) ** 1.6, min=0.0, max=3.0))
         cast_sh = 1.0
 
     # Dot product N . L
@@ -278,9 +299,12 @@ def compute_light_shading(
     h_norm = torch.norm(h_vec, dim=-1, keepdim=True) + 1e-7
     h_vec = h_vec / h_norm
 
-    # Blinn-Phong Specular (controlled to preserve diffuse contrast)
+    # Blinn-Phong Specular (gated by diffuse horizon to prevent back-facing silhouette leakage)
     n_dot_h = torch.clamp(torch.sum(normals * h_vec, dim=-1, keepdim=True), min=0.0, max=1.0)
-    specular = torch.pow(n_dot_h, spec_power) * spec_strength * 0.35
+    # Physically, specular highlights can only exist on surface microfacets oriented towards the light source (N . L > 0).
+    # Smoothly taper to zero as surface grazes the shadow horizon to eliminate edge halos:
+    horizon_gate = torch.clamp(n_dot_l * 10.0, 0.0, 1.0)
+    specular = torch.pow(n_dot_h, spec_power) * spec_strength * 0.35 * horizon_gate
 
     c_tensor = torch.tensor(light_color, device=device, dtype=dtype).view(1, 1, 1, 3)
     diffuse_rgb = diffuse * float(intensity) * c_tensor * attenuation * cast_sh
@@ -375,6 +399,7 @@ def render_studio_lighting(
     detected_prompt: str = "",
     return_passes: bool = False,
     invert_normals_x: bool = True,
+    invert_depth: bool = False,
 ) -> Tuple[torch.Tensor, ...]:
     """
     Renders the complete 3-point photographic studio lighting pass and dual-probe preview.
@@ -383,6 +408,18 @@ def render_studio_lighting(
       probe_preview:  [1, H, W, 3] in range [0, 1] (Grey ball + Chrome ball + 2D Radar)
     """
     device = get_preferred_device() if normals is None else normals.device
+
+    # Depth polarity: the shader assumes larger value = NEARER to camera (Depth Anything / ZoeDepth-style
+    # "near = white"). Depth maps with near = black are flipped here, range-preserving, before any use
+    # (back-projection, falloff, screen-space shadow and the subject mask all see the corrected map).
+    # The flip normalizes to [0, 1] first so the absolute-valued subject mask (depth > 0.02) stays meaningful.
+    if depth is not None and invert_depth:
+        d_all = torch.nan_to_num(depth.float(), nan=0.0, posinf=0.0, neginf=0.0)
+        d_lo, d_hi = d_all.min(), d_all.max()
+        if float(d_hi - d_lo) > 1e-6:
+            depth = 1.0 - (d_all - d_lo) / (d_hi - d_lo)
+        else:
+            depth = d_all
 
     key_vec = azimuth_elevation_to_vector(key_params["azimuth"], key_params["elevation"])
     key_col = kelvin_to_rgb(key_params["kelvin"])

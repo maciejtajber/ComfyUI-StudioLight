@@ -206,6 +206,13 @@ class StudioLightRig:
                 "target_engine": (["Flux.1 / Flux.2", "Video (Wan / MiniMax)", "SDXL"], {
                     "default": "Flux.1 / Flux.2",
                 }),
+                # NOTE: widget-type optionals serialize in order AFTER the 27 required widgets.
+                # Only ever APPEND new widgets here, never insert, or old workflows shift.
+                "invert_depth": ("BOOLEAN", {
+                    "default": False,
+                    "label_on": "Inverted (near = black)",
+                    "label_off": "Standard (near = white)",
+                }),
             },
             "hidden": {
                 "prompt": "PROMPT",
@@ -214,15 +221,16 @@ class StudioLightRig:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "IMAGE", "STRING")
-    RETURN_NAMES = ("relighting_map", "probe_preview", "lighting_prompt")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "STRING", "IMAGE")
+    RETURN_NAMES = ("relighting_map", "probe_preview", "lighting_prompt", "specular_pass")
     FUNCTION = "execute_rig"
     CATEGORY = "lighting"
     DESCRIPTION = (
         "ComfyUI-StudioLight: Professional Photographic 3-Point Studio Rig.\n"
         "• relighting_map: 32-bit deferred physical lighting pass (Lit proxy plate for Flux).\n"
         "• probe_preview: VFX 18% Grey Ball + Mirror Chrome Ball + 2D Studio Radar.\n"
-        "• lighting_prompt: Concise, high-signal photographic tokens for Flux/SDXL."
+        "• lighting_prompt: Concise, high-signal photographic tokens for Flux/SDXL.\n"
+        "• specular_pass: isolated Blinn-Phong specular lobes (feed StudioPhotometricComposite.specular_map)."
     )
 
     def execute_rig(
@@ -259,6 +267,7 @@ class StudioLightRig:
         depth_optional: Optional[torch.Tensor] = None,
         invert_normals_x: bool = True,
         target_engine: str = "Flux.1 / Flux.2",
+        invert_depth: bool = False,
         prompt: Optional[Dict] = None,
         unique_id: Optional[str] = None,
         extra_pnginfo: Optional[Dict] = None,
@@ -322,6 +331,7 @@ class StudioLightRig:
             detected_prompt="",
             return_passes=True,
             invert_normals_x=effective_invert_x,
+            invert_depth=bool(invert_depth),
         )
 
         # 3. Synthesize High-Signal Photographic Prompt Tokens
@@ -329,7 +339,8 @@ class StudioLightRig:
             key_params, fill_params, rim_params, framing=framing, target_engine=target_engine
         )
 
-        return (relighting_map, probe_preview, lighting_prompt)
+        specular_pass = torch.clamp(spec_pass.float(), 0.0, 1.0)
+        return (relighting_map, probe_preview, lighting_prompt, specular_pass)
 
 
 NODE_CLASS_MAPPINGS = {

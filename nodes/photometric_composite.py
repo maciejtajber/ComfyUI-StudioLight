@@ -30,6 +30,11 @@ def linear_to_srgb(x: torch.Tensor) -> torch.Tensor:
     )
 
 
+# Specular-pass radiance that maps to a full-strength catchlight (hard modifiers at ~1.5 intensity peak
+# at 0.25-0.37, Octabox ~0.10, so soft sources give proportionally gentler catchlights).
+SPEC_PASS_REFERENCE = 0.25
+
+
 def rgb_to_luminance(x: torch.Tensor) -> torch.Tensor:
     """Rec.709 / sRGB Photometric Luminance."""
     weights = torch.tensor([0.212639, 0.715169, 0.072192], device=x.device, dtype=x.dtype).view(1, 1, 1, 3)
@@ -98,7 +103,12 @@ class StudioPhotometricComposite:
                     "max": 10.0,
                     "step": 0.25,
                 }),
-            }
+            },
+            "optional": {
+                # Isolated Blinn-Phong lobes from StudioLightRig.specular_pass. When connected, catchlights are
+                # confined to the real specular lobes instead of any region where the light map exceeds 0.70.
+                "specular_map": ("IMAGE",),
+            },
         }
 
     RETURN_TYPES = ("IMAGE",)
@@ -119,6 +129,7 @@ class StudioPhotometricComposite:
         specular_kick: float = 0.0,
         chroma_bleed: float = 0.40,
         filmic_white_point: float = 3.5,
+        specular_map=None,
     ):
         device = image.device
         img = image.to(device=device, dtype=torch.float32)
@@ -156,9 +167,19 @@ class StudioPhotometricComposite:
         lit_diffuse = base_linear * colorized_gain
 
         # 6. Extract Specular Highlights & Add Dielectric Specular Catchlights
-        # Gated by dielectric Fresnel base (0.12) to ensure black patent leather & metals pop
+        # Reflectivity gate: 0.12 floor (artistic, ~3x real dielectric F0 of 0.04) + albedo term.
         if float(specular_kick) > 0.0:
-            spec_peak = torch.clamp((light_linear - 0.70) / 0.30, 0.0, 1.0)
+            if specular_map is not None:
+                # Lobe-accurate path: peak comes from the rig's isolated specular pass (Kelvin-tinted, per channel).
+                spec = specular_map.to(device=device, dtype=torch.float32)
+                if spec.shape[1:3] != img.shape[1:3]:
+                    spec = F.interpolate(spec.permute(0, 3, 1, 2), size=(img.shape[1], img.shape[2]),
+                                         mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
+                spec = torch.nan_to_num(spec, nan=0.0, posinf=0.0, neginf=0.0)
+                spec_peak = torch.clamp(spec * float(lighting_strength) / SPEC_PASS_REFERENCE, 0.0, 1.0)
+            else:
+                # Legacy path: threshold the summed light map. Veils any broad bright region, not just lobes.
+                spec_peak = torch.clamp((light_linear - 0.70) / 0.30, 0.0, 1.0)
             reflectivity_gate = torch.clamp(0.12 + base_linear * 1.5, 0.0, 1.0)
             specular_component = spec_peak * float(specular_kick) * 0.35 * reflectivity_gate
             lit_hdr = lit_diffuse + specular_component

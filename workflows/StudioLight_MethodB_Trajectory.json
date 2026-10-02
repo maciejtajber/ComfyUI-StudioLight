@@ -543,6 +543,12 @@
           "links": [
             25
           ]
+        },
+        {
+          "name": "specular_pass",
+          "type": "IMAGE",
+          "links": null,
+          "slot_index": 3
         }
       ],
       "properties": {
@@ -556,21 +562,29 @@
         true,
         45.0,
         25.0,
+        1.8,
         1.2,
         5500,
         "Beauty Dish (Silver)",
         true,
         -45.0,
         15.0,
+        1.8,
         0.35,
         4800,
         "Octabox (Soft)",
         true,
         140.0,
         40.0,
+        1.8,
         1.1,
         6500,
-        "Stripbox"
+        "Stripbox",
+        1.0,
+        0.0,
+        true,
+        "Flux.1 / Flux.2",
+        false
       ],
       "title": "ZONE 3: StudioLightRig (Directional 45\u00b0 Console)"
     },

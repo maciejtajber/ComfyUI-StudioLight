@@ -158,7 +158,12 @@
       "rim_elevation": 40.0,
       "rim_intensity": 0.9,
       "rim_kelvin": 6500,
-      "rim_modifier": "Stripbox"
+      "rim_modifier": "Stripbox",
+      "key_distance": 1.8,
+      "fill_distance": 1.8,
+      "rim_distance": 1.8,
+      "normal_boost": 1.0,
+      "ao_anchoring": 0.0
     }
   },
   "14": {

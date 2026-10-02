@@ -465,6 +465,12 @@
           "links": [],
           "shape": 3,
           "slot_index": 2
+        },
+        {
+          "name": "specular_pass",
+          "type": "IMAGE",
+          "links": null,
+          "slot_index": 3
         }
       ],
       "properties": {
@@ -478,21 +484,29 @@
         true,
         45.0,
         35.0,
+        1.8,
         1.2,
         5500,
         "Octabox (Soft)",
         true,
         -30.0,
         15.0,
+        1.8,
         0.35,
         4800,
         "Octabox (Soft)",
         true,
         160.0,
         45.0,
+        1.8,
         1.15,
         6500,
-        "Stripbox"
+        "Stripbox",
+        1.0,
+        0.0,
+        true,
+        "Flux.1 / Flux.2",
+        false
       ],
       "title": "StudioLightRig (3-Point Console)"
     },

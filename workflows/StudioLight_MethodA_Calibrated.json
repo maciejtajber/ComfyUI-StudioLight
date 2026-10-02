@@ -1450,6 +1450,14 @@
           "links": [
             30
           ]
+        },
+        {
+          "name": "specular_pass",
+          "type": "IMAGE",
+          "links": [
+            42
+          ],
+          "slot_index": 3
         }
       ],
       "title": "StudioLightRig (3-Point Photographic Console)",
@@ -1485,7 +1493,8 @@
         1.8,
         0.65,
         true,
-        "Flux.1 / Flux.2"
+        "Flux.1 / Flux.2",
+        false
       ]
     },
     {
@@ -1512,6 +1521,11 @@
           "name": "lighting_map",
           "type": "IMAGE",
           "link": 23
+        },
+        {
+          "name": "specular_map",
+          "type": "IMAGE",
+          "link": 42
         }
       ],
       "outputs": [
@@ -1531,7 +1545,7 @@
       "widgets_values": [
         1.2,
         0.08,
-        0,
+        0.45,
         0.45,
         3.5
       ],
@@ -1866,6 +1880,14 @@
       0,
       28,
       0,
+      "IMAGE"
+    ],
+    [
+      42,
+      15,
+      3,
+      17,
+      2,
       "IMAGE"
     ]
   ],

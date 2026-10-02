@@ -220,7 +220,7 @@ function cleanObsoleteSlots(node) {
     if (!node) return;
 
     const VALID_INPUTS = new Set(["scene_3d", "normals_optional", "depth_optional"]);
-    const VALID_OUTPUTS = new Set(["relighting_map", "probe_preview", "lighting_prompt"]);
+    const VALID_OUTPUTS = new Set(["relighting_map", "probe_preview", "lighting_prompt", "specular_pass"]);
     const OBSOLETE_WIDGETS = new Set(["start_step", "end_step", "conditioning_strength", "weight_type"]);
 
     let changed = false;

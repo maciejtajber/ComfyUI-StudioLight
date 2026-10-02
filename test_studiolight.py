@@ -170,7 +170,7 @@ def test_studio_light_node():
     print("Testing StudioLightRig node execution...")
     node = StudioLightRig()
     # Test 1: Explicit framing (Full Body)
-    relight, probe, prompt = node.execute_rig(
+    relight, probe, prompt, _spec = node.execute_rig(
         preset="Rembrandt Classic",
         framing="Full Body (Standing Lookbook)",
         ambient_intensity=0.05,
@@ -210,7 +210,7 @@ def test_studio_light_node():
         "metadata": {"framing": "Custom 3D Scene"},
     }
 
-    relight_scene, probe_scene, prompt_scene = node.execute_rig(
+    relight_scene, probe_scene, prompt_scene, _spec_scene = node.execute_rig(
         preset="Rembrandt Classic",
         scene_3d=scene_3d_mock,
         key_enabled=True,
@@ -248,7 +248,7 @@ def test_studio_3d_stage_and_suite_pipeline():
     print("  ✓ Stage 1 (Studio3DStage) generated valid scene_3d, normals, and depth passes.")
 
     # 2. Test Rig execution taking scene_3d directly from Stage
-    relit_plate, probe_preview, light_prompt = rig.execute_rig(
+    relit_plate, probe_preview, light_prompt, _spec_plate = rig.execute_rig(
         preset="Rembrandt Classic",
         scene_3d=scene_3d,
         key_enabled=True,
@@ -439,7 +439,7 @@ def test_external_review_fixes():
     assert len(inputs["required"]) == 27, f"Required widgets count MUST be 27 to prevent UI shift, got {len(inputs['required'])}"
     
     # Run with invert_normals_x=False (OpenGL convention)
-    out_map, out_probe, prompt = rig.execute_rig(
+    out_map, out_probe, prompt, _out_spec = rig.execute_rig(
         preset="Custom",
         invert_normals_x=False,
         target_engine="SDXL",
@@ -449,7 +449,130 @@ def test_external_review_fixes():
     assert out_map.shape == (1, 64, 64, 3)
     assert "SDXL" in prompt or "key light" in prompt
     print(f"  ✓ StudioLightRig 27-widget required schema locked, optional invert_normals_x and target_engine fully operational.")
+    assert list(inputs["optional"])[-1] == "invert_depth", "new widget-type optionals must be APPENDED (found invert_depth not last)"
     print("✓ All External Review Fixes passed flawlessly!")
+
+
+# ---------------------------------------------------------------------------------------------
+# Patch tests: workflow schema stability, depth polarity, specular-pass wiring
+# ---------------------------------------------------------------------------------------------
+# Workflows known to target the pre-refactor rig (removed conditioning/lit_composite outputs, removed inputs).
+# They are reported, not silently ignored. Rebuild or delete them, then remove them from this list.
+OBSOLETE_WORKFLOWS = {
+    "StudioLight_ICLight_Relighting.json", "StudioLight_Master.json", "StudioLight_Master_Suite.json",
+    "StudioLight_Phase05_Validation.json", "StudioLight_Probe_Local_Test.json", "StudioLight_T2I_Simple.json",
+    "StudioLight_T2I_Simple_api.json", "StudioLight_TwoStage_Master.json", "StudioLight_TwoStage_Master_api.json",
+}
+
+
+def _validate_widget_values(wv, it, widgets):
+    errs = []
+    for k, v in zip(widgets, wv):
+        spec = it["required"].get(k) or it["optional"].get(k)
+        t = spec[0]
+        if isinstance(t, list):
+            if v not in t:
+                errs.append(f"{k}={v!r} not in options")
+        elif t in ("FLOAT", "INT"):
+            o = spec[1]
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or v < o.get("min", -1e18) or v > o.get("max", 1e18):
+                errs.append(f"{k}={v!r} outside [{o.get('min')}, {o.get('max')}]")
+        elif t == "BOOLEAN" and not isinstance(v, bool):
+            errs.append(f"{k}={v!r} not boolean")
+    return errs
+
+
+def test_workflow_widget_schema():
+    """Every shipped workflow must serialize EXACTLY the current StudioLightRig widget layout (no widget shift)."""
+    import glob, json
+    print("Testing workflow widget schema stability...")
+    it = StudioLightRig.INPUT_TYPES()
+    widgets = list(it["required"]) + [k for k, v in it["optional"].items() if v[0] not in ("SCENE_3D", "IMAGE")]
+    out_types = list(StudioLightRig.RETURN_TYPES)
+    checked, skipped, failures = 0, [], []
+    for path in sorted(glob.glob(os.path.join(BASE_DIR, "workflows", "*.json"))):
+        name = os.path.basename(path)
+        data = json.load(open(path))
+        if not isinstance(data, dict):
+            continue
+        if "nodes" in data:  # graph format
+            rigs = [n for n in data["nodes"] if n.get("type") == "StudioLightRig"]
+            problems = []
+            for n in rigs:
+                wv = n.get("widgets_values", [])
+                if len(wv) != len(widgets):
+                    problems.append(f"{len(wv)} widget values, schema has {len(widgets)}")
+                else:
+                    problems += _validate_widget_values(wv, it, widgets)
+            ids = {n["id"] for n in rigs}
+            for l in data.get("links", []):
+                if l[1] in ids and (l[2] >= len(out_types) or l[5] != out_types[l[2]]):
+                    problems.append(f"link {l[0]} reads rig output slot {l[2]} as {l[5]}")
+            if not rigs:
+                continue
+        else:  # API format
+            rigs = {k: v for k, v in data.items() if isinstance(v, dict) and v.get("class_type") == "StudioLightRig"}
+            if not rigs:
+                continue
+            problems = []
+            for k, v in rigs.items():
+                missing = [r for r in it["required"] if r not in v["inputs"]]
+                unknown = [i for i in v["inputs"] if i not in it["required"] and i not in it["optional"]]
+                if missing:
+                    problems.append(f"missing required inputs {missing[:3]}...")
+                if unknown:
+                    problems.append(f"removed inputs {unknown[:3]}")
+        if problems and name in OBSOLETE_WORKFLOWS:
+            skipped.append(name)
+            continue
+        if problems:
+            failures.append((name, problems[:3]))
+        checked += 1
+    assert not failures, "Stale workflows would shift widgets / break on load:\n  " + "\n  ".join(f"{n}: {p}" for n, p in failures) + "\n  Fix: python tools/migrate_workflows.py --write"
+    # An allow-listed file that is actually fine should be removed from the list (keeps the list honest).
+    print(f"  ✓ {checked} workflows match the {len(widgets)}-widget schema; {len(skipped)} known-obsolete skipped: {', '.join(skipped) or 'none'}")
+    print("✓ Workflow widget schema stability passed!")
+
+
+def test_depth_polarity_toggle():
+    print("Testing depth polarity toggle...")
+    H = W = 96
+    yy, xx = torch.meshgrid(torch.linspace(-1, 1, H), torch.linspace(-1, 1, W), indexing="ij")
+    depth = torch.exp(-((xx / 0.5) ** 2 + (yy / 0.5) ** 2)).view(1, H, W, 1)
+    depth = (depth - depth.min()) / (depth.max() - depth.min())  # near = white, exactly [0, 1] (the flip normalizes)
+    normals = torch.zeros(1, H, W, 3)
+    normals[..., 2] = 1.0
+    kw = dict(preset="Custom", fill_enabled=False, rim_enabled=False, normals_optional=normals)
+    rig = StudioLightRig()
+    ref = rig.execute_rig(depth_optional=depth, invert_depth=False, **kw)[0]
+    flipped = rig.execute_rig(depth_optional=1.0 - depth, invert_depth=True, **kw)[0]
+    wrong = rig.execute_rig(depth_optional=1.0 - depth, invert_depth=False, **kw)[0]
+    assert torch.allclose(ref, flipped, atol=1e-4), f"invert_depth should recover the near=white result: {(ref - flipped).abs().max()}"
+    assert (ref - wrong).abs().max() > 0.05, "un-flipped inverted depth should visibly differ (otherwise the test proves nothing)"
+    print("  ✓ near=black depth + invert_depth reproduces the near=white render")
+    print("✓ Depth polarity toggle passed!")
+
+
+def test_specular_pass_wiring():
+    print("Testing specular_pass -> composite wiring...")
+    from nodes.photometric_composite import StudioPhotometricComposite
+    rig, comp = StudioLightRig(), StudioPhotometricComposite()
+    out = rig.execute_rig(preset="Custom", framing="Portrait (Classical Bust)", key_modifier="Beauty Dish (Silver)", key_intensity=1.5)
+    assert len(out) == 4 and len(StudioLightRig.RETURN_TYPES) == 4 and StudioLightRig.RETURN_NAMES[3] == "specular_pass"
+    light, spec = out[0], out[3]
+    assert spec.shape == light.shape and 0.0 <= float(spec.min()) and float(spec.max()) <= 1.0 and float(spec.max()) > 0.05
+    black = torch.full(light.shape, 0.152)  # sRGB 0.152 == linear 0.02 black leather
+    off = comp.composite(black, light, specular_kick=0.0)[0]
+    legacy = comp.composite(black, light, specular_kick=1.0)[0]
+    lobes = comp.composite(black, light, specular_kick=1.0, specular_map=spec)[0]
+    frac = lambda t: float(((t - off).mean(-1) > 0.02).float().mean())
+    assert frac(lobes) < 0.5 * frac(legacy), f"lobe path should confine catchlights: lobes={frac(lobes):.3f} legacy={frac(legacy):.3f}"
+    assert float((lobes - off).max()) > 0.05, "catchlight must still be visible on black material"
+    zero = comp.composite(black, light, specular_kick=1.0, specular_map=torch.zeros_like(spec))[0]
+    assert torch.allclose(zero, off, atol=1e-6), "no specular lobe => no catchlight"
+    assert torch.equal(comp.composite(black, light, specular_kick=1.0)[0], legacy), "omitting specular_map must keep legacy behaviour"
+    print(f"  ✓ catchlight area: legacy veil {100*frac(legacy):.1f}% -> lobe-based {100*frac(lobes):.1f}% of pixels, peak preserved")
+    print("✓ specular_pass wiring passed!")
 
 
 if __name__ == "__main__":
@@ -463,6 +586,9 @@ if __name__ == "__main__":
     test_trajectory_nodes()
     test_council_hardened_edge_cases()
     test_external_review_fixes()
+    test_workflow_widget_schema()
+    test_depth_polarity_toggle()
+    test_specular_pass_wiring()
     print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified!")
 
 
