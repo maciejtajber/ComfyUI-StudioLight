@@ -6,7 +6,7 @@
 ![ComfyUI Node](https://img.shields.io/badge/ComfyUI-Custom%20Node-000000?style=flat-square)
 ![License: MIT](https://img.shields.io/badge/License-MIT-black?style=flat-square)
 ![Optimized for: Flux.1 Dev | Flux.2 | SDXL](https://img.shields.io/badge/Optimized%20for-Flux.1%20%7C%20Flux.2%20%7C%20SDXL-black?style=flat-square)
-![Tests: 10/10 Passed](https://img.shields.io/badge/Automated%20Suites-10%2F10%20Verified-brightgreen?style=flat-square)
+![Tests: 14/14 Passed](https://img.shields.io/badge/Automated%20Suites-14%2F14%20Verified-brightgreen?style=flat-square)
 ![Status: Production Calibrated](https://img.shields.io/badge/Status-Production%20Calibrated-success?style=flat-square)
 
 ---
@@ -18,11 +18,12 @@
 In standard generative AI, typing `"dramatic golden hour rim light"` is pure lottery—words bleed into facial anatomy and cannot guarantee where photons strike. 
 
 **ComfyUI-StudioLight bridges true 3D studio photography into generative diffusion models:**
-1. **3D Pinhole Camera Back-Projection ($40^\circ$ Portrait FOV):** Unprojects 2D surface normals and depth maps into true OpenGL metric coordinates ($Z = -1.5\text{m}$ to $-4.5\text{m}$).
-2. **Inverse-Square Physical Falloff:** Computes per-light Euclidean stand distance $(1/d)^{1.6}$. Placing a light close to a subject casts upward shadows on background architecture and over-drives foreground specular reflections according to real physics.
-3. **Dual-Sphere VFX Probes & 2D Studio Radar:** Live 0.03s generation of an 18% Neutral Grey Ball, Mirror Chrome Ball, and Top-Down Studio Floorplan Diagram.
-4. **Rational Shoulder Tonemapping & Dielectric Gating:** C1-continuous photographic tonemapping that guarantees values stay strictly $< 1.00$ without clipping, while preserving crisp dielectric catchlights on dark patent leather and wet surfaces.
-5. **Two Battle-Tested Architectures:**
+1. **3D Pinhole Camera Back-Projection ($40^\circ$ Portrait FOV):** Unprojects 2D surface normals and depth maps into true OpenGL metric coordinates ($Z = -1.5\text{m}$ to $-4.5\text{m}$) with anamorphic non-square aspect ratio correction.
+2. **Photographic Power Falloff ($1/d^{1.6}$) & Hermite Distance Taper:** Computes per-light Euclidean stand distance falloff with a smooth background distance taper ($d_{\text{norm}} < 0.20$), preventing studio strobes from bleeding onto distant architectural facades.
+3. **Optical Forward Modifier Beam Cone:** Gates light emission forward towards the subject via modifier beam coning, completely eliminating backward light leakage and architectural edge halos.
+4. **Dedicated Specular Pass & Rational Shoulder Tonemapping:** Isolates a crisp Blinn-Phong dielectric catchlight lobe (2.8% pixel area) mapped through a $C^1$-continuous rational shoulder with active `white_point` headroom control.
+5. **Automatic Albedo Prompt Decoupling (`StudioPromptSanitizer`):** Automatically strips high-specular tokens (`"glossy"`, `"patent"`, `"chrome"`) exclusively for Pass 1 (Steps 0–10) while preserving the complete master prompt for Pass 2, eliminating pre-baked specular blobs on patent leather and metallic surfaces.
+6. **Two Battle-Tested Architectures:**
    * **Method A (2-Stage Calibrated Relighting):** The production workhorse. Combines unlit albedo draft passes with deferred 3D lit proxy plates and stochastic re-diffusion.
    * **Method B (Continuous Trajectory Injection):** Mathematical flow-matching split at step $\sigma_{10} = 0.863338$, intercepting clean $x_0$ via native Euler callback and injecting the lighting delta $\Delta x = (x_0' - x_0) \cdot \text{strength}$ directly into the ODE path.
 
@@ -128,9 +129,11 @@ python test_studiolight.py
 ## 📁 Included Master Workflows
 
 Inside the `workflows/` directory:
-* **`StudioLight_MethodA_Calibrated.json`**: The calibrated production standard (37 nodes with visual notes and organized zones). Features FLUX Krea Dev, DSINE 3D Normals, Depth Anything V2, dual-conditioning prompt synthesis, and live preview cards.
-* **`StudioLight_MethodB_Trajectory.json`**: Single-pass continuous latent trajectory splitting and delta-injection.
-* **`StudioLight_Master_Suite.json`**: Complete 5-node integrated studio with 3D stage anchoring.
+* **`StudioLight_v0.1_Starter.json`**: Lean, single-click starter workflow. Features the clean 3-plate display (Pass 1 Albedo Draft $\to$ 3D Lit Proxy Plate $\to$ Final Master Render) with diagnostic clutter stripped for seamless production use.
+* **`StudioLight_MethodA_Calibrated.json`**: The calibrated production standard (37 nodes with visual engineering notes and organized zones). Features FLUX Krea Dev, DSINE 3D Normals, Depth Anything V2, dual-conditioning prompt synthesis, and live preview cards.
+* **`StudioLight_MethodB_Trajectory.json`**: Single-pass continuous latent trajectory splitting and delta-injection at flow step $\sigma_{10} = 0.863338$.
+* **`StudioLight_Midstream_Master.json`**: Midstream KSampler hook architecture for fine-grained Euler step interception.
+* *(Legacy and pre-refactor exploratory graphs have been cleanly quarantined to `workflows/archive/`)*.
 
 ---
 
