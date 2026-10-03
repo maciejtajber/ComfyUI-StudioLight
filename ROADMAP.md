@@ -10,17 +10,27 @@
 
 The following foundational systems are completed, calibrated on FLUX Krea Dev, and verified by 15/15 automated test suites:
 
-- [x] **Method A (2-Stage Calibrated Relighting):** The production workhorse. Combines neutral flat albedo draft passes with deferred 3D lit proxy plates and stochastic re-diffusion.
-- [x] **Method B (Continuous Trajectory Injection):** Intercepts un-overshot clean prediction $x_0$ at flow step $\sigma_{10} = 0.863338$ and algebraically injects the lighting delta $\Delta x = (x_0' - x_0) \cdot \text{strength}$ directly into the diffusion trajectory.
+- [x] **Method A (2-Stage Calibrated Relighting):** The production workhorse. Combines neutral flat albedo draft passes with deferred 3D lit proxy plates and stochastic re-diffusion (Steps 10–30).
 - [x] **3D Pinhole Camera Back-Projection:** Full metric OpenGL camera space ($40^\circ$ FOV portrait lens) mapping relative depth to $Z = -1.5\text{m}$ (nose) down to $-4.5\text{m}$ (background), with non-square aspect ratio ($W/H$) correction.
-- [x] **Photographic Falloff & Hermite Background Taper:** Per-light Euclidean stand distance falloff $(1/d)^{1.6}$ with smooth cubic Hermite distance tapering ($d_{\text{norm}} < 0.20$), preventing studio light bleeds onto distant backgrounds.
-- [x] **Optical Forward Modifier Beam Coning:** Directed beam gating that stops backwards light leakage, completely eliminating architectural edge halos.
+- [x] **Calibrated Photographic Power Falloff & Hermite Background Taper:** Per-light Euclidean stand distance falloff $(1/d)^{1.6}$ (sub-quadratic to account for studio bounce) with smooth cubic Hermite distance tapering ($d_{\text{norm}} < 0.20$), preventing studio light bleeds onto distant backgrounds.
+- [x] **Optical Forward Modifier Beam Coning & Horizon Gating:** Directed beam gating that stops backwards light leakage ($\cos\theta_{\text{beam}} > 0$) and specular horizon gating ($N \cdot L > 0$), completely eliminating architectural edge halos.
 - [x] **Automatic Albedo Prompt Decoupling (`StudioPromptSanitizer`):** Strips high-gloss/specular terms from Pass 1 while keeping 100% of the master prompt in Pass 2 to eliminate pre-baked specular blobs.
 - [x] **Photometric Composite & Rational Shoulder:** Zero double-flooring in linear Rec.709 space. Quadratic rational shoulder tonemapping with active `white_point` scaling and dielectric Fresnel base gating ($F_0 \ge 0.12$).
 - [x] **Dedicated Specular Pass (4th Output):** Razor-sharp Blinn-Phong dielectric catchlights (2.8% pixel area) with dedicated `specular_pass` output and composite hook.
 - [x] **DSINE / OpenGL Coordinate Parity & Depth Polarity:** Verified $+Y$ OpenGL coordinate convention, automatic stage asset detection, `invert_normals_x`, and `invert_depth` toggles.
 - [x] **Frozen 27-Widget Required Schema:** 100% backward compatibility for all existing user workflows with zero slider-shift risk.
 - [x] **Curated Studio Presets:** `Rembrandt Classic`, `High-Fashion Beauty`, `Direct On-Camera Flash`, `Cinematic Film Noir`, and `Golden Hour Window`.
+
+---
+
+## 🔬 Experimental Research: Continuous Flow Trajectory (Method B)
+
+Method B explores single-pass continuous diffusion injection without a full 2-stage KSampler restart:
+* **Mathematical Premise:** Intercepts un-overshot clean prediction $x_0$ at flow step $\sigma_{10} = 0.863338$ via native Euler callback, relights it in 3D, and injects the delta $\Delta x = (x_0' - x_0) \cdot \text{strength}$ directly into the diffusion trajectory.
+* **Current Status & Findings:**
+  * Unit tests and mathematical invariants verified ($\Delta$-invariant max error $\le 4.77 \times 10^{-7}$).
+  * Empirical cloud tests (Tests 9–14) showed that pure deterministic trajectory injection with `add_noise = disable` produced a subtle ~2.5% luminance shift, effectively freezing the latents.
+  * **Next Iteration:** Testing adaptive noise re-injection at $\sigma_{10}$ to give the flow vector freedom to repaint high-frequency shadow penumbras without destabilizing facial geometry. Tracked as an active research track in `nodes/trajectory_nodes.py` and `workflows/StudioLight_MethodB_Trajectory.json`.
 
 ---
 
