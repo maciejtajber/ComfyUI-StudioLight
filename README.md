@@ -119,6 +119,85 @@ Automatic albedo decoupling engine:
 
 ---
 
+## 💡 Photographic Modifiers & Optical Physics
+
+In physical studio lighting, light character is governed by a fundamental optical principle: **the physical diameter of the light source relative to the subject dictates shadow edge penumbra, specular highlight shape, and light wrap.**
+
+`StudioLightRig` does not treat light sources as dimensionless mathematical points. Each modifier dropdown assigns a real-world physical aperture diameter to the virtual strobe, driving our **Screen-Space Percentage-Closer Soft Shadow (PCSS)** engine and Blinn-Phong dielectric specular lobes.
+
+---
+
+### The 6 Optical Presets
+
+| Modifier Preset | Virtual Aperture | Optical Profile | Shadow Behavior | Primary Aesthetic |
+| :--- | :---: | :--- | :--- | :--- |
+| **Direct On-Camera Flash** | **0.04m** (~4cm) | Raw, bare bulb / speedlight tube | Razor-sharp edges across all distances | High-contrast, raw 90s editorial / Terry Richardson |
+| **Hard Snoot** | **0.10m** (~10cm) | Narrow conical metal restriction tube | Hard boundary cutoff, zero lateral spill | Theatrical spotlight, isolated facial/jewelry drama |
+| **Fresnel Spotlight** | **0.20m** (~20cm) | Collimated stepped glass lens | Sharp, sculpted edges with subtle edge roll | 1940s Hollywood Golden Age portraits, Film Noir |
+| **Stripbox** | **0.30m** (~30×120cm)| Asymmetric baffled softbox with grid | Directional wrap, controlled spill | Clean rim/kicker separation, edge silhouette accent |
+| **Beauty Dish (Silver)** | **0.55m** (~55cm) | Parabolic reflector with center deflector plate | Defined bone-structure carving, soft skin falloff | High-fashion cosmetic advertising, magazine covers |
+| **Octabox (Soft)** | **1.40m** (~140cm) | 5-foot 8-sided diffused umbrella | Broad, creamy, continuous penumbra gradient | Flattering catalog commercial, soft ambient window light |
+
+---
+
+### Detailed Optical Breakdown
+
+#### 1. Direct On-Camera Flash (Aperture: 0.04m)
+* **Studio Configuration:** A naked speedlight or bare strobe tube aimed straight along the camera axis without diffusion baffles.
+* **Optical Behavior:** Near-point-source radiation.
+* **Cast Shadows:** Razor-sharp boundary cutoffs across all scene depths with zero edge feathering.
+* **Specular Catchlights:** Tiny, concentrated, high-intensity pinpoint catchlights in eyes and reflective hardware.
+* **Aesthetic:** Unfiltered, direct fashion editorial.
+
+#### 2. Hard Snoot (Aperture: 0.10m)
+* **Studio Configuration:** An elongated cylindrical/conical metal snoot mounted directly to the fixture.
+* **Optical Behavior:** Restricts beam divergence into a narrow circular cone with steep radial attenuation.
+* **Cast Shadows:** Sharp geometric projection lines; un-aimed geometry drops off rapidly outside the cone.
+* **Spill:** Zero lateral ambient bleed into surrounding architecture.
+* **Aesthetic:** High-drama chiaroscuro, isolating specific planes (e.g. cheekbone, handbag buckle) while sinking the environment into darkness.
+
+#### 3. Fresnel Spotlight (Aperture: 0.20m)
+* **Studio Configuration:** Traditional studio tungsten housing paired with a stepped Fresnel glass lens.
+* **Optical Behavior:** Parallel collimated beam emitting punchy, directional illumination.
+* **Cast Shadows:** Clean, defined cast shadows that maintain edge clarity without the clinical harshness of a bare bulb.
+* **Aesthetic:** Classical cinematic lighting, hard-boiled film noir, and sculpted architectural portraits.
+
+#### 4. Stripbox (Aperture: 0.30m)
+* **Studio Configuration:** A narrow, tall rectangular softbox fitted with front diffusion fabric and a directional honeycomb grid.
+* **Optical Behavior:** Directional diffusion—softer along the vertical orientation, razor-sharp along the horizontal axis.
+* **Cast Shadows:** Controlled directional cutoff.
+* **Specular Catchlights:** Long, continuous linear highlights tracing curved surfaces (e.g. cylinder folds of a wool coat or patent leather flaps).
+* **Aesthetic:** Rim and kicker isolation designed to separate dark garments and silhouettes from dark backgrounds without leaking onto facial planes.
+
+#### 5. Beauty Dish - Silver (Aperture: 0.55m)
+* **Studio Configuration:** Shallow parabolic metal reflector with an opaque center bounce plate that forces all light to bounce off the silver dish interior before exiting.
+* **Optical Behavior:** Semi-hard, directional contrast with accelerated highlight-to-shadow falloff.
+* **Cast Shadows:** Crisp enough to carve out jawlines and cheekbone hollows, but soft enough to flatter human skin.
+* **Specular Catchlights:** Distinct, punchy circular catchlights in the irises.
+* **Aesthetic:** Standard commercial high-fashion, cosmetics campaigns, and luxury editorial portraiture.
+
+#### 6. Octabox - Soft (Aperture: 1.40m)
+* **Studio Configuration:** A 140cm octagonal softbox incorporating both internal baffle fabric and a heavy outer diffusion panel.
+* **Optical Behavior:** Large virtual surface area emitting widely diffused light rays that wrap around curved geometry.
+* **Cast Shadows:** Broad, creamy penumbra. Cast shadows dissolve over wide pixel gradients as the distance from subject to background increases.
+* **Specular Catchlights:** Large, smooth, soft reflection panels across glossy materials and skin.
+* **Aesthetic:** Natural beauty catalog, gentle overcast simulation, and soft editorial fill.
+
+---
+
+### What Changes in the Shading Engine When Modifiers Switch
+
+Toggling a modifier updates three physical calculations simultaneously:
+
+1. **Percentage-Closer Soft Shadows (PCSS):**  
+   The engine calculates the spatial gap between occluder geometry and receiver planes ($\Delta z = d_{\text{receiver}} - d_{\text{blocker}}$) and scales an 8-tap Vogel disk sampling kernel by modifier diameter. Contact shadows (e.g., collar on neck, chin on throat) remain crisp and contact-hardened, while shadows cast onto background architecture $2\text{m}$ to $5\text{m}$ back softly diffuse according to aperture width.
+2. **Specular Reflection Lobe Width:**  
+   Dielectric catchlights expand from a tiny pinpoint (Direct Flash / Snoot) into a broad, soft reflective window (Octabox), matching the virtual surface area of the fixture.
+3. **Forward Optical Beam Coning:**  
+   The optical housing limits backward light spill ($\cos\theta_{\text{beam}} > 0$). Fixtures aimed forward at a model will not leak backward onto background walls or arches located behind the virtual light stand.
+
+---
+
 ## 🔬 Empirical Discoveries & Working Rules
 
 Through empirical calibration on FLUX Krea Dev across 30+ iterations, we observed 4 working rules for practical generative studio lighting:

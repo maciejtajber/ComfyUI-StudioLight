@@ -15,6 +15,7 @@ StudioLight bridges deterministic 3D photographic lighting with generative diffu
 ---
 
 ### Phase 2: v0.2 — Productization & Physical Realism 🎯
+* [ ] **`StudioModifierTuner` Companion Node:** Dedicated utility node piping into an optional input slot on `StudioLightRig`. Enables continuous slider control over physical aperture diameter (0.01m – 3.00m), asymmetric modifier aspect ratios (stripbox width vs. length), and internal baffle diffusion softness without altering the core 27-widget required schema.
 * [ ] **Universal 2D Image Relighting (Img2Img):** Standalone relighting pipeline accepting existing 2D photographs or renders via intrinsic albedo estimation and depth/normal extraction.
 * [ ] **Native 3D Stage & Asset Ingestion:** Integrated lightweight Three.js/WebGL canvas supporting `.glb` / `.obj` positioning, camera alignment, and interactive light gizmos inside ComfyUI.
 * [ ] **Live Interactive Radar Overhaul:** Enhanced top-down radar console with multi-light distance ring manipulation and interactive beam-cone angles.
