@@ -221,6 +221,61 @@ Through empirical calibration on FLUX Krea Dev across 30+ iterations, we observe
 
 ---
 
+## 🎛️ Recommended Settings & Production Recipes
+
+Use these empirically calibrated starting points inside `StudioPhotometricComposite` and `StudioLightRig` to achieve immediate photographic results:
+
+### 1. Production Recipes by Scenario
+
+| Setup / Scenario | `specular_kick` | `chroma_bleed` | `filmic_white_point` | Pass 2 Denoise | Recommended Key Modifier |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **High-Fashion Beauty (Skin & Soft Fill)** | `0.40 – 0.50` | `0.40 – 0.45` | `3.5` | `0.50 – 0.55` | `Beauty Dish (Silver)` or `Octabox` |
+| **Commercial Catalog (Mixed Fabrics & Leather)** | `0.40 – 0.50` | `0.35` | `3.5` | `0.55 – 0.60` | `Beauty Dish` or `Stripbox` |
+| **Dark Tailored Apparel (Matte Wool / Velvet)** | `0.00 – 0.20` | `0.00` | `2.5` | `0.55 – 0.60` | `Octabox (Soft)` |
+| **Cinematic Film Noir (High Chiaroscuro)** | `0.50 – 0.60` | `0.50` | `2.0 – 2.5` | `0.60 – 0.65` | `Fresnel Spotlight` or `Hard Snoot` |
+| **Isolated Metallic / Chrome Props (Macro)** | `1.00 – 1.50` | `0.10` | `5.0 – 6.0` | `0.60 – 0.65` | `Direct Flash` or `Hard Snoot` |
+
+> **⚠️ Multi-Material Rule:** When dark matte wool and glossy patent leather appear in the same shot, keep `specular_kick` at **`0.40 – 0.50`**. With `specular_pass` wired to `specular_map`, the isolated Blinn-Phong lobe concentrates crisp catchlights onto leather and eyes without solarizing dark wool fibers.
+
+---
+
+### 2. The 4 Core Composite Sliders Decoded
+
+* **`specular_kick` (`0.0 – 3.0`):**  
+  Controls the amplitude of dielectric specular catchlights.
+  - *Keep at `0.00` for pure matte garments* to guarantee zero edge solarization.
+  - *`0.40 – 0.50` (Calibrated Standard):* The universal sweet spot for portraits containing mixed materials (skin, eyes, wool, leather).
+  - *`1.0+`:* Reserve strictly for isolated metallic/jewelry product shots.  
+  *(Always ensure `specular_pass` from `StudioLightRig` is connected to `specular_map`!)*
+
+* **`chroma_bleed` (`0.0 – 1.0`):**  
+  Controls how strongly Kelvin color temperature (e.g. 3200K Tungsten or 7000K Cyan) transfers into surface midtones.
+  - *`0.40 – 0.45` (Default):* Natural photographic color balance.
+  - *Set to `0.00`:* When you want pure monochrome exposure without tinting dark clothing or neutral shadows.
+
+* **`filmic_white_point` (`1.5 – 8.0`):**  
+  Governs highlight dynamic range compression in linear Rec.709 space.
+  - *`2.0 – 2.5`:* Tight photographic ceiling. Soft, creamy highlight roll-off (ideal for delicate skin and overcast beauty).
+  - *`3.5` (Default):* Balanced filmic curve with natural highlight preservation.
+  - *`5.0 – 8.0`:* High dynamic headroom. Preserves sharp specular glints on polished chrome and direct flash reflections.
+
+* **`ambient_floor` (`0.0 – 0.50`):**  
+  Sets the baseline shadow illuminance floor.
+  - *Keep at `0.00`:* For true optical contrast, deep chiaroscuro, and rich blacks.
+  - *Lift to `0.05 – 0.08`:* Only if Pass 2 over-darkens tight cavity crevices on high-contrast prompts.
+
+---
+
+### 3. Quick-Start: Your First Relit Portrait in 60 Seconds
+
+1. Load `workflows/StudioLight_MethodA_Calibrated.json` into ComfyUI.
+2. In **Zone 1**, enter your subject description in the **Base Subject Prompt** (leave the Albedo Lighting Suffix connected).
+3. On **`StudioLightRig`**, choose a starting preset (e.g., `High-Fashion Beauty` or `Rembrandt Classic`), or position Key/Fill/Rim manually.
+4. Pass 1 is pre-set to **10 steps** (draft albedo geometry); Pass 2 is pre-set to **30 steps** with denoise at **`0.55 – 0.60`**.
+5. Click **Queue Prompt**. Inspect the live side-by-side preview cards: `3D Surface Normals`, `Depth Map`, `3D Lit Proxy Plate`, and the `Final Master Render`.
+
+---
+
 ## 🚀 Quick Start & Installation
 
 ### Option 1: Git Clone
