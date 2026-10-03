@@ -8,7 +8,7 @@
 
 ## 🏆 Shipped in v0.1 (Production Calibrated)
 
-The following foundational systems are completed, calibrated on FLUX Krea Dev, and verified by 14/14 automated test suites:
+The following foundational systems are completed, calibrated on FLUX Krea Dev, and verified by 15/15 automated test suites:
 
 - [x] **Method A (2-Stage Calibrated Relighting):** The production workhorse. Combines neutral flat albedo draft passes with deferred 3D lit proxy plates and stochastic re-diffusion.
 - [x] **Method B (Continuous Trajectory Injection):** Intercepts un-overshot clean prediction $x_0$ at flow step $\sigma_{10} = 0.863338$ and algebraically injects the lighting delta $\Delta x = (x_0' - x_0) \cdot \text{strength}$ directly into the diffusion trajectory.
@@ -68,7 +68,7 @@ With core 3-point lighting physics proven and operational, the following five fr
 
 | Milestone | Target Date | Scope |
 |---|---|---|
-| **v0.1 Public Drop** | **Tuesday, Oct 6, 2026** | 5-Node Core Suite, Method A/B Calibrated, 10/10 Tests, Hero Renders, Manager Index |
+| **v0.1 Public Drop** | **Tuesday, Oct 6, 2026** | Step 10 Midstream 3D Extraction, Method A Calibrated, 15/15 Tests, Hero Renders, Manager Index |
 | **v0.1.1 Optical Penumbra** | **Mid-October 2026** | Area-light soft shadow penumbra in `shader_engine.py` |
 | **v0.2 Img2Img Relighting** | **Late October 2026** | Intrinsic albedo stripping + arbitrary 2D photo relighting |
 | **v0.3 Material Gating** | **November 2026** | SAM 3 semantic material masking for automatic wool vs. leather handling |
