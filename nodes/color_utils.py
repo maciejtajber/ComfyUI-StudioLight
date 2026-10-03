@@ -84,6 +84,7 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "specular_power": 16.0,
         "specular_strength": 0.20,
         "falloff_exponent": 1.0,
+        "aperture_size": 1.40,
     },
     "Beauty Dish (Silver)": {
         "token": "punchy beauty dish lighting, crisp round catchlights",
@@ -91,6 +92,7 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "specular_power": 45.0,
         "specular_strength": 0.45,
         "falloff_exponent": 1.4,
+        "aperture_size": 0.55,
     },
     "Fresnel Spotlight": {
         "token": "hard optical fresnel beam, high-contrast chiaroscuro shadows",
@@ -98,6 +100,7 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "specular_power": 85.0,
         "specular_strength": 0.70,
         "falloff_exponent": 2.0,
+        "aperture_size": 0.20,
     },
     "Hard Snoot": {
         "token": "tight snoot spotlight, dramatic isolation pool of light",
@@ -105,6 +108,7 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "specular_power": 120.0,
         "specular_strength": 0.85,
         "falloff_exponent": 2.8,
+        "aperture_size": 0.10,
     },
     "Direct On-Camera Flash": {
         "token": "raw direct on-camera flash, hard snapshot micro-shadows, glossy specularity",
@@ -112,6 +116,7 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "specular_power": 90.0,
         "specular_strength": 0.90,
         "falloff_exponent": 1.8,
+        "aperture_size": 0.04,
     },
     "Stripbox": {
         "token": "narrow stripbox kicker, razor edge rim separation",
@@ -119,5 +124,6 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "specular_power": 60.0,
         "specular_strength": 0.55,
         "falloff_exponent": 1.6,
+        "aperture_size": 0.30,
     },
 }

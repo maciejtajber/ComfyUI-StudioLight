@@ -86,14 +86,36 @@ def compute_cavity_ao_map(normals: torch.Tensor, strength: float = 1.5) -> torch
     return cavity
 
 
+def get_vogel_disk_samples(
+    num_samples: int = 8,
+    device: Optional[torch.device] = None,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
+    """Computes deterministic 2D Vogel disk sample offsets for area-light filtering."""
+    if device is None:
+        device = torch.device("cpu")
+    golden_angle = 2.39996323  # radians
+    indices = torch.arange(num_samples, device=device, dtype=dtype)
+    r = torch.sqrt((indices + 0.5) / float(num_samples))
+    theta = indices * golden_angle
+    offsets = torch.stack([r * torch.cos(theta), r * torch.sin(theta)], dim=-1)
+    return offsets  # [num_samples, 2]
+
+
 def screen_space_directional_shadow(
     depth: torch.Tensor,
     light_vec: torch.Tensor,
     steps: int = 16,
-    max_dist: float = 0.08
+    max_dist: float = 0.08,
+    aperture_size: float = 0.0,
+    dist_to_light: Optional[torch.Tensor] = None,
+    soft_shadows: bool = True,
 ) -> torch.Tensor:
     """
     Calculates directional cast shadow from screen-space depth raymarching.
+    Features Screen-Space Percentage-Closer Soft Shadows (PCSS) with Vogel disk sampling:
+      - Sharp contact shadows near occluders (gap ~ 0)
+      - Soft diffused penumbra on distant background surfaces (gap > 0) scaled by modifier aperture size
     depth: [B, H, W, 1]
     light_vec: [3]
     """
@@ -121,6 +143,7 @@ def screen_space_directional_shadow(
     base_grid = torch.stack([x_coords, y_coords], dim=-1).unsqueeze(0).expand(B, -1, -1, -1)
 
     shadow = torch.ones_like(d_in)
+    blocker_gap = torch.zeros_like(d_in)
     bias = 0.005
 
     for s in range(1, steps + 1):
@@ -133,15 +156,52 @@ def screen_space_directional_shadow(
 
         sampled_d = F.grid_sample(d_perm, sample_grid, mode="bilinear", padding_mode="border", align_corners=True).permute(0, 2, 3, 1)
 
-        is_closer = (sampled_d - d_in) > bias
+        depth_diff = sampled_d - d_in
+        is_closer = depth_diff > bias
         weight = 1.0 - (s / (steps + 1))
-        occlusion = torch.clamp((sampled_d - d_in - bias) * 15.0, 0.0, 1.0) * is_closer.float() * weight
+        occlusion = torch.clamp((depth_diff - bias) * 15.0, 0.0, 1.0) * is_closer.float() * weight
         shadow = shadow - occlusion * 0.25
+
+        # Accumulate blocker distance gap (receiver depth - blocker depth) for penumbra estimation
+        blocker_gap = torch.maximum(blocker_gap, torch.clamp(depth_diff, min=0.0) * is_closer.float())
 
     # Attenuate screen shadow when light is grazing or behind the plane (lz <= 0)
     lz_val = float(light_vec[2].item() if isinstance(light_vec, torch.Tensor) else light_vec[2])
     front_factor = max(0.0, min(1.0, lz_val))
     shadow = 1.0 - (1.0 - shadow) * front_factor
+    shadow = torch.clamp(shadow, 0.0, 1.0)
+
+    # Percentage-Closer Soft Shadows (PCSS) via Vogel Disk Sampling
+    # Contact shadows remain razor-sharp; distant cast shadows diffuse according to aperture size
+    if soft_shadows and float(aperture_size) > 0.05:
+        # Calculate light stand distance factor
+        if dist_to_light is not None:
+            l_dist = torch.clamp(dist_to_light, min=0.5, max=10.0)
+        else:
+            l_dist = 1.8
+
+        # Penumbra radius in normalized screen coordinates:
+        # penumbra = aperture * (receiver_depth - blocker_depth) / distance
+        # Clamped to maximum 0.040 (~40 pixels in standard resolution) to prevent washed-out blur
+        penumbra_radius = torch.clamp(
+            (float(aperture_size) * blocker_gap / l_dist) * 0.12,
+            min=0.0,
+            max=0.040,
+        )
+
+        vogel_samples = get_vogel_disk_samples(8, device=device, dtype=dtype)
+        sh_perm = shadow.permute(0, 3, 1, 2)
+        sh_accum = torch.zeros_like(shadow)
+
+        for i in range(8):
+            vx, vy = vogel_samples[i, 0], vogel_samples[i, 1]
+            tap_grid = base_grid.clone()
+            tap_grid[..., 0] += vx * penumbra_radius[..., 0]
+            tap_grid[..., 1] += vy * penumbra_radius[..., 0]
+            sampled_sh = F.grid_sample(sh_perm, tap_grid, mode="bilinear", padding_mode="border", align_corners=True).permute(0, 2, 3, 1)
+            sh_accum = sh_accum + sampled_sh
+
+        shadow = sh_accum / 8.0
 
     return torch.clamp(shadow, 0.0, 1.0)
 
@@ -271,9 +331,14 @@ def compute_light_shading(
         cos_beam = torch.sum(dir_from_light * aim_axis, dim=-1, keepdim=True)
         # Smoothly cut off light emitted past 90 degrees from the fixture's forward aim axis (hemispherical forward emission)
         beam_gate = torch.clamp(cos_beam * 3.0, 0.0, 1.0)
-        attenuation = attenuation * beam_gate
-
-        cast_sh = screen_space_directional_shadow(d, light_vec)
+        aperture = preset.get("aperture_size", 0.0)
+        cast_sh = screen_space_directional_shadow(
+            d,
+            light_vec,
+            aperture_size=aperture,
+            dist_to_light=dist_to_light,
+            soft_shadows=True,
+        )
     else:
         l_vec = l_vec_dir
         dist_val = max(float(distance), 0.3)

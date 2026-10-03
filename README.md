@@ -6,7 +6,7 @@
 ![ComfyUI Node](https://img.shields.io/badge/ComfyUI-Custom%20Node-000000?style=flat-square)
 ![License: MIT](https://img.shields.io/badge/License-MIT-black?style=flat-square)
 ![Calibrated for: Flux.1 Dev | Krea | Wan 2.1 | SDXL](https://img.shields.io/badge/Calibrated%20for-Flux.1%20%7C%20Krea%20%7C%20Wan%202.1%20%7C%20SDXL-black?style=flat-square)
-![Automated Suites: 15/15 Verified](https://img.shields.io/badge/Automated%20Suites-15%2F15%20Verified-brightgreen?style=flat-square)
+![Automated Suites: 16/16 Verified](https://img.shields.io/badge/Automated%20Suites-16%2F16%20Verified-brightgreen?style=flat-square)
 ![Status: Calibrated Prototype](https://img.shields.io/badge/Status-Calibrated%20Prototype-blue?style=flat-square)
 
 ---
@@ -23,15 +23,17 @@ In standard generative AI, typing `"dramatic golden hour rim light"` or `"3200K 
    At an empirically calibrated intermediate step (e.g. step 10), the generative model has crystallized structural scene geometry, depth, and spatial forms. StudioLight extracts surface normals (DSINE) and metric depth (Depth Anything V2) from this latent draft and uses them as a lighting carrier.
 2. **3D Camera-Space Back-Projection ($40^\circ$ Portrait FOV):**  
    Unprojects extracted 2D normals and depth into metric OpenGL camera-space ($Z = -1.5\text{m}$ to $-4.5\text{m}$), fully corrected for non-square anamorphic aspect ratios ($W/H$).
-3. **Calibrated Photographic Power Falloff ($1/d^{1.6}$) & Hermite Distance Taper:**  
+3. **Optical Penumbra & Area Soft Shadows (Screen-Space PCSS):**  
+   Simulates physical modifier aperture diameters (Octabox 140cm, Beauty Dish 55cm, Snoot 10cm, Flash 4cm). Uses Percentage-Closer Soft Shadows with 8-tap Vogel disk filtering to keep contact shadows razor-sharp near occluders while softly diffusing cast shadows across distant walls.
+4. **Calibrated Photographic Power Falloff ($1/d^{1.6}$) & Hermite Distance Taper:**  
    Calculates per-pixel Euclidean distance from the virtual lighting fixture to every surface point. A calibrated $1/d^{1.6}$ falloff curve is used to approximate practical studio light behavior and secondary bounce in enclosed volumes, while a smooth Hermite background taper ($d_{\text{norm}} < 0.20$) prevents studio strobes from spilling onto distant architecture 25 meters behind the subject.
-4. **Optical Forward Modifier Beam Cones & Horizon Gating:**  
+5. **Optical Forward Modifier Beam Cones & Horizon Gating:**  
    Studio fixtures (Stripboxes, Beauty Dishes, Snoots) are aimed forward at the subject. The engine models the forward beam cone ($\cos\theta_{\text{beam}} > 0$) and specular horizon gating ($N \cdot L > 0$), eliminating backward light leakage and banishing edge halos on background architecture.
-5. **Dedicated Specular Lobes & Rational Shoulder Tonemapping:**  
+6. **Dedicated Specular Lobes & Rational Shoulder Tonemapping:**  
    Isolates pure Blinn-Phong dielectric catchlight lobes (tight 2.8% pixel area) composited onto linear Rec.709 plates, rolled off smoothly through a $C^1$-continuous rational shoulder with active `white_point` headroom control.
-6. **Albedo Prompt Decoupling:**  
+7. **Albedo Prompt Decoupling:**  
    Addresses the pre-baked specular artifact problem. Prompts are neutralized for Pass 1 with shadowless albedo tokens to generate clean, un-burned base geometry, allowing 3D specular catchlights in Pass 2 to appear strictly where your lights strike.
-7. **Production Architecture (Method A):**  
+8. **Production Architecture (Method A):**  
    2-Stage Calibrated Relighting. Step 10 draft $\to$ 3D extraction $\to$ deferred photometric composite $\to$ stochastic re-diffusion (Steps 10–30, denoise `0.50–0.75`, empirically calibrated per subject/material). *(Continuous trajectory injection Method B is tracked for next-generation research in [ROADMAP.md](ROADMAP.md)).*
 
 ---

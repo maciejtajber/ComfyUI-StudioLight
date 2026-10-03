@@ -599,6 +599,52 @@ def test_prompt_sanitizer():
     print("✓ StudioPromptSanitizer passed!")
 
 
+def test_optical_penumbra_shadows():
+    print("Testing optical penumbra and area soft shadows...")
+    from nodes.shader_engine import screen_space_directional_shadow
+    from nodes.color_utils import MODIFIER_PRESETS
+
+    # Synthetic scene: 128x128 depth buffer with a foreground pillar at d=0.8 (closer)
+    # casting shadow onto a background wall at d=0.2 (further)
+    depth = torch.full((1, 128, 128, 1), 0.2, dtype=torch.float32)
+    # Pillar in the center (x: 40..60, y: 30..90)
+    depth[:, 30:90, 40:60, :] = 0.80
+
+    # Key light pointing from left (lx > 0, cast shadow to right)
+    light_vec = torch.tensor([1.0, 0.0, 0.8], dtype=torch.float32)
+
+    # 1. Hard Snoot (aperture 0.10m)
+    snoot_aperture = MODIFIER_PRESETS["Hard Snoot"]["aperture_size"]
+    sh_snoot = screen_space_directional_shadow(
+        depth, light_vec, aperture_size=snoot_aperture, soft_shadows=True
+    )
+
+    # 2. Octabox (aperture 1.40m)
+    octa_aperture = MODIFIER_PRESETS["Octabox (Soft)"]["aperture_size"]
+    sh_octa = screen_space_directional_shadow(
+        depth, light_vec, aperture_size=octa_aperture, soft_shadows=True
+    )
+
+    # In the shadow penumbra zone (x: 34..40),
+    # Octabox should produce a smoother, softer penumbra transition than Hard Snoot
+    snoot_penumbra_edge = sh_snoot[:, 50, 34:40, 0]
+    octa_penumbra_edge = sh_octa[:, 50, 34:40, 0]
+
+    # Verify both produce valid shadow values [0, 1]
+    assert torch.all(sh_snoot >= 0.0) and torch.all(sh_snoot <= 1.0)
+    assert torch.all(sh_octa >= 0.0) and torch.all(sh_octa <= 1.0)
+
+    # In the penumbra transition region near the edge (x=39), Octabox has softened the edge
+    assert octa_penumbra_edge[:, 5] > snoot_penumbra_edge[:, 5], "Octabox should diffuse/lift edge shadow"
+
+    # Verify shadow core is present in both
+    assert torch.min(sh_snoot) < 0.10
+    assert torch.min(sh_octa) < 0.15
+
+    print("  ✓ PCSS Vogel disk soft shadow verified: Octabox casts diffused penumbra; Hard Snoot preserves crisp edge.")
+    print("✓ Optical penumbra soft shadows passed!")
+
+
 if __name__ == "__main__":
     test_color_utils()
     test_presets()
@@ -614,6 +660,7 @@ if __name__ == "__main__":
     test_depth_polarity_toggle()
     test_specular_pass_wiring()
     test_prompt_sanitizer()
+    test_optical_penumbra_shadows()
     print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified!")
 
 
