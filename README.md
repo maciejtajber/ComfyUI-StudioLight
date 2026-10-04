@@ -98,19 +98,44 @@ The master 3-point photographic lighting console:
 * **Coordinate Parity Toggles**: `invert_normals_x` (DSINE / OpenGL parity), `invert_normals_y`, and `invert_depth` (near=white vs near=black polarity).
 
 ### 2. `StudioPhotometricComposite` (`nodes/photometric_composite.py`)
-Scene-referred linear Rec.709 photographic compositing engine:
-* **Zero Double-Floor Architecture**: Operates strictly in linear radiance space without compounding ambient floors.
-* **Rational Shoulder Tonemapping**: Smooth $C^1$-continuous rational shoulder that compresses high-energy specular highlights into display headroom without hard-clipping.
-* **Active `white_point` Control**: Dial highlight dynamic range compression stiffness from 1.5 (tight ceiling) to 8.0 (extended filmic headroom).
-* **Lobe-Accurate Specular Integration**: Accepts isolated `specular_pass` input, confining dielectric catchlights to genuine specular microfacets instead of veiling entire lit surfaces.
-* **Chroma Bleed Control**: Transfers Kelvin color warmth into midtones without contaminating deep shadows or dark fabrics.
+The linear physics engine translating 3D spatial vectors into physical photons.
+
+This node is not a simple image overlay or Photoshop blend mode. It performs scene-referred linear Rec.709 compositing, taking raw geometric vectors (normals, depth, light distance, and modifier profiles) and computing real physical radiance before display tonemapping:
+
+* **Zero Double-Floor Architecture:**  
+  Unlike typical post-processing nodes that apply arbitrary ambient lifts, it calculates diffuse illumination in true linear space. Surfaces maintain genuine contrast ratios without grey, washed-out shadow floors.
+* **Rational Shoulder Tonemapping:**  
+  High-intensity studio strobes produce high dynamic range specular spikes. A $C^1$-continuous rational shoulder tonemapper compresses specular peaks into display headroom smoothly, preserving texture without hard digital clipping or solarized white halos.
+* **Lobe-Accurate Specular Integration (`specular_pass` $\to$ `specular_map`):**  
+  Accepts the isolated Blinn-Phong specular pass from `StudioLightRig`. This confines dielectric catchlights exclusively to genuine specular microfacets (eyes, lips, patent leather, polished metal), preventing specular light from washing out matte fabric textures.
+* **Blackbody Kelvin Midtone Bleed:**  
+  Controls how color temperature transfers into surface albedo via `chroma_bleed`. Warms or cools skin tones naturally according to dialed Kelvin values ($2000\text{K} - 10000\text{K}$) without contaminating neutral shadows or dark garments.
+
+#### Core Shader Controls:
+* **`lighting_strength` (`1.00 – 1.20`):** Master irradiance multiplier. `1.00` provides physically exact photometric scale; `1.20` gives a slight photographic push for high-key portraiture.
+* **`ambient_floor` (`0.05 – 0.08`):** Minimum shadow illuminance floor. Prevents unlit surface cavities from collapsing to pitch black ($0.0$), ensuring the diffusion model has underlying structure to build upon.
+* **`specular_kick` (`0.40 – 0.50`):** Dielectric catchlight amplitude. Calibrated to `0.40` for mixed scenes (skin + leather + wool). Set to `0.00` for pure matte black wool to eliminate edge solarization.
+* **`chroma_bleed` (`0.35 – 0.45`):** Kelvin warmth midtone transfer. Default `0.45` delivers balanced portrait saturation. Keep at `0.00` for monochrome or high-contrast noir setups.
+* **`filmic_white_point` (`2.5 – 3.5`):** Dynamic range compression ceiling. `2.5` creates a soft, creamy highlight roll-off (catalog beauty); `3.5` maintains crisp specular punch on jewelry, chrome, and patent leather.
+
+---
 
 ### 3. `SIShadowHighlight` (`nodes/si_shadow_highlight.py`)
-Latent-level digital darkroom tonal sculptor:
-* **`shadow_amount`**: Deepens shadows into rich noir blacks ($-0.30$) or lifts dark fabrics ($+0.25$).
-* **`highlight_amount`**: Boosts specular catchlights on jewelry, metallic chains, and glossy leather.
-* **`shadow_tonal_width` / `highlight_tonal_width`**: Shapes the transition zone into midtones.
-* **`midtone_contrast`**: Tunes tonal punch without blowing out highlight detail.
+The digital darkroom lathe adapting physical plates for latent diffusion.
+
+Diffusion UNETs and Transformers do not perceive light like physical camera sensors. When fed raw linear render plates, diffusion models often misinterpret pure zero-radiance shadows as missing data or sensor noise, leading to smearing, muddy gray voids, or hallucinated background clutter in Pass 2. 
+
+`SIShadowHighlight` functions as an adaptive dodging-and-burning stage directly preceding `VAE Encode Lit Plate`, shaping the photometric plate into optimal tonal ranges for latent conditioning:
+
+* **Adaptive Shadow Conditioning (`shadow_amount`):**  
+  * *Negative values (`-0.15` to `-0.25`):* Pulls ambient shadow zones into dense, inky noir blacks without destroying edge geometry.
+  * *Positive values (`+0.10` to `+0.20`):* Gently recovers deep shadow crevices (e.g. under dark lapels or folded sleeves), feeding sufficient surface density to FLUX so Pass 2 synthesizes authentic fabric weave rather than muddy noise.
+* **Specular Beaconing (`highlight_amount: 0.15`):**  
+  Applies a targeted micro-boost strictly across high-energy specular microfacets. This acts as a high-frequency attention beacon for the Pass 2 diffusion process, directing FLUX to synthesize sharp catchlights in the pupils, wet lips, and metallic buckles.
+* **Bilateral Tonal Width Isolation:**  
+  `shadow_tonal_width` and `highlight_tonal_width` (calibrated at `0.50`) lock adjustments to the extreme ends of the luminance histogram, leaving skin midtones and facial features untouched.
+* **Perceptual Midtone S-Curve (`midtone_contrast`):**  
+  Tunes perceptual punch and contrast slope without shifting the white point or shadow floor.
 
 ### 4. `StudioPromptSanitizer` (`nodes/prompt_sanitizer.py`)
 Automatic albedo decoupling engine:
