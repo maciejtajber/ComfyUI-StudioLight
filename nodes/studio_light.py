@@ -224,7 +224,7 @@ class StudioLightRig:
     RETURN_TYPES = ("IMAGE", "IMAGE", "STRING", "IMAGE")
     RETURN_NAMES = ("relighting_map", "probe_preview", "lighting_prompt", "specular_pass")
     FUNCTION = "execute_rig"
-    CATEGORY = "lighting"
+    CATEGORY = "StudioLight/Rig"
     DESCRIPTION = (
         "ComfyUI-StudioLight: Professional Photographic 3-Point Studio Rig.\n"
         "• relighting_map: 32-bit deferred physical lighting pass (Lit proxy plate for Flux).\n"

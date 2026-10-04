@@ -22,7 +22,7 @@ class SIShadowHighlight:
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("IMAGE",)
     FUNCTION = "adjust"
-    CATEGORY = "StudioLight/processing"
+    CATEGORY = "StudioLight/Photometric"
 
     def adjust(self, image, shadow_amount, highlight_amount, shadow_tonal_width, highlight_tonal_width, midtone_contrast):
         img = image.clone()

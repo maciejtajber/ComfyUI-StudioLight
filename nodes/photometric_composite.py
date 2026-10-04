@@ -114,7 +114,7 @@ class StudioPhotometricComposite:
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("lit_image",)
     FUNCTION = "composite"
-    CATEGORY = "StudioLight/processing"
+    CATEGORY = "StudioLight/Photometric"
     DESCRIPTION = (
         "Composites 3D deferred physical lighting maps onto base/draft images in linear Rec.709 HDR space.\n"
         "Features Kelvin chromaticity transfer, dielectric specular catchlights, and filmic Reinhard tone compression."

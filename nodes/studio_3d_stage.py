@@ -169,7 +169,7 @@ class Studio3DStage:
     RETURN_TYPES = ("SCENE_3D", "IMAGE", "IMAGE")
     RETURN_NAMES = ("scene_3d", "normals", "depth")
     FUNCTION = "execute_stage"
-    CATEGORY = "lighting"
+    CATEGORY = "StudioLight/Stage"
     DESCRIPTION = (
         "ComfyUI-StudioLight: Stage 1 (3D Mannequin & Pose Controller).\n"
         "• scene_3d: Bundled normal map, depth map, and metadata for StudioLightRig.\n"
