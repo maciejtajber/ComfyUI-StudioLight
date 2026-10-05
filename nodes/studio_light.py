@@ -45,9 +45,6 @@ class StudioLightRig:
                 "preset": (preset_list, {
                     "default": "Custom",
                 }),
-                "framing": (FRAMING_OPTIONS, {
-                    "default": "Portrait (Classical Bust)",
-                }),
                 "ambient_intensity": ("FLOAT", {
                     "default": 0.05,
                     "min": 0.0,
@@ -236,7 +233,6 @@ class StudioLightRig:
     def execute_rig(
         self,
         preset: str,
-        framing: str = "Portrait (Classical Bust)",
         ambient_intensity: float = 0.05,
         invert_normals_y: bool = False,
         key_enabled: bool = True,
@@ -277,12 +273,13 @@ class StudioLightRig:
         active_normals = normals_optional
         active_depth = depth_optional
         effective_invert_x = invert_normals_x
+        framing = kwargs.get("framing", "Portrait (Classical Bust)")
         if scene_3d is not None and isinstance(scene_3d, dict):
             if active_normals is None:
                 active_normals = scene_3d.get("normals")
             if active_depth is None:
                 active_depth = scene_3d.get("depth")
-            if "framing" in scene_3d.get("metadata", {}) and framing == "Portrait (Classical Bust)":
+            if "framing" in scene_3d.get("metadata", {}):
                 framing = scene_3d["metadata"]["framing"]
             if scene_3d.get("metadata", {}).get("is_stage_asset", False) or scene_3d.get("metadata", {}).get("is_built_in", False):
                 effective_invert_x = False

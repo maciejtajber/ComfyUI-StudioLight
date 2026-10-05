@@ -322,7 +322,7 @@
           "links": null
         }
       ],
-      "title": "💎 FINAL LIT RENDER (Method A Calibrated)",
+      "title": "\ud83d\udc8e FINAL LIT RENDER (Method A Calibrated)",
       "properties": {
         "cnr_id": "comfy-core",
         "ver": "0.30.0",
@@ -945,7 +945,6 @@
       },
       "widgets_values": [
         "Custom",
-        "American Plan (3/4 Shot)",
         0.05,
         false,
         true,
@@ -977,7 +976,6 @@
       ],
       "widgets_values_named": {
         "preset": "Custom",
-        "framing": "American Plan (3/4 Shot)",
         "ambient_intensity": 0.05,
         "invert_normals_y": false,
         "key_enabled": true,
@@ -1183,10 +1181,10 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "SIShadowHighlight -\nThis is your digital darkroom curve.\n\nhighlight_amount (Default 0.3):\n\nPush to 0.6 – 0.8: Tests if FLUX highlights blow out or remain rich and textured.\n\nshadow_amount (Default 0.0):\n\nTry -0.25: Deepens the blacks (crushed luxury editorial look).\n\nTry +0.30: Shadow recovery / lifts dark wool coats so texture doesn't get lost in shadow."
+        "SIShadowHighlight -\nThis is your digital darkroom curve.\n\nhighlight_amount (Default 0.3):\n\nPush to 0.6 \u2013 0.8: Tests if FLUX highlights blow out or remain rich and textured.\n\nshadow_amount (Default 0.0):\n\nTry -0.25: Deepens the blacks (crushed luxury editorial look).\n\nTry +0.30: Shadow recovery / lifts dark wool coats so texture doesn't get lost in shadow."
       ],
       "widgets_values_named": {
-        "text": "SIShadowHighlight -\nThis is your digital darkroom curve.\n\nhighlight_amount (Default 0.3):\n\nPush to 0.6 – 0.8: Tests if FLUX highlights blow out or remain rich and textured.\n\nshadow_amount (Default 0.0):\n\nTry -0.25: Deepens the blacks (crushed luxury editorial look).\n\nTry +0.30: Shadow recovery / lifts dark wool coats so texture doesn't get lost in shadow."
+        "text": "SIShadowHighlight -\nThis is your digital darkroom curve.\n\nhighlight_amount (Default 0.3):\n\nPush to 0.6 \u2013 0.8: Tests if FLUX highlights blow out or remain rich and textured.\n\nshadow_amount (Default 0.0):\n\nTry -0.25: Deepens the blacks (crushed luxury editorial look).\n\nTry +0.30: Shadow recovery / lifts dark wool coats so texture doesn't get lost in shadow."
       },
       "color": "#2d3732",
       "bgcolor": "#19231e"
@@ -1212,10 +1210,10 @@
       "title": "Studio Photometric Composite",
       "properties": {},
       "widgets_values": [
-        "StudioPhotometricComposite -\nThese controls shape the input plate before FLUX ever touches it.\n\nlighting_strength (Default 1.0): \n\nTry 1.5 – 2.2: Force extreme directional contrast and deep carving shadows.\nTry 0.6 – 0.8: Gentle beauty studio wash.\n\nspecular_kick (Default 1.5):\n\nTry 2.5 – 3.0: Makes wet skin, metallic chains, and patent leather explode with crisp catchlights.\n\nfilmic_white_point (Default 3.5):\n\nTry 1.8 – 2.2: Soft vintage film roll-off (highlights compress early, no blown-out whites).\nTry 6.0 – 8.0: Punchy, crisp digital look with high dynamic range ceiling."
+        "StudioPhotometricComposite -\nThese controls shape the input plate before FLUX ever touches it.\n\nlighting_strength (Default 1.0): \n\nTry 1.5 \u2013 2.2: Force extreme directional contrast and deep carving shadows.\nTry 0.6 \u2013 0.8: Gentle beauty studio wash.\n\nspecular_kick (Default 1.5):\n\nTry 2.5 \u2013 3.0: Makes wet skin, metallic chains, and patent leather explode with crisp catchlights.\n\nfilmic_white_point (Default 3.5):\n\nTry 1.8 \u2013 2.2: Soft vintage film roll-off (highlights compress early, no blown-out whites).\nTry 6.0 \u2013 8.0: Punchy, crisp digital look with high dynamic range ceiling."
       ],
       "widgets_values_named": {
-        "text": "StudioPhotometricComposite -\nThese controls shape the input plate before FLUX ever touches it.\n\nlighting_strength (Default 1.0): \n\nTry 1.5 – 2.2: Force extreme directional contrast and deep carving shadows.\nTry 0.6 – 0.8: Gentle beauty studio wash.\n\nspecular_kick (Default 1.5):\n\nTry 2.5 – 3.0: Makes wet skin, metallic chains, and patent leather explode with crisp catchlights.\n\nfilmic_white_point (Default 3.5):\n\nTry 1.8 – 2.2: Soft vintage film roll-off (highlights compress early, no blown-out whites).\nTry 6.0 – 8.0: Punchy, crisp digital look with high dynamic range ceiling."
+        "text": "StudioPhotometricComposite -\nThese controls shape the input plate before FLUX ever touches it.\n\nlighting_strength (Default 1.0): \n\nTry 1.5 \u2013 2.2: Force extreme directional contrast and deep carving shadows.\nTry 0.6 \u2013 0.8: Gentle beauty studio wash.\n\nspecular_kick (Default 1.5):\n\nTry 2.5 \u2013 3.0: Makes wet skin, metallic chains, and patent leather explode with crisp catchlights.\n\nfilmic_white_point (Default 3.5):\n\nTry 1.8 \u2013 2.2: Soft vintage film roll-off (highlights compress early, no blown-out whites).\nTry 6.0 \u2013 8.0: Punchy, crisp digital look with high dynamic range ceiling."
       },
       "color": "#2d3732",
       "bgcolor": "#19231e"
@@ -1295,10 +1293,10 @@
       "title": "FLUX guidance",
       "properties": {},
       "widgets_values": [
-        "FLUX guidance (in Conditioning / Clip Text)\n\n2.0 – 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 – 4.5: High prompt adherence; enhances hard edges, but can introduce digital sharpness."
+        "FLUX guidance (in Conditioning / Clip Text)\n\n2.0 \u2013 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 \u2013 4.5: High prompt adherence; enhances hard edges, but can introduce digital sharpness."
       ],
       "widgets_values_named": {
-        "text": "FLUX guidance (in Conditioning / Clip Text)\n\n2.0 – 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 – 4.5: High prompt adherence; enhances hard edges, but can introduce digital sharpness."
+        "text": "FLUX guidance (in Conditioning / Clip Text)\n\n2.0 \u2013 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 \u2013 4.5: High prompt adherence; enhances hard edges, but can introduce digital sharpness."
       },
       "color": "#362844",
       "bgcolor": "#221430"
@@ -1722,10 +1720,10 @@
       "title": "Pass 2 KSampler",
       "properties": {},
       "widgets_values": [
-        "The #1 King Lever: Pass 2 KSampler denoise\n\nThis determines how much FLUX redraws the image to adopt the new 3D lighting versus keeping the original geometry.\n\n0.30 – 0.40 (Surgical Polish):\nResult: 100% preserves original face, wrinkles, and fabric details. Only adds subtle specular sheen and surface tints.\n\n0.50 – 0.60 (The Golden Sweet Spot):\nResult: FLUX generatively re-synthesizes realistic subsurface scattering on skin, new bounce light in the eyes, and glossy highlights on leather without losing the person's identity.\n\n0.70 – 0.80 (High Chiaroscuro / Dramatic):\nResult: Extreme light transformation (e.g. converting daylight to moody night film noir), but fine facial features or jewelry details may slightly drift."
+        "The #1 King Lever: Pass 2 KSampler denoise\n\nThis determines how much FLUX redraws the image to adopt the new 3D lighting versus keeping the original geometry.\n\n0.30 \u2013 0.40 (Surgical Polish):\nResult: 100% preserves original face, wrinkles, and fabric details. Only adds subtle specular sheen and surface tints.\n\n0.50 \u2013 0.60 (The Golden Sweet Spot):\nResult: FLUX generatively re-synthesizes realistic subsurface scattering on skin, new bounce light in the eyes, and glossy highlights on leather without losing the person's identity.\n\n0.70 \u2013 0.80 (High Chiaroscuro / Dramatic):\nResult: Extreme light transformation (e.g. converting daylight to moody night film noir), but fine facial features or jewelry details may slightly drift."
       ],
       "widgets_values_named": {
-        "text": "The #1 King Lever: Pass 2 KSampler denoise\n\nThis determines how much FLUX redraws the image to adopt the new 3D lighting versus keeping the original geometry.\n\n0.30 – 0.40 (Surgical Polish):\nResult: 100% preserves original face, wrinkles, and fabric details. Only adds subtle specular sheen and surface tints.\n\n0.50 – 0.60 (The Golden Sweet Spot):\nResult: FLUX generatively re-synthesizes realistic subsurface scattering on skin, new bounce light in the eyes, and glossy highlights on leather without losing the person's identity.\n\n0.70 – 0.80 (High Chiaroscuro / Dramatic):\nResult: Extreme light transformation (e.g. converting daylight to moody night film noir), but fine facial features or jewelry details may slightly drift."
+        "text": "The #1 King Lever: Pass 2 KSampler denoise\n\nThis determines how much FLUX redraws the image to adopt the new 3D lighting versus keeping the original geometry.\n\n0.30 \u2013 0.40 (Surgical Polish):\nResult: 100% preserves original face, wrinkles, and fabric details. Only adds subtle specular sheen and surface tints.\n\n0.50 \u2013 0.60 (The Golden Sweet Spot):\nResult: FLUX generatively re-synthesizes realistic subsurface scattering on skin, new bounce light in the eyes, and glossy highlights on leather without losing the person's identity.\n\n0.70 \u2013 0.80 (High Chiaroscuro / Dramatic):\nResult: Extreme light transformation (e.g. converting daylight to moody night film noir), but fine facial features or jewelry details may slightly drift."
       },
       "color": "#243440",
       "bgcolor": "#10202c"
@@ -1751,10 +1749,10 @@
       "title": "INFO",
       "properties": {},
       "widgets_values": [
-        "# 💡 StudioLight: Method A Calibrated\n### Professional 3-Point Photometric Lighting Console\n\n---\n\n### 📦 Required Models & Storage Paths\n\n* **Diffusion Model (UNET):**\n  `flux1-krea-dev.safetensors` *(or standard `flux1-dev.safetensors`)*\n  📁 `ComfyUI/models/unet/` or `diffusion_models/`\n\n* **Text Encoders (CLIP):**\n  `clip_l.safetensors` + `t5xxl_fp16.safetensors` *(or fp8)*\n  📁 `ComfyUI/models/clip/`\n\n* **VAE:**\n  `ae.safetensors`\n  📁 `ComfyUI/models/vae/`\n\n* **Preprocessors (Auto-downloaded by ControlNet-Aux):**\n  `dsine.pt` + `depth_anything_v2_vitl.pth`\n\n---\n\n### ⚡ 3-Step Quick Start\n\n1. **Prompt (Zone 1):** Enter subject description in `Base Subject Prompt`. Leave `Albedo Lighting Suffix` attached to prevent pre-baked shadow seams.\n2. **Light (Zone 3):** Select a preset on `StudioLightRig` *(e.g. Rembrandt Classic)* or drag light heads on the live 2D Studio Radar.\n3. **Queue:** Pass 1 extracts 3D geometry at Step 10; Pass 2 synthesizes photorealistic lighting at Step 30.\n\n---\n\n### 🎛️ Production Calibration Rules\n\n* **Pass 2 Denoise (Zone 5):**\n  * `0.45 – 0.50`: Strict facial identity lock (catalog beauty).\n  * `0.55 – 0.60`: **Calibrated Sweet Spot** (subsurface scattering, leather reflections, skin wrap).\n  * `0.65+`: Extreme Chiaroscuro / Film Noir.\n\n* **Specular Kick (Zone 3 - Composite):**\n  * `0.40 – 0.50`: Universal standard for mixed materials (skin + wool coat + leather bag).\n  * `0.00`: Pure matte black wool (prevents edge solarization).\n\n* **Stand Distance (Zone 3 - Rig):**\n  * `0.8m – 1.5m`: Close, dramatic falloff; background architecture drops into darkness.\n  * `2.5m – 4.0m`: Soft, broad ambient coverage.\n\n---\n*Created by METAMATERIAL // github.com/maciejtajber/ComfyUI-StudioLight*\n"
+        "# \ud83d\udca1 StudioLight: Method A Calibrated\n### Professional 3-Point Photometric Lighting Console\n\n---\n\n### \ud83d\udce6 Required Models & Storage Paths\n\n* **Diffusion Model (UNET):**\n  `flux1-krea-dev.safetensors` *(or standard `flux1-dev.safetensors`)*\n  \ud83d\udcc1 `ComfyUI/models/unet/` or `diffusion_models/`\n\n* **Text Encoders (CLIP):**\n  `clip_l.safetensors` + `t5xxl_fp16.safetensors` *(or fp8)*\n  \ud83d\udcc1 `ComfyUI/models/clip/`\n\n* **VAE:**\n  `ae.safetensors`\n  \ud83d\udcc1 `ComfyUI/models/vae/`\n\n* **Preprocessors (Auto-downloaded by ControlNet-Aux):**\n  `dsine.pt` + `depth_anything_v2_vitl.pth`\n\n---\n\n### \u26a1 3-Step Quick Start\n\n1. **Prompt (Zone 1):** Enter subject description in `Base Subject Prompt`. Leave `Albedo Lighting Suffix` attached to prevent pre-baked shadow seams.\n2. **Light (Zone 3):** Select a preset on `StudioLightRig` *(e.g. Rembrandt Classic)* or drag light heads on the live 2D Studio Radar.\n3. **Queue:** Pass 1 extracts 3D geometry at Step 10; Pass 2 synthesizes photorealistic lighting at Step 30.\n\n---\n\n### \ud83c\udf9b\ufe0f Production Calibration Rules\n\n* **Pass 2 Denoise (Zone 5):**\n  * `0.45 \u2013 0.50`: Strict facial identity lock (catalog beauty).\n  * `0.55 \u2013 0.60`: **Calibrated Sweet Spot** (subsurface scattering, leather reflections, skin wrap).\n  * `0.65+`: Extreme Chiaroscuro / Film Noir.\n\n* **Specular Kick (Zone 3 - Composite):**\n  * `0.40 \u2013 0.50`: Universal standard for mixed materials (skin + wool coat + leather bag).\n  * `0.00`: Pure matte black wool (prevents edge solarization).\n\n* **Stand Distance (Zone 3 - Rig):**\n  * `0.8m \u2013 1.5m`: Close, dramatic falloff; background architecture drops into darkness.\n  * `2.5m \u2013 4.0m`: Soft, broad ambient coverage.\n\n---\n*Created by METAMATERIAL // github.com/maciejtajber/ComfyUI-StudioLight*\n"
       ],
       "widgets_values_named": {
-        "text": "# 💡 StudioLight: Method A Calibrated\n### Professional 3-Point Photometric Lighting Console\n\n---\n\n### 📦 Required Models & Storage Paths\n\n* **Diffusion Model (UNET):**\n  `flux1-krea-dev.safetensors` *(or standard `flux1-dev.safetensors`)*\n  📁 `ComfyUI/models/unet/` or `diffusion_models/`\n\n* **Text Encoders (CLIP):**\n  `clip_l.safetensors` + `t5xxl_fp16.safetensors` *(or fp8)*\n  📁 `ComfyUI/models/clip/`\n\n* **VAE:**\n  `ae.safetensors`\n  📁 `ComfyUI/models/vae/`\n\n* **Preprocessors (Auto-downloaded by ControlNet-Aux):**\n  `dsine.pt` + `depth_anything_v2_vitl.pth`\n\n---\n\n### ⚡ 3-Step Quick Start\n\n1. **Prompt (Zone 1):** Enter subject description in `Base Subject Prompt`. Leave `Albedo Lighting Suffix` attached to prevent pre-baked shadow seams.\n2. **Light (Zone 3):** Select a preset on `StudioLightRig` *(e.g. Rembrandt Classic)* or drag light heads on the live 2D Studio Radar.\n3. **Queue:** Pass 1 extracts 3D geometry at Step 10; Pass 2 synthesizes photorealistic lighting at Step 30.\n\n---\n\n### 🎛️ Production Calibration Rules\n\n* **Pass 2 Denoise (Zone 5):**\n  * `0.45 – 0.50`: Strict facial identity lock (catalog beauty).\n  * `0.55 – 0.60`: **Calibrated Sweet Spot** (subsurface scattering, leather reflections, skin wrap).\n  * `0.65+`: Extreme Chiaroscuro / Film Noir.\n\n* **Specular Kick (Zone 3 - Composite):**\n  * `0.40 – 0.50`: Universal standard for mixed materials (skin + wool coat + leather bag).\n  * `0.00`: Pure matte black wool (prevents edge solarization).\n\n* **Stand Distance (Zone 3 - Rig):**\n  * `0.8m – 1.5m`: Close, dramatic falloff; background architecture drops into darkness.\n  * `2.5m – 4.0m`: Soft, broad ambient coverage.\n\n---\n*Created by METAMATERIAL // github.com/maciejtajber/ComfyUI-StudioLight*\n"
+        "text": "# \ud83d\udca1 StudioLight: Method A Calibrated\n### Professional 3-Point Photometric Lighting Console\n\n---\n\n### \ud83d\udce6 Required Models & Storage Paths\n\n* **Diffusion Model (UNET):**\n  `flux1-krea-dev.safetensors` *(or standard `flux1-dev.safetensors`)*\n  \ud83d\udcc1 `ComfyUI/models/unet/` or `diffusion_models/`\n\n* **Text Encoders (CLIP):**\n  `clip_l.safetensors` + `t5xxl_fp16.safetensors` *(or fp8)*\n  \ud83d\udcc1 `ComfyUI/models/clip/`\n\n* **VAE:**\n  `ae.safetensors`\n  \ud83d\udcc1 `ComfyUI/models/vae/`\n\n* **Preprocessors (Auto-downloaded by ControlNet-Aux):**\n  `dsine.pt` + `depth_anything_v2_vitl.pth`\n\n---\n\n### \u26a1 3-Step Quick Start\n\n1. **Prompt (Zone 1):** Enter subject description in `Base Subject Prompt`. Leave `Albedo Lighting Suffix` attached to prevent pre-baked shadow seams.\n2. **Light (Zone 3):** Select a preset on `StudioLightRig` *(e.g. Rembrandt Classic)* or drag light heads on the live 2D Studio Radar.\n3. **Queue:** Pass 1 extracts 3D geometry at Step 10; Pass 2 synthesizes photorealistic lighting at Step 30.\n\n---\n\n### \ud83c\udf9b\ufe0f Production Calibration Rules\n\n* **Pass 2 Denoise (Zone 5):**\n  * `0.45 \u2013 0.50`: Strict facial identity lock (catalog beauty).\n  * `0.55 \u2013 0.60`: **Calibrated Sweet Spot** (subsurface scattering, leather reflections, skin wrap).\n  * `0.65+`: Extreme Chiaroscuro / Film Noir.\n\n* **Specular Kick (Zone 3 - Composite):**\n  * `0.40 \u2013 0.50`: Universal standard for mixed materials (skin + wool coat + leather bag).\n  * `0.00`: Pure matte black wool (prevents edge solarization).\n\n* **Stand Distance (Zone 3 - Rig):**\n  * `0.8m \u2013 1.5m`: Close, dramatic falloff; background architecture drops into darkness.\n  * `2.5m \u2013 4.0m`: Soft, broad ambient coverage.\n\n---\n*Created by METAMATERIAL // github.com/maciejtajber/ComfyUI-StudioLight*\n"
       },
       "color": "#df691a",
       "bgcolor": "#cb5506"

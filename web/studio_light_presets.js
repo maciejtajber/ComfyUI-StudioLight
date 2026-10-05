@@ -84,7 +84,7 @@ function hookNodePresets(node) {
 
     // 2. Hook All Setting Widgets -> Auto-flip preset to "Custom" on tweak
     for (const w of node.widgets) {
-        if (w.name === "preset" || w.name === "framing") continue;
+        if (w.name === "preset") continue;
         const origCb = w.callback;
         w.callback = function () {
             if (origCb) origCb.apply(this, arguments);

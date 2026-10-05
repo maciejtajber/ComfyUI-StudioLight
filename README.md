@@ -5,7 +5,7 @@
 
 ![ComfyUI Node](https://img.shields.io/badge/ComfyUI-Custom%20Node-000000?style=flat-square)
 ![License: MIT](https://img.shields.io/badge/License-MIT-black?style=flat-square)
-![Calibrated for: Flux.1 Dev | Krea | Wan 2.1 | SDXL](https://img.shields.io/badge/Calibrated%20for-Flux.1%20%7C%20Krea%20%7C%20Wan%202.1%20%7C%20SDXL-black?style=flat-square)
+![Calibrated for: Flux.1 Dev | SDXL](https://img.shields.io/badge/Calibrated%20for-Flux.1%20Dev%20%7C%20SDXL-black?style=flat-square)
 ![Automated Suites: 16/16 Verified](https://img.shields.io/badge/Automated%20Suites-16%2F16%20Verified-brightgreen?style=flat-square)
 ![Status: Calibrated Prototype](https://img.shields.io/badge/Status-Calibrated%20Prototype-blue?style=flat-square)
 
