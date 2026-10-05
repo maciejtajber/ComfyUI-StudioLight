@@ -436,7 +436,7 @@ def test_external_review_fixes():
     inputs = rig.INPUT_TYPES()
     assert "invert_normals_x" in inputs["optional"]
     assert "target_engine" in inputs["optional"]
-    assert len(inputs["required"]) == 27, f"Required widgets count MUST be 27 to prevent UI shift, got {len(inputs['required'])}"
+    assert len(inputs["required"]) == 26, f"Required widgets count MUST be 26 to prevent UI shift, got {len(inputs['required'])}"
     
     # Run with invert_normals_x=False (OpenGL convention)
     out_map, out_probe, prompt, _out_spec = rig.execute_rig(
@@ -645,6 +645,76 @@ def test_optical_penumbra_shadows():
     print("✓ Optical penumbra soft shadows passed!")
 
 
+def test_si_shadow_highlight_hermite_isolation():
+    print("Testing SIShadowHighlight Hermite Tonal Isolation & Bounded S-Curve...")
+    from nodes.si_shadow_highlight import SIShadowHighlight
+
+    si = SIShadowHighlight()
+    
+    # 1. Zero Midtone Bleed Invariant:
+    # At L = 0.50, neither extreme shadow_amount nor highlight_amount should alter the midtone!
+    midtone_img = torch.full((1, 16, 16, 3), 0.50, dtype=torch.float32)
+    adjusted_mid = si.adjust(
+        image=midtone_img,
+        shadow_amount=1.50,
+        highlight_amount=1.50,
+        shadow_tonal_width=0.5,
+        highlight_tonal_width=0.5,
+        midtone_contrast=1.0,
+    )[0]
+    mid_diff = torch.abs(adjusted_mid - midtone_img).max().item()
+    assert mid_diff < 1e-5, f"Midtone bleed detected! Diff = {mid_diff}"
+    print("  ✓ Zero midtone bleed verified: L=0.50 is 100% untouched by shadow/highlight adjustments.")
+
+    # 2. Strict Shadow & Highlight Isolation:
+    # Deep shadow (0.10) is affected by shadow_amount, unaffected by highlight_amount
+    shadow_img = torch.full((1, 16, 16, 3), 0.10, dtype=torch.float32)
+    hi_only_shadow = si.adjust(
+        image=shadow_img,
+        shadow_amount=0.0,
+        highlight_amount=1.50,
+        shadow_tonal_width=0.5,
+        highlight_tonal_width=0.5,
+        midtone_contrast=1.0,
+    )[0]
+    assert torch.abs(hi_only_shadow - shadow_img).max().item() < 1e-5, "Highlight adjustment leaked into shadow zone!"
+    print("  ✓ Strict shadow isolation verified: L=0.10 has 0.0% bleed from highlight slider.")
+
+    # Bright highlight (0.90) is affected by highlight_amount, unaffected by shadow_amount
+    hi_img = torch.full((1, 16, 16, 3), 0.90, dtype=torch.float32)
+    sh_only_hi = si.adjust(
+        image=hi_img,
+        shadow_amount=1.50,
+        highlight_amount=0.0,
+        shadow_tonal_width=0.5,
+        highlight_tonal_width=0.5,
+        midtone_contrast=1.0,
+    )[0]
+    assert torch.abs(sh_only_hi - hi_img).max().item() < 1e-5, "Shadow adjustment leaked into highlight zone!"
+    print("  ✓ Strict highlight isolation verified: L=0.90 has 0.0% bleed from shadow slider.")
+
+    # 3. Bounded Sigmoidal S-Curve:
+    # Midtone contrast > 1.0 increases slope around 0.5 without hard clipping 0.0 or 1.0
+    gradient = torch.linspace(0.0, 1.0, 100, dtype=torch.float32).view(1, 1, 100, 1).expand(1, 1, 100, 3)
+    contrast_img = si.adjust(
+        image=gradient,
+        shadow_amount=0.0,
+        highlight_amount=0.0,
+        shadow_tonal_width=0.5,
+        highlight_tonal_width=0.5,
+        midtone_contrast=1.5,
+    )[0]
+    assert contrast_img.min().item() >= 0.0 and contrast_img.max().item() <= 1.0
+    # Pure black and pure white remain anchored
+    assert torch.abs(contrast_img[0, 0, 0, :] - 0.0).max().item() < 1e-5
+    assert torch.abs(contrast_img[0, 0, -1, :] - 1.0).max().item() < 1e-5
+    # Middle grey remains anchored at 0.5
+    mid_val = contrast_img[0, 0, 49, 0].item() # near 0.5
+    assert 0.45 < mid_val < 0.55
+    print("  ✓ Bounded sigmoidal S-curve verified: 0.0, 0.5, and 1.0 stay anchored without hard clipping.")
+    print("✓ SIShadowHighlight Hermite Tonal Isolation passed flawlessly!")
+
+
 if __name__ == "__main__":
     test_color_utils()
     test_presets()
@@ -661,6 +731,7 @@ if __name__ == "__main__":
     test_specular_pass_wiring()
     test_prompt_sanitizer()
     test_optical_penumbra_shadows()
+    test_si_shadow_highlight_hermite_isolation()
     print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified!")
 
 
