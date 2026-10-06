@@ -230,7 +230,7 @@ pip install -r ComfyUI-StudioLight/requirements.txt
 * **Preprocessors:** Install `comfyui_controlnet_aux` for `DSINE-NormalMapPreprocessor` and `DepthAnythingV2Preprocessor`.
 * **Models:** Standard `flux1-dev.safetensors` (or `flux1-krea-dev.safetensors`), CLIP text encoders, and VAE.
 
-<h3 id="-automated-test-suite"> Automated Test Suite</h3>
+### Automated Test Suite
 
 Verify math, photometric color spaces, and shader engines (runs standalone without ComfyUI):
 ```bash
@@ -239,7 +239,7 @@ python test_studiolight.py
 
 ---
 
-<h2 id="-workflows"> Master Workflows</h2>
+## Master Workflows
 
 * `workflows/StudioLight_MethodA_Calibrated.json`: Complete production workflow with organized functional zones, live preview cards, and prompt synchronization.
 * `workflows/StudioLight_Production.json`: Streamlined production layout for fast iterations.
