@@ -88,13 +88,6 @@ https://github.com/user-attachments/assets/YOUR-VIDEO-ID.mp4
 
 Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic blue rim light on the left"` often triggers severe prompt bleed: facial features shift, clothing changes cut, and colors wash across the entire frame.
 
-<div align="center">
-  <picture>
-    <source srcset="assets/lottery_vs_spatial.svg" type="image/svg+xml">
-    <img src="assets/lottery_vs_spatial.png" alt="Prompt Lottery vs Spatial Control Breakdown" width="100%" style="border-radius: 6px; margin: 18px 0;" />
-  </picture>
-</div>
-
 | Prompt-Based Lighting (Text Only) | StudioLight Spatial Control (VFX Engine) |
 | :--- | :--- |
 | **Subject Mutation:** Prompting for light changes anatomy, styling, and background geometry. | **Geometry Preservation:** Structure crystallizes in Pass 1; lighting is steered independently in Pass 2. |
