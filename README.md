@@ -14,10 +14,11 @@
 
 <!-- STATUS & SPEC BADGES -->
 <p align="center">
+  <a href="https://github.com/maciejtajber/ComfyUI-StudioLight/releases"><img src="https://img.shields.io/badge/Version-v1.0.0-0f141c?style=for-the-badge" alt="Version v1.0.0"></a>
   <a href="https://github.com/maciejtajber/ComfyUI-StudioLight"><img src="https://img.shields.io/badge/ComfyUI-Custom%20Node-0f141c?style=for-the-badge&logo=comfyui&logoColor=white" alt="ComfyUI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0f141c?style=for-the-badge" alt="License"></a>
   <a href="https://black-forest-labs.com"><img src="https://img.shields.io/badge/Engine-FLUX.1%20%7C%20Krea-10b981?style=for-the-badge" alt="FLUX Calibrated"></a>
-  <a href="#-automated-test-suite"><img src="https://img.shields.io/badge/Tests-16%2F16%20Passed-3b82f6?style=for-the-badge" alt="16/16 Verified"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0f141c?style=for-the-badge" alt="License"></a>
+  <a href="#-automated-test-suite"><img src="https://img.shields.io/badge/Tests-16%2F16%20Passed-3b82f6?style=for-the-badge" alt="16/16 Unit Tests"></a>
 </p>
 
 <!-- GITHUB ANCHOR NAVIGATION -->
@@ -39,12 +40,10 @@
 
 ## 🎬 Quick Demo
 
-<div align="center">
-  <img src="assets/radar_animated.svg" alt="Interactive 2D Studio Radar Live Animation" width="480" style="border-radius: 8px; margin: 16px 0;" />
-  <p><sub><i>60 FPS hardware-accelerated vector simulation of the 2D Studio Radar Console. <a href="assets/demo.mp4">View raw MP4 capture</a></i></sub></p>
-</div>
+<!-- Video Placeholder: Paste your recorded UI video here (e.g. drag & drop mp4 or github user-attachments link) -->
+https://github.com/user-attachments/assets/YOUR-VIDEO-ID.mp4
 
-> **Interactive 2D Studio Radar & Real-Time Spherical VFX Probes.** Positioning the Key light live in camera-space. As the fixture moves, facial penumbras, contact shadows, and dielectric catchlights update while preserving identity, pose, and garment construction.
+> **Interactive 2D Studio Radar & Real-Time Spherical VFX Probes. & Real-Time Spherical VFX Probes.** Positioning the Key light live in camera-space. As the fixture moves, facial penumbras, contact shadows, and dielectric catchlights update while preserving identity, pose, and garment construction.
 
 ---
 
