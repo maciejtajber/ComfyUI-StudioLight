@@ -101,48 +101,10 @@ Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic
 
 StudioLight splits generation into a **two-stage geometry and relighting pipeline**:
 
-```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              STUDIOLIGHT RELIGHTING PIPELINE                           │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+<div align="center">
+  <img src="assets/studiolight_pipeline.png" alt="StudioLight Architecture Pipeline Diagram" width="100%" style="border-radius: 6px; margin: 18px 0;" />
+</div>
 
- [ Master User Prompt ]
-          │
-          ├──► [ Neutral Albedo Suffix ] ──► [ Pass 1 Draft (Steps 0-10) ]
-          │                                                │
-          │                                                ▼
-          │                                  [ 3D Structural Extraction ]
-          │                                  • DSINE Surface Normals
-          │                                  • Depth Anything V2 Metric Z
-          │                                                │
-          │                                                ▼
-          │                                       [ StudioLightRig ]
-          │                                  • 3D Camera-Space Placement
-          │                                  • PCSS Area Soft Shadows
-          │                                  • Physical Modifier Apertures
-          │                                                │
-          │                                ┌───────────────┴───────────────┐
-          │                                ▼                               ▼
-          │                        (relighting_map)                 (specular_pass)
-          │                                │                               │
-          │                                └───────────────┬───────────────┘
-          │                                                │
-          │                                                ▼
-          │                                  [ Photometric Composite ]
-          │                                  • Linear Rec.709 Space
-          │                                  • Rational Shoulder Tonemapper
-          │                                                │
-          │                                                ▼
-          │                                      [ SIShadowHighlight ]
-          │                                  • Tonal Darkroom Sculpting
-          │                                  • Highlight Beaconing
-          ▼                                                ▼
- [ Synchronized Prompt ] ─────────────────────► [ Pass 2 KSampler (Steps 10-30) ]
-                                                (Stochastic Integration | Denoise: 0.55)
-                                                           │
-                                                           ▼
-                                                 FINAL MASTER RENDER
-```
 
 1. **Geometry Crystallization (Steps 0–10):** Pass 1 generates an unlit albedo draft to define scene forms, anatomy, and clothing weave without baked directional shadows.
 2. **Metric 3D Projection:** Extracts surface normals (DSINE) and metric depth (Depth Anything V2), back-projecting the 2D draft into virtual camera-space ($40^\circ$ portrait FOV).
