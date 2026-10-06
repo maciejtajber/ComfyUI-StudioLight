@@ -48,10 +48,10 @@ https://github.com/user-attachments/assets/YOUR-VIDEO-ID.mp4
 
 > **Locked Seed:** `424242` | *Identical Base Prompt, Geometry, and Seed across FLUX.1 Krea Dev*
 
-| Light Left (Key -45°) | Light Right (Key +45°) | High Overhead (Butterfly) | Dual-Tone Split (Warm/Cyan) |
-| :---: | :---: | :---: | :---: |
-| <img src="assets/proof_left.png" width="100%" alt="Sculpted Rembrandt" /> | <img src="assets/proof_right.png" width="100%" alt="Broad Commercial" /> | <img src="assets/proof_top.png" width="100%" alt="High-Fashion Beauty" /> | <img src="assets/proof_split.png" width="100%" alt="Dual-Tone Split" /> |
-| **Sculpted Rembrandt**<br>Key: -45° / Fill: +30° | **Broad Commercial**<br>Key: +45° / Fill: -20° | **High-Fashion Beauty**<br>Key: 0° Az / +70° Elevation | **Editorial Kicker**<br>Key: 3500K / Fill: 10000K |
+| Hard Key (Fresnel Spotlight) | Sculpted (Beauty Dish) | Soft Wrap (Diffused Octabox) |
+| :---: | :---: | :---: |
+| <img src="assets/showcase_fresnel.png" width="100%" alt="Fresnel Spotlight" /> | <img src="assets/showcase_beauty.png" width="100%" alt="Beauty Dish" /> | <img src="assets/showcase_octabox.png" width="100%" alt="Diffused Octabox" /> |
+| **Fresnel Spotlight (Hard Key)**<br>Key: +30° Azimuth / +25° Elevation<br>Crisp penumbra & sharp dielectric glints | **High-Fashion Beauty Dish**<br>Key: +30° Azimuth / +25° Elevation<br>Carved cheekbones & circular eye catchlights | **Diffused Studio Octabox (140cm)**<br>Key: +30° Azimuth / +25° Elevation<br>Creamy continuous penumbra & wrap fill |
 
 ---
 
