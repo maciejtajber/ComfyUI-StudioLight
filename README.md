@@ -40,10 +40,7 @@
 
 ## Quick Demo
 
-<!-- Video Placeholder: Paste your recorded UI video here (e.g. drag & drop mp4 or github user-attachments link) -->
 https://github.com/user-attachments/assets/YOUR-VIDEO-ID.mp4
-
-> **Interactive 3D Camera-Space Lighting & Real-Time VFX Probes.** Positioning the Key light live in camera-space. As the fixture moves, facial penumbras, contact shadows, and dielectric catchlights update while preserving identity, pose, and garment construction.
 
 ---
 
