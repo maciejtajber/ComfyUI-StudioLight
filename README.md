@@ -101,13 +101,6 @@ Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic
 
 StudioLight splits generation into a **two-stage geometry and relighting pipeline**:
 
-<div align="center">
-  <picture>
-    <source srcset="assets/pipeline.svg" type="image/svg+xml">
-    <img src="assets/pipeline.png" alt="StudioLight Architecture Pipeline Diagram" width="100%" style="border-radius: 6px; margin: 18px 0;" />
-  </picture>
-</div>
-
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                              STUDIOLIGHT RELIGHTING PIPELINE                           │
