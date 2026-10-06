@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 1024" width="100%" height="100%">
+  <defs>
+    <linearGradient id="compBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060709" />
+      <stop offset="50%" stop-color="#0a0c12" />
+      <stop offset="100%" stop-color="#050608" />
+    </linearGradient>
+
+    <linearGradient id="badCard" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1c1012" />
+      <stop offset="100%" stop-color="#0e0809" />
+    </linearGradient>
+
+    <linearGradient id="goodCard" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0c181c" />
+      <stop offset="100%" stop-color="#060e10" />
+    </linearGradient>
+
+    <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#141724" stroke-width="0.75" />
+    </pattern>
+
+    <filter id="badgeGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="2048" height="1024" fill="url(#compBg)" />
+  <rect width="2048" height="1024" fill="url(#gridPattern)" opacity="0.85" />
+  <rect x="24" y="24" width="2000" height="976" fill="none" stroke="#1f2538" stroke-width="1.2" />
+
+  <!-- Corner Registration Markers -->
+  <path d="M 24 48 L 24 24 L 48 24" fill="none" stroke="#f59e0b" stroke-width="3" />
+  <path d="M 2024 48 L 2024 24 L 2000 24" fill="none" stroke="#f59e0b" stroke-width="3" />
+  <path d="M 24 976 L 24 1000 L 48 1000" fill="none" stroke="#f59e0b" stroke-width="3" />
+  <path d="M 2024 976 L 2024 1000 L 2000 1000" fill="none" stroke="#f59e0b" stroke-width="3" />
+
+  <!-- Top Telemetry Header -->
+  <g transform="translate(60, 65)">
+    <rect x="0" y="0" width="8" height="8" fill="#f59e0b" />
+    <text x="20" y="8" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="700" fill="#f59e0b" letter-spacing="4">ENGINEERING COMPARISON MATRIX</text>
+    <text x="360" y="8" font-family="'JetBrains Mono', monospace" font-size="12" fill="#64748b" letter-spacing="1.5">| PROMPT LOTTERY VS. DETERMINISTIC SPATIAL CONTROL</text>
+  </g>
+
+  <!-- ════════════════════ LEFT PANEL: THE PROMPT LOTTERY ════════════════════ -->
+  <g transform="translate(60, 110)">
+    <rect x="0" y="0" width="934" height="850" fill="url(#badCard)" stroke="#ef4444" stroke-width="1.2" rx="6" opacity="0.95" />
+    <rect x="0" y="0" width="934" height="48" fill="#200d10" rx="6" />
+
+    <!-- Panel Header -->
+    <circle cx="28" cy="24" r="6" fill="#ef4444" />
+    <text x="46" y="30" font-family="'JetBrains Mono', monospace" font-size="16" font-weight="800" fill="#fca5a5" letter-spacing="2">THE PROMPT LOTTERY (TEXT-ONLY DIFFUSION)</text>
+    <text x="890" y="30" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="#ef4444" text-anchor="end">UNRELIABLE</text>
+
+    <!-- Subtitle Prompt Simulation -->
+    <rect x="25" y="70" width="884" height="42" fill="#14090b" stroke="#3b151a" stroke-width="1" />
+    <text x="40" y="96" font-family="'JetBrains Mono', monospace" font-size="12.5" fill="#f87171">
+      PROMPT INPUT: "high-fashion woman, dramatic blue rim light on the left, golden warm key spotlight, 3200K"
+    </text>
+
+    <!-- Failure Card 1: Subject Mutation -->
+    <g transform="translate(25, 135)">
+      <rect x="0" y="0" width="884" height="145" fill="#140a0c" stroke="#381318" stroke-width="1" />
+      <text x="25" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="18" font-weight="800" fill="#ef4444">01. Severe Subject &amp; Anatomy Mutation</text>
+      <text x="25" y="58" font-family="'JetBrains Mono', monospace" font-size="11" fill="#fca5a5">ROOT CAUSE: Cross-attention semantic entanglement between lighting tokens and spatial geometry</text>
+      <text x="25" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="14" fill="#cbd5e1" width="830">
+        Adding adjectives like "dramatic rim" or "golden spotlight" rewires the entire diffusion vector space. Facial bone structure morphs, eye gaze shifts, styling transforms, and garments change silhouette between seed variations.
+      </text>
+      <rect x="25" y="105" width="220" height="24" fill="#290e12" />
+      <text x="35" y="121" font-family="'JetBrains Mono', monospace" font-size="11" fill="#f87171">✕ ZERO IDENTITY LOCK</text>
+    </g>
+
+    <!-- Failure Card 2: Chromatic Bleed -->
+    <g transform="translate(25, 300)">
+      <rect x="0" y="0" width="884" height="145" fill="#140a0c" stroke="#381318" stroke-width="1" />
+      <text x="25" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="18" font-weight="800" fill="#ef4444">02. Uncontrolled Chromatic Bleed</text>
+      <text x="25" y="58" font-family="'JetBrains Mono', monospace" font-size="11" fill="#fca5a5">ROOT CAUSE: Text tokens lack surface normal awareness and bleed across unlit albedo</text>
+      <text x="25" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="14" fill="#cbd5e1">
+        Requesting "blue rim light" dyes the model's skin, hair, and clothing blue. The model does not understand that light only strikes surfaces facing the vector (N · L > 0); instead, the color word globally stains shadows and matte fabrics.
+      </text>
+      <rect x="25" y="105" width="220" height="24" fill="#290e12" />
+      <text x="35" y="121" font-family="'JetBrains Mono', monospace" font-size="11" fill="#f87171">✕ SEVERE COLOR CONTAMINATION</text>
+    </g>
+
+    <!-- Failure Card 3: Uncalibrated Falloff -->
+    <g transform="translate(25, 465)">
+      <rect x="0" y="0" width="884" height="145" fill="#140a0c" stroke="#381318" stroke-width="1" />
+      <text x="25" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="18" font-weight="800" fill="#ef4444">03. Uncalibrated Falloff &amp; Background Spill</text>
+      <text x="25" y="58" font-family="'JetBrains Mono', monospace" font-size="11" fill="#fca5a5">ROOT CAUSE: Prompts cannot compute metric Euclidean distance or inverse-square decay</text>
+      <text x="25" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="14" fill="#cbd5e1">
+        Studio lights do not decay into the room. An intended close key strobe illuminates distant architecture 20 meters behind the subject with identical brightness, destroying cinematic depth separation and chiaroscuro falloff.
+      </text>
+      <rect x="25" y="105" width="220" height="24" fill="#290e12" />
+      <text x="35" y="121" font-family="'JetBrains Mono', monospace" font-size="11" fill="#f87171">✕ FLAT CARTOON ILLUMINATION</text>
+    </g>
+
+    <!-- Failure Card 4: Pre-baked Specular Artifacts -->
+    <g transform="translate(25, 630)">
+      <rect x="0" y="0" width="884" height="145" fill="#140a0c" stroke="#381318" stroke-width="1" />
+      <text x="25" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="18" font-weight="800" fill="#ef4444">04. Pre-baked Blown Specular Artifacts</text>
+      <text x="25" y="58" font-family="'JetBrains Mono', monospace" font-size="11" fill="#fca5a5">ROOT CAUSE: High-contrast tokens bake blown white patches into early latent steps</text>
+      <text x="25" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="14" fill="#cbd5e1">
+        Prompting for shiny patent leather or high-gloss makeup causes the initial latent steps to burn permanent, clipped white solarization blobs that cannot be relit, desaturated, or reshaped downstream.
+      </text>
+      <rect x="25" y="105" width="220" height="24" fill="#290e12" />
+      <text x="35" y="121" font-family="'JetBrains Mono', monospace" font-size="11" fill="#f87171">✕ CLIPPED LATENT BURNOUT</text>
+    </g>
+  </g>
+
+  <!-- ════════════════════ RIGHT PANEL: STUDIOLIGHT SPATIAL CONTROL ════════════════════ -->
+  <g transform="translate(1054, 110)">
+    <rect x="0" y="0" width="934" height="850" fill="url(#goodCard)" stroke="#10b981" stroke-width="1.2" rx="6" opacity="0.95" />
+    <rect x="0" y="0" width="934" height="48" fill="#08201a" rx="6" />
+
+    <!-- Panel Header -->
+    <circle cx="28" cy="24" r="6" fill="#10b981" />
+    <text x="46" y="30" font-family="'JetBrains Mono', monospace" font-size="16" font-weight="800" fill="#a7f3d0" letter-spacing="2">STUDIOLIGHT SPATIAL CONTROL (METAMATERIAL)</text>
+    <text x="890" y="30" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="#10b981" text-anchor="end">CALIBRATED VFX</text>
+
+    <!-- Subtitle Spec Simulation -->
+    <rect x="25" y="70" width="884" height="42" fill="#071714" stroke="#0e3d30" stroke-width="1" />
+    <text x="40" y="96" font-family="'JetBrains Mono', monospace" font-size="12.5" fill="#6ee7b7">
+      SPATIAL RIG: Key [-45° / 1.5m / Beauty Dish / 3200K] · Rim [+140° / 2.0m / Stripbox / 7200K]
+    </text>
+
+    <!-- Solution Card 1: Geometry Crystallization -->
+    <g transform="translate(25, 135)">
+      <rect x="0" y="0" width="884" height="145" fill="#061411" stroke="#0f3d32" stroke-width="1" />
+      <text x="25" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="18" font-weight="800" fill="#10b981">01. 100% Geometry &amp; Identity Preservation</text>
+      <text x="25" y="58" font-family="'JetBrains Mono', monospace" font-size="11" fill="#6ee7b7">ENGINEERING: Two-stage decoupling. Pass 1 locks geometry; Pass 2 steers physical photons</text>
+      <text x="25" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="14" fill="#cbd5e1">
+        Subject anatomy, facial features, styling, and garment folds crystallize in Pass 1 (Steps 0–10). You can swing the Key fixture from -90° to +90° or dial Kelvin from 2000K to 10000K without a single millimeter of facial drift.
+      </text>
+      <rect x="25" y="105" width="220" height="24" fill="#0c2b22" />
+      <text x="35" y="121" font-family="'JetBrains Mono', monospace" font-size="11" fill="#34d399">✓ 100% POSE &amp; IDENTITY LOCK</text>
+    </g>
+
+    <!-- Solution Card 2: Directional Lobe Isolation -->
+    <g transform="translate(25, 300)">
+      <rect x="0" y="0" width="884" height="145" fill="#061411" stroke="#0f3d32" stroke-width="1" />
+      <text x="25" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="18" font-weight="800" fill="#10b981">02. Directional Lobe Isolation (N · L &gt; 0)</text>
+      <text x="25" y="58" font-family="'JetBrains Mono', monospace" font-size="11" fill="#6ee7b7">ENGINEERING: Metric surface normal dot products gate photon deposition and color lobes</text>
+      <text x="25" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="14" fill="#cbd5e1">
+        Cyan rim photons and amber tungsten rays are calculated in metric camera space. Color energy illuminates exclusively where surface normals face the fixture vector (N · L > 0). Occluded shadows stay rich and unpolluted.
+      </text>
+      <rect x="25" y="105" width="220" height="24" fill="#0c2b22" />
+      <text x="35" y="121" font-family="'JetBrains Mono', monospace" font-size="11" fill="#34d399">✓ ZERO CHROMATIC BLEED</text>
+    </g>
+
+    <!-- Solution Card 3: Calibrated Falloff -->
+    <g transform="translate(25, 465)">
+      <rect x="0" y="0" width="884" height="145" fill="#061411" stroke="#0f3d32" stroke-width="1" />
+      <text x="25" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="18" font-weight="800" fill="#10b981">03. Calibrated Studio Falloff (1/d¹·⁶)</text>
+      <text x="25" y="58" font-family="'JetBrains Mono', monospace" font-size="11" fill="#6ee7b7">ENGINEERING: Per-pixel Euclidean distance attenuation + Hermite C¹ background taper</text>
+      <text x="25" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="14" fill="#cbd5e1">
+        Light intensity naturally decays with distance from the virtual C-stand. A key light positioned at 1.0m illuminates the cheek with crisp clarity while letting the rear background fall off naturally into rich velvet darkness.
+      </text>
+      <rect x="25" y="105" width="220" height="24" fill="#0c2b22" />
+      <text x="35" y="121" font-family="'JetBrains Mono', monospace" font-size="11" fill="#34d399">✓ NATURAL STUDIO DEPTH &amp; CYC</text>
+    </g>
+
+    <!-- Solution Card 4: Albedo Decoupling -->
+    <g transform="translate(25, 630)">
+      <rect x="0" y="0" width="884" height="145" fill="#061411" stroke="#0f3d32" stroke-width="1" />
+      <text x="25" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="18" font-weight="800" fill="#10b981">04. Albedo Decoupling &amp; Dedicated Specular</text>
+      <text x="25" y="58" font-family="'JetBrains Mono', monospace" font-size="11" fill="#6ee7b7">ENGINEERING: Pass 1 neutral plate + isolated Blinn-Phong dielectric catchlight passes</text>
+      <text x="25" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="14" fill="#cbd5e1">
+        Pass 1 generates a clean, unburned albedo plate. High-contrast dielectric catchlights (tight 2.8% pixel area) ignite in Pass 2 strictly where your physical modifier strikes, shaped with rational shoulder headroom tonemapping.
+      </text>
+      <rect x="25" y="105" width="220" height="24" fill="#0c2b22" />
+      <text x="35" y="121" font-family="'JetBrains Mono', monospace" font-size="11" fill="#34d399">✓ PRISTINE CATCHLIGHT CONTROL</text>
+    </g>
+  </g>
+</svg>

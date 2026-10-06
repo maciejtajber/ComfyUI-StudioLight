@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <radialGradient id="logoSphere" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="25%" stop-color="#cbd5e1" />
+      <stop offset="60%" stop-color="#334155" />
+      <stop offset="90%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </radialGradient>
+
+    <filter id="logoBloom" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="400" height="400" fill="#07080a" rx="32" />
+  <rect x="8" y="8" width="384" height="384" fill="none" stroke="#1e2433" stroke-width="1.5" rx="26" />
+
+  <!-- Radar Calibration Concentric Rings -->
+  <circle cx="200" cy="200" r="140" fill="none" stroke="#161c2b" stroke-width="1" />
+  <circle cx="200" cy="200" r="100" fill="none" stroke="#1c2438" stroke-width="1" stroke-dasharray="4,4" />
+  <circle cx="200" cy="200" r="60" fill="none" stroke="#25314d" stroke-width="1" />
+
+  <!-- Crosshairs -->
+  <line x1="60" y1="200" x2="340" y2="200" stroke="#1c2438" stroke-width="1" />
+  <line x1="200" y1="60" x2="200" y2="340" stroke="#1c2438" stroke-width="1" />
+
+  <!-- 3-Point Light Vectors -->
+  <!-- KEY LIGHT VECTOR (-45° Amber) -->
+  <line x1="90" y1="90" x2="175" y2="175" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" filter="url(#logoBloom)" />
+  <circle cx="85" cy="85" r="9" fill="#f59e0b" filter="url(#logoBloom)" />
+  <circle cx="85" cy="85" r="4" fill="#ffffff" />
+
+  <!-- FILL LIGHT VECTOR (+35° Cyan) -->
+  <line x1="315" y1="120" x2="225" y2="185" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" filter="url(#logoBloom)" />
+  <circle cx="320" cy="116" r="8" fill="#38bdf8" filter="url(#logoBloom)" />
+  <circle cx="320" cy="116" r="3.5" fill="#ffffff" />
+
+  <!-- RIM LIGHT VECTOR (+140° Magenta) -->
+  <line x1="290" y1="305" x2="220" y2="225" stroke="#e879f9" stroke-width="2" stroke-linecap="round" filter="url(#logoBloom)" />
+  <circle cx="295" cy="310" r="7" fill="#e879f9" filter="url(#logoBloom)" />
+  <circle cx="295" cy="310" r="3" fill="#ffffff" />
+
+  <!-- Central Optical Calibration Sphere -->
+  <circle cx="200" cy="200" r="36" fill="url(#logoSphere)" stroke="#475569" stroke-width="1" />
+  <!-- Catchlight Specular Kick -->
+  <circle cx="187" cy="187" r="4.5" fill="#ffffff" filter="url(#logoBloom)" />
+  <circle cx="187" cy="187" r="2" fill="#fef3c7" />
+
+  <!-- Registration Marks -->
+  <path d="M 28 44 L 28 28 L 44 28" fill="none" stroke="#f59e0b" stroke-width="2.5" />
+  <path d="M 372 44 L 372 28 L 356 28" fill="none" stroke="#f59e0b" stroke-width="2.5" />
+  <path d="M 28 356 L 28 372 L 44 372" fill="none" stroke="#f59e0b" stroke-width="2.5" />
+  <path d="M 372 356 L 372 372 L 356 372" fill="none" stroke="#f59e0b" stroke-width="2.5" />
+</svg>

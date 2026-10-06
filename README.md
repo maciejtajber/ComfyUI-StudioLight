@@ -1,90 +1,184 @@
-# ComfyUI-StudioLight
+<div align="center">
 
-> **Professional Photographic 3-Point Studio Lighting Console & Photometric Engine for ComfyUI.**  
-> Direct the physical illumination of generative diffusion models with spatial control. Position Key, Fill, and Rim lights in 3D camera-space, dial blackbody-inspired Kelvin temperatures, shape beam angles with optical modifiers, control photographic distance falloff, inspect live 2D radar gizmos, and composite with scene-referred linear photometric math.
+<!-- HERO BANNER (CAMERA-GRADE HASSELBLAD & ZEISS AESTHETIC) -->
+<img src="assets/studiolight_banner.svg" alt="StudioLight by METAMATERIAL" width="100%" />
 
-![ComfyUI Node](https://img.shields.io/badge/ComfyUI-Custom%20Node-000000?style=flat-square)
-![License: MIT](https://img.shields.io/badge/License-MIT-black?style=flat-square)
-![Calibrated for: Flux.1 Dev | SDXL](https://img.shields.io/badge/Calibrated%20for-Flux.1%20Dev%20%7C%20SDXL-black?style=flat-square)
-![Automated Suites: 16/16 Verified](https://img.shields.io/badge/Automated%20Suites-16%2F16%20Verified-brightgreen?style=flat-square)
-![Status: Calibrated Prototype](https://img.shields.io/badge/Status-Calibrated%20Prototype-blue?style=flat-square)
+# StudioLight
+### Professional 3-Point Photometric Lighting Console for FLUX
+**by METAMATERIAL**
 
----
+<p align="center">
+  <b>Stop prompt gambling. Design the light.</b><br>
+  Interactive 3D camera-space lighting control, physical modifier apertures, blackbody Kelvin calibration, and scene-referred linear photometric compositing for generative diffusion.
+</p>
 
-## The Concept
+<!-- STATUS & SPEC BADGES -->
+<p align="center">
+  <a href="https://github.com/maciejtajber/ComfyUI-StudioLight"><img src="https://img.shields.io/badge/ComfyUI-Custom%20Node-0f141c?style=for-the-badge&logo=comfyui&logoColor=white" alt="ComfyUI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0f141c?style=for-the-badge" alt="License"></a>
+  <a href="https://black-forest-labs.com"><img src="https://img.shields.io/badge/Engine-FLUX.1%20%7C%20Krea-10b981?style=for-the-badge" alt="FLUX Calibrated"></a>
+  <a href="#-automated-test-suite"><img src="https://img.shields.io/badge/Tests-16%2F16%20Passed-3b82f6?style=for-the-badge" alt="16/16 Verified"></a>
+</p>
 
-> **"Photoshop manipulates pixels. Generative models infer lighting from learned visual priors. StudioLight lets you design the lighting spatially in a virtual studio."**  
-
-In standard generative AI, typing `"dramatic golden hour rim light"` or `"3200K tungsten spotlight"` is prompt gambling—text tokens bleed into anatomy, scramble facial features, and provide zero deterministic spatial control over where illumination strikes or casts shadows.
-
-**How ComfyUI-StudioLight bridges photographic studio lighting into generative diffusion:**
-
-1. **Midstream Structural Extraction:**  
-   At an empirically calibrated intermediate step (e.g. step 10), the generative model has crystallized structural scene geometry, depth, and spatial forms. StudioLight extracts surface normals (DSINE) and metric depth (Depth Anything V2) from this latent draft and uses them as a lighting carrier.
-2. **3D Camera-Space Back-Projection ($40^\circ$ Portrait FOV):**  
-   Unprojects extracted 2D normals and depth into metric OpenGL camera-space ($Z = -1.5\text{m}$ to $-4.5\text{m}$), fully corrected for non-square anamorphic aspect ratios ($W/H$).
-3. **Optical Penumbra & Area Soft Shadows (Screen-Space PCSS):**  
-   Simulates physical modifier aperture diameters (Octabox 140cm, Beauty Dish 55cm, Snoot 10cm, Flash 4cm). Uses Percentage-Closer Soft Shadows with 8-tap Vogel disk filtering to keep contact shadows razor-sharp near occluders while softly diffusing cast shadows across distant walls.
-4. **Calibrated Photographic Power Falloff ($1/d^{1.6}$) & Hermite Distance Taper:**  
-   Calculates per-pixel Euclidean distance from the virtual lighting fixture to every surface point. A calibrated $1/d^{1.6}$ falloff curve is used to approximate practical studio light behavior and secondary bounce in enclosed volumes, while a smooth Hermite background taper ($d_{\text{norm}} < 0.20$) prevents studio strobes from spilling onto distant architecture 25 meters behind the subject.
-5. **Optical Forward Modifier Beam Cones & Horizon Gating:**  
-   Studio fixtures (Stripboxes, Beauty Dishes, Snoots) are aimed forward at the subject. The engine models the forward beam cone ($\cos\theta_{\text{beam}} > 0$) and specular horizon gating ($N \cdot L > 0$), eliminating backward light leakage and banishing edge halos on background architecture.
-6. **Dedicated Specular Lobes & Rational Shoulder Tonemapping:**  
-   Isolates pure Blinn-Phong dielectric catchlight lobes (tight 2.8% pixel area) composited onto linear Rec.709 plates, rolled off smoothly through a $C^1$-continuous rational shoulder with active `white_point` headroom control.
-7. **Albedo Prompt Decoupling:**  
-   Addresses the pre-baked specular artifact problem. Prompts are neutralized for Pass 1 with shadowless albedo tokens to generate clean, un-burned base geometry, allowing 3D specular catchlights in Pass 2 to appear strictly where your lights strike.
-8. **Production Architecture (Method A):**  
-   2-Stage Calibrated Relighting. Step 10 draft $\to$ 3D extraction $\to$ deferred photometric composite $\to$ stochastic re-diffusion (Steps 10–30, denoise `0.50–0.75`, empirically calibrated per subject/material). *(Continuous trajectory injection Method B is tracked for next-generation research in [ROADMAP.md](ROADMAP.md)).*
+<!-- GITHUB ANCHOR NAVIGATION -->
+<p align="center">
+  <a href="#-quick-demo"><b>Demo</b></a> •
+  <a href="#-same-subject-same-prompt-different-light"><b>Visual Proof</b></a> •
+  <a href="#-the-problem-prompt-lottery-vs-spatial-control"><b>The Problem</b></a> •
+  <a href="#-how-it-works"><b>Architecture</b></a> •
+  <a href="#-the-virtual-studio"><b>The Studio</b></a> •
+  <a href="#-showcase-gallery"><b>Showcase</b></a> •
+  <a href="#-core-nodes-deep-manual"><b>Nodes Manual</b></a> •
+  <a href="#-installation"><b>Installation</b></a> •
+  <a href="#-workflows"><b>Workflows</b></a>
+</p>
 
 ---
 
-## 📦 The Core Production Suite (Method A)
+</div>
+
+## 🎬 Quick Demo
+
+<div align="center">
+  <img src="assets/radar_animated.svg" alt="Interactive 2D Studio Radar Live Animation" width="480" style="border-radius: 8px; margin: 16px 0;" />
+  <p><sub><i>60 FPS hardware-accelerated vector simulation of the 2D Studio Radar Console. <a href="assets/demo.mp4">View raw MP4 capture</a></i></sub></p>
+</div>
+
+> **Interactive 2D Studio Radar & Real-Time Spherical VFX Probes.** Positioning the Key light live in camera-space. As the fixture moves, facial penumbras, contact shadows, and dielectric catchlights update while preserving identity, pose, and garment construction.
+
+---
+
+## 💡 Same Subject. Same Prompt. Different Light.
+
+> **Locked Seed:** `424242` | *Identical Base Prompt, Geometry, and Seed across FLUX.1 Krea Dev*
+
+| Light Left (Key -45°) | Light Right (Key +45°) | High Overhead (Butterfly) | Dual-Tone Split (Warm/Cyan) |
+| :---: | :---: | :---: | :---: |
+| <img src="assets/proof_left.png" width="100%" alt="Sculpted Rembrandt" /> | <img src="assets/proof_right.png" width="100%" alt="Broad Commercial" /> | <img src="assets/proof_top.png" width="100%" alt="High-Fashion Beauty" /> | <img src="assets/proof_split.png" width="100%" alt="Dual-Tone Split" /> |
+| **Sculpted Rembrandt**<br>Key: -45° / Fill: +30° | **Broad Commercial**<br>Key: +45° / Fill: -20° | **High-Fashion Beauty**<br>Key: 0° Az / +70° Elevation | **Editorial Kicker**<br>Key: 3500K / Fill: 10000K |
+
+---
+
+## ⚡ The Problem: Prompt Lottery vs. Spatial Control
+
+Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic blue rim light on the left"` often triggers severe prompt bleed: facial features shift, clothing changes cut, and colors wash across the entire frame.
+
+<div align="center">
+  <picture>
+    <source srcset="assets/lottery_vs_spatial.svg" type="image/svg+xml">
+    <img src="assets/lottery_vs_spatial.png" alt="Prompt Lottery vs Spatial Control Breakdown" width="100%" style="border-radius: 6px; margin: 18px 0;" />
+  </picture>
+</div>
+
+| Prompt-Based Lighting (Text Only) | StudioLight Spatial Control (VFX Engine) |
+| :--- | :--- |
+| **Subject Mutation:** Prompting for light changes anatomy, styling, and background geometry. | **Geometry Preservation:** Structure crystallizes in Pass 1; lighting is steered independently in Pass 2. |
+| **Chromatic Bleed:** Color tokens tint skin, hair, and clothing indiscriminately. | **Directional Lobe Isolation:** Rim and key colors remain confined to illuminated surfaces ($N \cdot L > 0$). |
+| **Uncalibrated Falloff:** Lights fail to observe inverse-square distance or scene depth. | **Calibrated Falloff Approximation:** Models $1/d^{1.6}$ studio attenuation and modifier beam coning. |
+| **Pre-baked Specular Artifacts:** High-gloss words bake blown-out white patches into early draft latents. | **Albedo Decoupling:** Renders clean, shadowless draft plates; specular highlights ignite only where fixtures strike. |
+
+---
+
+## 🧠 How It Works
+
+StudioLight splits generation into a **two-stage geometry and relighting pipeline**:
+
+<div align="center">
+  <picture>
+    <source srcset="assets/pipeline.svg" type="image/svg+xml">
+    <img src="assets/pipeline.png" alt="StudioLight Architecture Pipeline Diagram" width="100%" style="border-radius: 6px; margin: 18px 0;" />
+  </picture>
+</div>
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              METHOD A PRODUCTION PIPELINE                              │
+│                              STUDIOLIGHT RELIGHTING PIPELINE                           │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 
-   ┌───────────────────────┐                                                              
-   │  Master User Prompt   │                                                              
-   └──────────┬────────────┘                                                              
-              │                                                                           
-              ▼                                                                           
-   ┌───────────────────────┐                                                              
-   │  Albedo Decoupling    │ ─── Pass 1 Albedo Prompt ───► ┌───────────────────────────┐  
-   │ (Shadowless Carrier)  │                               │  Pass 1 Draft (Step 0-10) │  
-   └──────────┬────────────┘                               └─────────────┬─────────────┘  
-              │                                                          │ (Step 10 Latent)
-              │ Pass 2 Full Prompt                                       ▼                
-              │                                            ┌───────────────────────────┐  
-              │                                            │  Extract 3D Normals/Depth │  
-              │                                            │  (DSINE + DepthAnything)  │  
-              │                                            └─────────────┬─────────────┘  
-              │                                                          │                
-              │                                                          ▼                
-              │         ┌─────────────────────────┐        ┌───────────────────────────┐  
-              │         │     StudioLightRig      │ ◄───── │   Extracted 3D Geometry   │  
-              │         │(3-Point Lighting Console│        └───────────────────────────┘  
-              │         └───────────┬─────────────┘                                       
-              │                     │ (relighting_map + specular_pass)                    
-              │                     ▼                                                     
-              │         ┌─────────────────────────┐                                       
-              │         │StudioPhotometricComposite│                                      
-              │         │(Scene-Referred Linear)  │                                       
-              │         └───────────┬─────────────┘                                       
-              │                     │ (Lit Proxy Plate)                                   
-              │                     ▼                                                     
-              │         ┌─────────────────────────┐                                       
-              │         │   SIShadowHighlight     │                                       
-              │         │(Tonal Latent Sculptor)  │                                       
-              │         └───────────┬─────────────┘                                       
-              │                     │                                                     
-              ▼                     ▼                                                     
-   ┌──────────────────────────────────────────────┐                                       
-   │            Pass 2 KSampler (Step 10-30)      │                                       
-   │      (Photometric Stochastic Polish)         │ ───► 💎 FINAL MASTER RENDER           
-   └──────────────────────────────────────────────┘                                       
+ [ Master User Prompt ]
+          │
+          ├──► [ Neutral Albedo Suffix ] ──► [ Pass 1 Draft (Steps 0-10) ]
+          │                                                │
+          │                                                ▼
+          │                                  [ 3D Structural Extraction ]
+          │                                  • DSINE Surface Normals
+          │                                  • Depth Anything V2 Metric Z
+          │                                                │
+          │                                                ▼
+          │                                       [ StudioLightRig ]
+          │                                  • 3D Camera-Space Placement
+          │                                  • PCSS Area Soft Shadows
+          │                                  • Physical Modifier Apertures
+          │                                                │
+          │                                ┌───────────────┴───────────────┐
+          │                                ▼                               ▼
+          │                        (relighting_map)                 (specular_pass)
+          │                                │                               │
+          │                                └───────────────┬───────────────┘
+          │                                                │
+          │                                                ▼
+          │                                  [ Photometric Composite ]
+          │                                  • Linear Rec.709 Space
+          │                                  • Rational Shoulder Tonemapper
+          │                                                │
+          │                                                ▼
+          │                                      [ SIShadowHighlight ]
+          │                                  • Tonal Darkroom Sculpting
+          │                                  • Highlight Beaconing
+          ▼                                                ▼
+ [ Synchronized Prompt ] ─────────────────────► [ Pass 2 KSampler (Steps 10-30) ]
+                                                (Stochastic Integration | Denoise: 0.55)
+                                                           │
+                                                           ▼
+                                                 💎 FINAL MASTER RENDER
 ```
+
+1. **Geometry Crystallization (Steps 0–10):** Pass 1 generates an unlit albedo draft to define scene forms, anatomy, and clothing weave without baked directional shadows.
+2. **Metric 3D Projection:** Extracts surface normals (DSINE) and metric depth (Depth Anything V2), back-projecting the 2D draft into virtual camera-space ($40^\circ$ portrait FOV).
+3. **Photometric Deferred Shading:** Computes diffuse irradiance, Blinn-Phong specular lobes (tight 2.8% pixel area), and Screen-Space PCSS soft shadows from virtual C-stands.
+4. **Stochastic Polish (Steps 10–30):** Composites the lit plate in linear Rec.709 space, preps tones in the `SIShadowHighlight` darkroom, and feeds it to Pass 2 (denoise: `0.55 – 0.60`) to synthesize subsurface skin scattering and photorealistic catchlights.
+
+---
+
+## 💡 The Virtual Studio
+
+### 3-Point Light Control
+* **Key, Fill, and Rim Fixtures:** Independent Azimuth ($-180^\circ$ to $+180^\circ$), Elevation ($-30^\circ$ to $+90^\circ$), Stand Distance ($0.5\text{m}$ to $10.0\text{m}$), and Intensity ($0.0$ to $3.0$).
+* **Blackbody Kelvin Curves:** Dial continuous color temperatures from warm tungsten ($2000\text{K}$) to cool skylight ($10000\text{K}$).
+* **Interactive 2D Studio Radar:** Visual top-down radar on the node canvas for rapid fixture positioning.
+* **Dual-Sphere VFX Probes:** Real-time 18% Grey Ball + Mirror Chrome Ball preview cards rendered in `0.03s`.
+
+### Optical Modifiers & Physical Apertures
+Shadow softness and highlight shapes are driven by virtual modifier diameters via Screen-Space PCSS:
+
+| Modifier | Virtual Aperture | Optical Profile | Typical Application |
+| :--- | :---: | :--- | :--- |
+| **Direct On-Camera Flash** | **0.04m** | Un-diffused speedlight tube | Razor-sharp contact shadows, raw 90s editorial |
+| **Hard Snoot** | **0.10m** | Narrow conical restriction | Isolated high-contrast beam, zero ambient spill |
+| **Fresnel Spotlight** | **0.20m** | Collimated stepped lens | Sculpted edges, classic cinematic chiaroscuro |
+| **Stripbox** | **0.30m** | Asymmetric baffled softbox | Controlled directional wrap, edge silhouette separation |
+| **Beauty Dish (Silver)** | **0.55m** | Parabolic reflector with deflector | Defined bone structure carving, high-fashion portraiture |
+| **Octabox (Soft)** | **1.40m** | Diffused 5-foot umbrella | Broad, creamy penumbra, natural catalog fill |
+
+---
+
+## 💎 Showcase Gallery
+
+Calibrated production renders executed on FLUX Krea Dev using Method A:
+
+| Raw 90s Direct Flash (5500K) | Cinematic Fresnel Spotlight (5500K) |
+| :---: | :---: |
+| <img src="assets/showcase_flash.png" width="100%" alt="Direct Flash" /> | <img src="assets/showcase_fresnel.png" width="100%" alt="Fresnel Spotlight" /> |
+| **Direct On-Camera Flash**<br>Key: 0° Azimuth / +5° Elevation (5500K)<br>Sharp contact drop shadow, punchy patent leather spec | **Fresnel Chiaroscuro**<br>Key: +30° Azimuth / +25° Elevation (5500K)<br>Collimated stepped beam, natural stone falloff |
+
+| High-Fashion Beauty Dish (5500K) | Diffused Studio Octabox (5500K) |
+| :---: | :---: |
+| <img src="assets/showcase_beauty.png" width="100%" alt="Beauty Dish" /> | <img src="assets/showcase_octabox.png" width="100%" alt="Octabox" /> |
+| **Beauty Dish (Silver 55cm)**<br>Key: +30° Azimuth / +25° Elevation<br>Carved cheekbone hollows, crisp eye catchlights | **Diffused Octabox (140cm)**<br>Key: +30° Azimuth / +25° Elevation<br>Soft, continuous penumbra, creamy coat wrap |
+
+---
+
+## 📦 The Core Production Suite (Deep Technical Manual)
 
 ### 1. `StudioLightRig` (`nodes/studio_light.py`)
 The master 3-point photographic lighting console:
@@ -98,159 +192,44 @@ The master 3-point photographic lighting console:
 * **Coordinate Parity Toggles**: `invert_normals_x` (DSINE / OpenGL parity), `invert_normals_y`, and `invert_depth` (near=white vs near=black polarity).
 
 ### 2. `StudioPhotometricComposite` (`nodes/photometric_composite.py`)
-The linear physics engine translating 3D spatial vectors into physical photons.
-
-This node is not a simple image overlay or Photoshop blend mode. It performs scene-referred linear Rec.709 compositing, taking raw geometric vectors (normals, depth, light distance, and modifier profiles) and computing real physical radiance before display tonemapping:
-
-* **Zero Double-Floor Architecture:**  
-  Unlike typical post-processing nodes that apply arbitrary ambient lifts, it calculates diffuse illumination in true linear space. Surfaces maintain genuine contrast ratios without grey, washed-out shadow floors.
-* **Rational Shoulder Tonemapping:**  
-  High-intensity studio strobes produce high dynamic range specular spikes. A $C^1$-continuous rational shoulder tonemapper compresses specular peaks into display headroom smoothly, preserving texture without hard digital clipping or solarized white halos.
-* **Lobe-Accurate Specular Integration (`specular_pass` $\to$ `specular_map`):**  
-  Accepts the isolated Blinn-Phong specular pass from `StudioLightRig`. This confines dielectric catchlights exclusively to genuine specular microfacets (eyes, lips, patent leather, polished metal), preventing specular light from washing out matte fabric textures.
-* **Blackbody Kelvin Midtone Bleed:**  
-  Controls how color temperature transfers into surface albedo via `chroma_bleed`. Warms or cools skin tones naturally according to dialed Kelvin values ($2000\text{K} - 10000\text{K}$) without contaminating neutral shadows or dark garments.
+The linear physics engine translating 3D spatial vectors into physical photons:
+* **Zero Double-Floor Architecture:** Calculates diffuse illumination in true linear space without washed-out grey shadow floors.
+* **Rational Shoulder Tonemapping:** Compresses specular spikes into display headroom smoothly, preserving texture without hard digital clipping or solarized white halos.
+* **Lobe-Accurate Specular Integration (`specular_pass` $\to$ `specular_map`):** Confines dielectric catchlights exclusively to genuine specular microfacets (eyes, lips, patent leather), leaving matte wool untouched.
+* **Blackbody Kelvin Midtone Bleed:** Controls how color temperature transfers into surface albedo via `chroma_bleed` without polluting deep shadows.
 
 #### Core Shader Controls:
-* **`lighting_strength` (`1.00 – 1.20`):** Master irradiance multiplier. `1.00` provides physically exact photometric scale; `1.20` gives a slight photographic push for high-key portraiture.
-* **`ambient_floor` (`0.05 – 0.08`):** Minimum shadow illuminance floor. Prevents unlit surface cavities from collapsing to pitch black ($0.0$), ensuring the diffusion model has underlying structure to build upon.
-* **`specular_kick` (`0.40 – 0.50`):** Dielectric catchlight amplitude. Calibrated to `0.40` for mixed scenes (skin + leather + wool). Set to `0.00` for pure matte black wool to eliminate edge solarization.
-* **`chroma_bleed` (`0.35 – 0.45`):** Kelvin warmth midtone transfer. Default `0.45` delivers balanced portrait saturation. Keep at `0.00` for monochrome or high-contrast noir setups.
-* **`filmic_white_point` (`2.5 – 3.5`):** Dynamic range compression ceiling. `2.5` creates a soft, creamy highlight roll-off (catalog beauty); `3.5` maintains crisp specular punch on jewelry, chrome, and patent leather.
-
----
+* **`lighting_strength` (`1.00 – 1.20`):** Master irradiance multiplier.
+* **`ambient_floor` (`0.05 – 0.08`):** Minimum shadow illuminance floor. Prevents unlit surface cavities from collapsing to pitch black.
+* **`specular_kick` (`0.40 – 0.50`):** Dielectric catchlight amplitude. Calibrated for mixed scenes (skin + leather + wool).
+* **`chroma_bleed` (`0.35 – 0.45`):** Kelvin warmth midtone transfer. Default `0.45` delivers balanced portrait saturation.
+* **`filmic_white_point` (`2.5 – 3.5`):** Dynamic range compression ceiling. `2.5` creates soft highlight roll-off; `3.5` maintains crisp specular punch.
 
 ### 3. `SIShadowHighlight` (`nodes/si_shadow_highlight.py`)
-The digital darkroom lathe adapting physical plates for latent diffusion.
-
-Diffusion UNETs and Transformers do not perceive light like physical camera sensors. When fed raw linear render plates, diffusion models often misinterpret pure zero-radiance shadows as missing data or sensor noise, leading to smearing, muddy gray voids, or hallucinated background clutter in Pass 2. 
-
-`SIShadowHighlight` functions as an adaptive dodging-and-burning stage directly preceding `VAE Encode Lit Plate`, shaping the photometric plate into optimal tonal ranges for latent conditioning:
-
-* **Adaptive Shadow Conditioning (`shadow_amount`):**  
-  * *Negative values (`-0.15` to `-0.25`):* Pulls ambient shadow zones into dense, inky noir blacks without destroying edge geometry.
-  * *Positive values (`+0.10` to `+0.20`):* Gently recovers deep shadow crevices (e.g. under dark lapels or folded sleeves), feeding sufficient surface density to FLUX so Pass 2 synthesizes authentic fabric weave rather than muddy noise.
-* **Specular Beaconing (`highlight_amount: 0.15`):**  
-  Applies a targeted micro-boost strictly across high-energy specular microfacets. This acts as a high-frequency attention beacon for the Pass 2 diffusion process, directing FLUX to synthesize sharp catchlights in the pupils, wet lips, and metallic buckles.
-* **Bilateral Tonal Width Isolation:**  
-  `shadow_tonal_width` and `highlight_tonal_width` (calibrated at `0.50`) lock adjustments to the extreme ends of the luminance histogram, leaving skin midtones and facial features untouched.
-* **Perceptual Midtone S-Curve (`midtone_contrast`):**  
-  Tunes perceptual punch and contrast slope without shifting the white point or shadow floor.
+The digital darkroom lathe adapting physical plates for latent diffusion:
+* **Adaptive Shadow Conditioning (`shadow_amount`):** Negative values (`-0.15` to `-0.25`) pull shadows into dense inky blacks; positive values gently recover deep crevices under dark lapels.
+* **Specular Beaconing (`highlight_amount: 0.15`):** Applies a targeted micro-boost strictly across specular microfacets, directing FLUX attention to synthesize sharp catchlights in the pupils.
+* **Bilateral Tonal Width Isolation:** Calibrated at `0.50` to lock adjustments strictly to extreme luminance ends, leaving skin midtones untouched.
+* **Perceptual Midtone S-Curve (`midtone_contrast`):** Tunes perceptual contrast slope without shifting the white point.
 
 ### 4. `StudioPromptSanitizer` (`nodes/prompt_sanitizer.py`)
-Automatic albedo decoupling engine:
-* Strips high-gloss/specular terms from Pass 1 while delivering the full user prompt to Pass 2.
-* Mitigates pre-baked specular blobs on patent leather, glass, and wet surfaces before they bake into the latent carrier.
-
----
-
-## 💡 Photographic Modifiers & Optical Physics
-
-In physical studio lighting, light character is governed by a fundamental optical principle: **the physical diameter of the light source relative to the subject dictates shadow edge penumbra, specular highlight shape, and light wrap.**
-
-`StudioLightRig` does not treat light sources as dimensionless mathematical points. Each modifier dropdown assigns a real-world physical aperture diameter to the virtual strobe, driving our **Screen-Space Percentage-Closer Soft Shadow (PCSS)** engine and Blinn-Phong dielectric specular lobes.
-
----
-
-### The 6 Optical Presets
-
-| Modifier Preset | Virtual Aperture | Optical Profile | Shadow Behavior | Primary Aesthetic |
-| :--- | :---: | :--- | :--- | :--- |
-| **Direct On-Camera Flash** | **0.04m** (~4cm) | Raw, bare bulb / speedlight tube | Razor-sharp edges across all distances | High-contrast, raw 90s editorial / Terry Richardson |
-| **Hard Snoot** | **0.10m** (~10cm) | Narrow conical metal restriction tube | Hard boundary cutoff, zero lateral spill | Theatrical spotlight, isolated facial/jewelry drama |
-| **Fresnel Spotlight** | **0.20m** (~20cm) | Collimated stepped glass lens | Sharp, sculpted edges with subtle edge roll | 1940s Hollywood Golden Age portraits, Film Noir |
-| **Stripbox** | **0.30m** (~30×120cm)| Asymmetric baffled softbox with grid | Directional wrap, controlled spill | Clean rim/kicker separation, edge silhouette accent |
-| **Beauty Dish (Silver)** | **0.55m** (~55cm) | Parabolic reflector with center deflector plate | Defined bone-structure carving, soft skin falloff | High-fashion cosmetic advertising, magazine covers |
-| **Octabox (Soft)** | **1.40m** (~140cm) | 5-foot 8-sided diffused umbrella | Broad, creamy, continuous penumbra gradient | Flattering catalog commercial, soft ambient window light |
-
----
-
-### Detailed Optical Breakdown
-
-#### 1. Direct On-Camera Flash (Aperture: 0.04m)
-* **Studio Configuration:** A naked speedlight or bare strobe tube aimed straight along the camera axis without diffusion baffles.
-* **Optical Behavior:** Near-point-source radiation.
-* **Cast Shadows:** Razor-sharp boundary cutoffs across all scene depths with zero edge feathering.
-* **Specular Catchlights:** Tiny, concentrated, high-intensity pinpoint catchlights in eyes and reflective hardware.
-* **Aesthetic:** Unfiltered, direct fashion editorial.
-
-#### 2. Hard Snoot (Aperture: 0.10m)
-* **Studio Configuration:** An elongated cylindrical/conical metal snoot mounted directly to the fixture.
-* **Optical Behavior:** Restricts beam divergence into a narrow circular cone with steep radial attenuation.
-* **Cast Shadows:** Sharp geometric projection lines; un-aimed geometry drops off rapidly outside the cone.
-* **Spill:** Zero lateral ambient bleed into surrounding architecture.
-* **Aesthetic:** High-drama chiaroscuro, isolating specific planes (e.g. cheekbone, handbag buckle) while sinking the environment into darkness.
-
-#### 3. Fresnel Spotlight (Aperture: 0.20m)
-* **Studio Configuration:** Traditional studio tungsten housing paired with a stepped Fresnel glass lens.
-* **Optical Behavior:** Parallel collimated beam emitting punchy, directional illumination.
-* **Cast Shadows:** Clean, defined cast shadows that maintain edge clarity without the clinical harshness of a bare bulb.
-* **Aesthetic:** Classical cinematic lighting, hard-boiled film noir, and sculpted architectural portraits.
-
-#### 4. Stripbox (Aperture: 0.30m)
-* **Studio Configuration:** A narrow, tall rectangular softbox fitted with front diffusion fabric and a directional honeycomb grid.
-* **Optical Behavior:** Directional diffusion—softer along the vertical orientation, razor-sharp along the horizontal axis.
-* **Cast Shadows:** Controlled directional cutoff.
-* **Specular Catchlights:** Long, continuous linear highlights tracing curved surfaces (e.g. cylinder folds of a wool coat or patent leather flaps).
-* **Aesthetic:** Rim and kicker isolation designed to separate dark garments and silhouettes from dark backgrounds without leaking onto facial planes.
-
-#### 5. Beauty Dish - Silver (Aperture: 0.55m)
-* **Studio Configuration:** Shallow parabolic metal reflector with an opaque center bounce plate that forces all light to bounce off the silver dish interior before exiting.
-* **Optical Behavior:** Semi-hard, directional contrast with accelerated highlight-to-shadow falloff.
-* **Cast Shadows:** Crisp enough to carve out jawlines and cheekbone hollows, but soft enough to flatter human skin.
-* **Specular Catchlights:** Distinct, punchy circular catchlights in the irises.
-* **Aesthetic:** Standard commercial high-fashion, cosmetics campaigns, and luxury editorial portraiture.
-
-#### 6. Octabox - Soft (Aperture: 1.40m)
-* **Studio Configuration:** A 140cm octagonal softbox incorporating both internal baffle fabric and a heavy outer diffusion panel.
-* **Optical Behavior:** Large virtual surface area emitting widely diffused light rays that wrap around curved geometry.
-* **Cast Shadows:** Broad, creamy penumbra. Cast shadows dissolve over wide pixel gradients as the distance from subject to background increases.
-* **Specular Catchlights:** Large, smooth, soft reflection panels across glossy materials and skin.
-* **Aesthetic:** Natural beauty catalog, gentle overcast simulation, and soft editorial fill.
-
----
-
-### What Changes in the Shading Engine When Modifiers Switch
-
-Toggling a modifier updates three physical calculations simultaneously:
-
-1. **Percentage-Closer Soft Shadows (PCSS):**  
-   The engine calculates the spatial gap between occluder geometry and receiver planes ($\Delta z = d_{\text{receiver}} - d_{\text{blocker}}$) and scales an 8-tap Vogel disk sampling kernel by modifier diameter. Contact shadows (e.g., collar on neck, chin on throat) remain crisp and contact-hardened, while shadows cast onto background architecture $2\text{m}$ to $5\text{m}$ back softly diffuse according to aperture width.
-2. **Specular Reflection Lobe Width:**  
-   Dielectric catchlights expand from a tiny pinpoint (Direct Flash / Snoot) into a broad, soft reflective window (Octabox), matching the virtual surface area of the fixture.
-3. **Forward Optical Beam Coning:**  
-   The optical housing limits backward light spill ($\cos\theta_{\text{beam}} > 0$). Fixtures aimed forward at a model will not leak backward onto background walls or arches located behind the virtual light stand.
+Automatic albedo decoupling engine: strips high-gloss and specular words from Pass 1 while delivering the full prompt to Pass 2, preventing pre-baked white solarization blobs in early latents.
 
 ---
 
 ## 🔬 Empirical Discoveries & Working Rules
 
-Through empirical calibration on FLUX Krea Dev across 30+ iterations, we observed 4 working rules for practical generative studio lighting:
-
-### Rule 1: Pass 1 Functions Best as a Flat Albedo Carrier
-* **Observation:** If Pass 1 is prompted with directional sunlight or extreme contrast, the diffusion model bakes hard shadow contours into the geometry. Pass 2 may then sharpen that pre-baked edge into an unnatural seam.
-* **Approach:** Use an Albedo Carrier Suffix in Pass 1 (`", flat overcast diffuse daylight, soft even shadowless lighting, neutral beauty catalog"`). Pass 1 generates clean, unlit geometry, giving `StudioLightRig` cleaner spatial control over illumination gradients.
-
-### Rule 2: Matte Fabrics Require Dedicated Specular Isolation
-* **Observation:** Dark wool coats have an albedo near $0.02$. High specular kicks ($> 2.0$) with low ambient floors cause grazing Fresnel spikes, making black wool look like metallic foil or thermal imaging.
-* **Approach:** Wire `specular_pass` directly into `StudioPhotometricComposite`, keep `specular_kick` modest ($0.30 – 0.50$), and set `chroma_bleed = 0.00` on dark garments. Direct diffuse radiance sculpts the form without solarizing matte wool fibers.
-
-### Rule 3: Rear Lights Benefit from Forward Beam Coning & Distance Tapers
-* **Observation:** Point lights placed behind the subject illuminate background architecture behind the light stand at $160^\circ+$ off-axis, creating edge halos on arches and washing out distant walls.
-* **Approach:** The optical forward modifier beam cone ($\cos\theta_{\text{beam}} > 0$) models directional fixture housing, and the Hermite distance taper ($d_{\text{norm}} < 0.20$) drops strobes to 0% irradiance on distant geometry.
-
-### Rule 4: Pass 2 Denoise Governs Illumination Integration
-* **`0.35 – 0.45` (Feature Lock / Soft Commercial):** Strict geometric and facial lock. Best suited for soft catalog fill (Beauty Dish / Octabox).
-* **`0.50 – 0.75` (Calibrated Range):** The working zone for dramatic lighting and chiaroscuro. Generatively synthesizes subsurface scattering on skin, new eye catchlights, and leather reflections while preserving human likeness. Denoise is empirically calibrated per subject and material.
-* **`0.75+` (Hallucination Boundary):** At very high denoise, dark proxy corners combined with prompt tokens like `"Stripbox"` can cause the model to hallucinate physical studio softboxes hanging in the frame. Keep denoise $\le 0.75$.
+* **Rule 1: Pass 1 Functions Best as a Flat Albedo Carrier:** Prompting Pass 1 with directional sun bakes hard contours into base geometry. Use an albedo carrier suffix in Pass 1 (`", flat diffuse ambient lighting, shadowless, albedo"`) to give StudioLight clean geometric control.
+* **Rule 2: Matte Fabrics Require Dedicated Specular Isolation:** Dark wool has albedo near 0.02. High specular kicks cause grazing Fresnel spikes, turning black wool into metallic foil. Wire `specular_pass` directly into `StudioPhotometricComposite`, keep `specular_kick` at `0.30–0.50`, and set `chroma_bleed = 0.00` on dark garments.
+* **Rule 3: Rear Lights Benefit from Forward Beam Coning & Distance Tapers:** Point lights placed behind subjects leak onto background architecture. StudioLight models forward modifier beam cones ($\cos\theta > 0$) and a Hermite distance taper ($d_{\text{norm}} < 0.20$) to eliminate edge halos on background walls.
+* **Rule 4: Pass 2 Denoise Governs Illumination Integration:**
+  * `0.35 – 0.45` (Feature Lock): Soft catalog fill.
+  * `0.50 – 0.75` (Calibrated Range): Working zone for dramatic lighting. Synthesizes skin subsurface scattering, eye catchlights, and leather wrap while preserving likeness.
+  * `0.75+` (Hallucination Boundary): May hallucinate physical softbox fixtures in the frame. Keep denoise $\le 0.75$.
 
 ---
 
-## 🎛️ Recommended Settings & Production Recipes
-
-Use these empirically calibrated starting points inside `StudioPhotometricComposite` and `StudioLightRig` to achieve immediate photographic results:
-
-### 1. Production Recipes by Scenario
+## 🎛️ Production Recipes by Scenario
 
 | Setup / Scenario | `specular_kick` | `chroma_bleed` | `filmic_white_point` | Pass 2 Denoise | Recommended Key Modifier |
 | :--- | :---: | :---: | :---: | :---: | :--- |
@@ -260,76 +239,40 @@ Use these empirically calibrated starting points inside `StudioPhotometricCompos
 | **Cinematic Film Noir (High Chiaroscuro)** | `0.50 – 0.60` | `0.50` | `2.0 – 2.5` | `0.60 – 0.65` | `Fresnel Spotlight` or `Hard Snoot` |
 | **Isolated Metallic / Chrome Props (Macro)** | `1.00 – 1.50` | `0.10` | `5.0 – 6.0` | `0.60 – 0.65` | `Direct Flash` or `Hard Snoot` |
 
-> **⚠️ Multi-Material Rule:** When dark matte wool and glossy patent leather appear in the same shot, keep `specular_kick` at **`0.40 – 0.50`**. With `specular_pass` wired to `specular_map`, the isolated Blinn-Phong lobe concentrates crisp catchlights onto leather and eyes without solarizing dark wool fibers.
-
 ---
 
-### 2. The 4 Core Composite Sliders Decoded
+## 🚀 Installation
 
-* **`specular_kick` (`0.0 – 3.0`):**  
-  Controls the amplitude of dielectric specular catchlights.
-  - *Keep at `0.00` for pure matte garments* to guarantee zero edge solarization.
-  - *`0.40 – 0.50` (Calibrated Standard):* The universal sweet spot for portraits containing mixed materials (skin, eyes, wool, leather).
-  - *`1.0+`:* Reserve strictly for isolated metallic/jewelry product shots.  
-  *(Always ensure `specular_pass` from `StudioLightRig` is connected to `specular_map`!)*
+### 1. ComfyUI Manager (Recommended)
+Search for `ComfyUI-StudioLight` in the ComfyUI Manager and install.
 
-* **`chroma_bleed` (`0.0 – 1.0`):**  
-  Controls how strongly Kelvin color temperature (e.g. 3200K Tungsten or 7000K Cyan) transfers into surface midtones.
-  - *`0.40 – 0.45` (Default):* Natural photographic color balance.
-  - *Set to `0.00`:* When you want pure monochrome exposure without tinting dark clothing or neutral shadows.
-
-* **`filmic_white_point` (`1.5 – 8.0`):**  
-  Governs highlight dynamic range compression in linear Rec.709 space.
-  - *`2.0 – 2.5`:* Tight photographic ceiling. Soft, creamy highlight roll-off (ideal for delicate skin and overcast beauty).
-  - *`3.5` (Default):* Balanced filmic curve with natural highlight preservation.
-  - *`5.0 – 8.0`:* High dynamic headroom. Preserves sharp specular glints on polished chrome and direct flash reflections.
-
-* **`ambient_floor` (`0.0 – 0.50`):**  
-  Sets the baseline shadow illuminance floor.
-  - *Keep at `0.00`:* For true optical contrast, deep chiaroscuro, and rich blacks.
-  - *Lift to `0.05 – 0.08`:* Only if Pass 2 over-darkens tight cavity crevices on high-contrast prompts.
-
----
-
-### 3. Quick-Start: Your First Relit Portrait in 60 Seconds
-
-1. Load `workflows/StudioLight_MethodA_Calibrated.json` into ComfyUI.
-2. In **Zone 1**, enter your subject description in the **Base Subject Prompt** (leave the Albedo Lighting Suffix connected).
-3. On **`StudioLightRig`**, choose a starting preset (e.g., `High-Fashion Beauty` or `Rembrandt Classic`), or position Key/Fill/Rim manually.
-4. Pass 1 is pre-set to **10 steps** (draft albedo geometry); Pass 2 is pre-set to **30 steps** with denoise at **`0.55 – 0.60`**.
-5. Click **Queue Prompt**. Inspect the live side-by-side preview cards: `3D Surface Normals`, `Depth Map`, `3D Lit Proxy Plate`, and the `Final Master Render`.
-
----
-
-## 🚀 Quick Start & Installation
-
-### Option 1: Git Clone
+### 2. Manual Installation
 ```bash
 cd ComfyUI/custom_nodes
 git clone https://github.com/maciejtajber/ComfyUI-StudioLight.git
 pip install -r ComfyUI-StudioLight/requirements.txt
 ```
 
-### Option 2: ComfyUI Manager
-Search for `ComfyUI-StudioLight` in the ComfyUI Manager and click Install.
+### Dependencies & Models
+* **Preprocessors:** Install `comfyui_controlnet_aux` for `DSINE-NormalMapPreprocessor` and `DepthAnythingV2Preprocessor`.
+* **Models:** Standard `flux1-dev.safetensors` (or `flux1-krea-dev.safetensors`), CLIP text encoders, and VAE.
 
-### Running Automated Test Suite
-To verify math, color conversions, shader engines, and node schemas:
+<h3 id="-automated-test-suite">🧪 Automated Test Suite</h3>
+
+Verify math, photometric color spaces, and shader engines (runs standalone without ComfyUI):
 ```bash
 python test_studiolight.py
 ```
-*(Runs 100% standalone anywhere with PyTorch—zero external ComfyUI runtime required).*
 
 ---
 
-## 📁 Included Master Workflows
+<h2 id="-workflows">📁 Master Workflows</h2>
 
-Inside the `workflows/` directory:
-* **`StudioLight_MethodA_Calibrated.json`**: The calibrated production standard (37 nodes with visual engineering notes and organized zones). Features FLUX Krea Dev, step-10 3D extraction (DSINE + Depth Anything V2), dual-conditioning prompt synthesis, dedicated specular pass, and live preview cards.
-* **`StudioLight_Midstream_Master.json`**: Midstream KSampler hook architecture for fine-grained Euler step interception.
-* **`StudioLight_Midstream_Sweep.json`**: Automated parameter sweep across lighting angles.
+* `workflows/StudioLight_MethodA_Calibrated.json`: Complete production workflow with organized functional zones, live preview cards, and prompt synchronization.
+* `workflows/StudioLight_Production.json`: Streamlined production layout for fast iterations.
 
 ---
 
 ## 📄 License
-MIT License. Created by [Maciej Tajber](https://github.com/maciejtajber).
+
+MIT License. Created by [Maciej Tajber](https://github.com/maciejtajber) // **METAMATERIAL** Applied VFX Systems.
