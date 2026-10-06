@@ -200,8 +200,8 @@ class StudioLightRig:
                     "label_on": "Invert X (DSINE / Vision)",
                     "label_off": "Standard (OpenGL / Blender)",
                 }),
-                "target_engine": (["Flux.1 / Flux.2", "Video (Wan / MiniMax)", "SDXL"], {
-                    "default": "Flux.1 / Flux.2",
+                "target_engine": (["Flux.1", "SDXL"], {
+                    "default": "Flux.1",
                 }),
                 # NOTE: widget-type optionals serialize in order AFTER the 27 required widgets.
                 # Only ever APPEND new widgets here, never insert, or old workflows shift.
@@ -262,7 +262,7 @@ class StudioLightRig:
         normals_optional: Optional[torch.Tensor] = None,
         depth_optional: Optional[torch.Tensor] = None,
         invert_normals_x: bool = True,
-        target_engine: str = "Flux.1 / Flux.2",
+        target_engine: str = "Flux.1",
         invert_depth: bool = False,
         prompt: Optional[Dict] = None,
         unique_id: Optional[str] = None,

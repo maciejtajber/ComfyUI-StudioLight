@@ -301,7 +301,7 @@ def build_method_a():
             True, 140.0, 40.0, 1.5, 1.20, 6800, "Stripbox",               # Rim: enabled, az, el, dist, int, kelvin, mod
             2.50, # normal_boost (Expands shallow 2.5D draft normals into sculpted 3D relief)
             0.65, # ao_anchoring (Divergence cavity shadows in folds and under jawline)
-            True, "Flux.1 / Flux.2", False,  # invert_normals_x, target_engine, invert_depth (serialized widget optionals)
+            True, "Flux.1", False,  # invert_normals_x, target_engine, invert_depth (serialized widget optionals)
         ],
         input_names=[
             ("scene_3d", "SCENE_3D"),

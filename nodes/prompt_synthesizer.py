@@ -15,7 +15,7 @@ from .color_utils import kelvin_to_mood, MODIFIER_PRESETS
 def get_azimuth_direction_token(
     azimuth_deg: float,
     elevation_deg: float = 35.0,
-    target_engine: str = "Flux.1 / Flux.2",
+    target_engine: str = "Flux.1",
 ) -> str:
     """
     Translates numeric azimuth & elevation into frame-relative directional language.
@@ -76,12 +76,11 @@ def synthesize_high_signal_prompt(
     fill_params: Dict[str, Any],
     rim_params: Dict[str, Any],
     framing: str = "Portrait (Classical Bust)",
-    target_engine: str = "Flux.1 / Flux.2",
+    target_engine: str = "Flux.1",
 ) -> str:
     """
     Synthesizes a curated high-signal photographic prompt tailored to the target neural architecture.
-    - Flux.1 / Flux.2: Descriptive cause-and-effect narrative grounded in physical optical anchors.
-    - Video (Wan 2.1 / MiniMax / Kling): Temporally stable structured blocks with static light anchors.
+    - Flux.1: Descriptive cause-and-effect narrative grounded in physical optical anchors.
     - SDXL: Weighted, comma-delimited photographic tags.
     """
     k_enabled = key_params.get("enabled", True)

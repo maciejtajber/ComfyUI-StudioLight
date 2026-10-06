@@ -134,8 +134,8 @@ def test_prompt_synthesizer():
     fill = {"enabled": True, "azimuth": -30.0, "elevation": 15.0, "intensity": 0.35, "kelvin": 4800, "modifier": "Octabox (Soft)"}
     rim = {"enabled": True, "azimuth": 160.0, "elevation": 45.0, "intensity": 1.1, "kelvin": 6500, "modifier": "Stripbox"}
 
-    # 1. Flux.1 / Flux.2 Engine (Narrative Cause & Effect)
-    prompt_port = synthesize_high_signal_prompt(key, fill, rim, framing="Portrait (Classical Bust)", target_engine="Flux.1 / Flux.2")
+    # 1. Flux.1 Engine (Narrative Cause & Effect)
+    prompt_port = synthesize_high_signal_prompt(key, fill, rim, framing="Portrait (Classical Bust)", target_engine="Flux.1")
     assert "Studio fashion portrait" in prompt_port
     assert "right side of the frame" in prompt_port
     assert "warm tungsten" in prompt_port

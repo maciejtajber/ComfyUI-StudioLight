@@ -857,7 +857,7 @@
         1.8,
         0.65,
         true,
-        "Flux.1 / Flux.2",
+        "Flux.1",
         false
       ],
       "widgets_values_named": {
@@ -888,7 +888,7 @@
         "normal_boost": 1.8,
         "ao_anchoring": 0.65,
         "invert_normals_x": true,
-        "target_engine": "Flux.1 / Flux.2",
+        "target_engine": "Flux.1",
         "invert_depth": false
       },
       "color": "#244131",
