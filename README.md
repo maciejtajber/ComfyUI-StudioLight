@@ -1,42 +1,30 @@
 <div align="center">
 
-<!-- HERO BANNER (CAMERA-GRADE HASSELBLAD & ZEISS AESTHETIC) -->
-<img src="assets/studiolight_banner.svg" alt="StudioLight by METAMATERIAL" width="100%" />
+<img src="assets/studiolight_banner.png" alt="StudioLight by METAMATERIAL" width="100%" />
 
-# StudioLight
-### Professional 3-Point Photometric Lighting Console for FLUX
-**by METAMATERIAL**
+<br>
+<br>
 
-<p align="center">
-  <b>Stop prompt gambling. Design the light.</b><br>
-  Interactive 3D camera-space lighting control, physical modifier apertures, blackbody Kelvin calibration, and scene-referred linear photometric compositing for generative diffusion.
-</p>
+**Stop prompt gambling. Design the light.**
 
-<!-- STATUS & SPEC BADGES -->
-<p align="center">
-  <a href="https://github.com/maciejtajber/ComfyUI-StudioLight/releases"><img src="https://img.shields.io/badge/Version-v1.0.0-0f141c?style=for-the-badge" alt="Version v1.0.0"></a>
-  <a href="https://github.com/maciejtajber/ComfyUI-StudioLight"><img src="https://img.shields.io/badge/ComfyUI-Custom%20Node-0f141c?style=for-the-badge&logo=comfyui&logoColor=white" alt="ComfyUI"></a>
-  <a href="https://black-forest-labs.com"><img src="https://img.shields.io/badge/Engine-FLUX.1%20%7C%20Krea-10b981?style=for-the-badge" alt="FLUX Calibrated"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0f141c?style=for-the-badge" alt="License"></a>
-  <a href="#automated-test-suite"><img src="https://img.shields.io/badge/Tests-16%2F16%20Passed-3b82f6?style=for-the-badge" alt="16/16 Unit Tests"></a>
-</p>
+Camera-space key, fill and rim lights, physical modifiers and Kelvin control for FLUX in ComfyUI.
 
-<!-- GITHUB ANCHOR NAVIGATION -->
-<p align="center">
-  <a href="#quick-demo"><b>Demo</b></a> •
-  <a href="#same-subject-same-prompt-different-light"><b>Visual Proof</b></a> •
-  <a href="#the-problem-prompt-lottery-vs-spatial-control"><b>The Problem</b></a> •
-  <a href="#how-it-works"><b>Architecture</b></a> •
-  <a href="#the-virtual-studio"><b>The Studio</b></a> •
-  <a href="#showcase-gallery"><b>Showcase</b></a> •
-  <a href="#-core-nodes-deep-manual"><b>Nodes Manual</b></a> •
-  <a href="#installation"><b>Installation</b></a> •
-  <a href="#production-recipes-by-scenario"><b>Workflows</b></a>
-</p>
+<sub>V1.0.0 &nbsp;·&nbsp; COMFYUI CUSTOM NODE &nbsp;·&nbsp; FLUX.1 DEV / KREA &nbsp;·&nbsp; 16/16 TESTS &nbsp;·&nbsp; MIT</sub>
 
----
+<br>
+
+<sub>
+<a href="#quick-demo">DEMO</a> &nbsp;·&nbsp;
+<a href="#how-it-works">HOW IT WORKS</a> &nbsp;·&nbsp;
+<a href="#the-virtual-studio">STUDIO</a> &nbsp;·&nbsp;
+<a href="#the-core-production-suite-deep-technical-manual">MANUAL</a> &nbsp;·&nbsp;
+<a href="#installation">INSTALL</a> &nbsp;·&nbsp;
+<a href="#master-workflows">WORKFLOWS</a>
+</sub>
 
 </div>
+
+<br>
 
 ## Quick Demo
 
@@ -101,9 +89,7 @@ Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic
 
 StudioLight splits generation into a **two-stage geometry and relighting pipeline**:
 
-<div align="center">
-  <img src="assets/studiolight_pipeline.png" alt="StudioLight Architecture Pipeline Diagram" width="100%" style="border-radius: 6px; margin: 18px 0;" />
-</div>
+<img src="assets/studiolight_pipeline.png" alt="StudioLight pipeline: prompt, draft, geometry, light rig, composite, darkroom, refine" width="100%" />
 
 
 1. **Geometry Crystallization (Steps 0–10):** Pass 1 generates an unlit albedo draft to define scene forms, anatomy, and clothing weave without baked directional shadows.
