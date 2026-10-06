@@ -18,36 +18,36 @@
   <a href="https://github.com/maciejtajber/ComfyUI-StudioLight"><img src="https://img.shields.io/badge/ComfyUI-Custom%20Node-0f141c?style=for-the-badge&logo=comfyui&logoColor=white" alt="ComfyUI"></a>
   <a href="https://black-forest-labs.com"><img src="https://img.shields.io/badge/Engine-FLUX.1%20%7C%20Krea-10b981?style=for-the-badge" alt="FLUX Calibrated"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0f141c?style=for-the-badge" alt="License"></a>
-  <a href="#-automated-test-suite"><img src="https://img.shields.io/badge/Tests-16%2F16%20Passed-3b82f6?style=for-the-badge" alt="16/16 Unit Tests"></a>
+  <a href="#automated-test-suite"><img src="https://img.shields.io/badge/Tests-16%2F16%20Passed-3b82f6?style=for-the-badge" alt="16/16 Unit Tests"></a>
 </p>
 
 <!-- GITHUB ANCHOR NAVIGATION -->
 <p align="center">
-  <a href="#-quick-demo"><b>Demo</b></a> •
-  <a href="#-same-subject-same-prompt-different-light"><b>Visual Proof</b></a> •
-  <a href="#-the-problem-prompt-lottery-vs-spatial-control"><b>The Problem</b></a> •
-  <a href="#-how-it-works"><b>Architecture</b></a> •
-  <a href="#-the-virtual-studio"><b>The Studio</b></a> •
-  <a href="#-showcase-gallery"><b>Showcase</b></a> •
+  <a href="#quick-demo"><b>Demo</b></a> •
+  <a href="#same-subject-same-prompt-different-light"><b>Visual Proof</b></a> •
+  <a href="#the-problem-prompt-lottery-vs-spatial-control"><b>The Problem</b></a> •
+  <a href="#how-it-works"><b>Architecture</b></a> •
+  <a href="#the-virtual-studio"><b>The Studio</b></a> •
+  <a href="#showcase-gallery"><b>Showcase</b></a> •
   <a href="#-core-nodes-deep-manual"><b>Nodes Manual</b></a> •
-  <a href="#-installation"><b>Installation</b></a> •
-  <a href="#-workflows"><b>Workflows</b></a>
+  <a href="#installation"><b>Installation</b></a> •
+  <a href="#production-recipes-by-scenario"><b>Workflows</b></a>
 </p>
 
 ---
 
 </div>
 
-## 🎬 Quick Demo
+## Quick Demo
 
 <!-- Video Placeholder: Paste your recorded UI video here (e.g. drag & drop mp4 or github user-attachments link) -->
 https://github.com/user-attachments/assets/YOUR-VIDEO-ID.mp4
 
-> **Interactive 2D Studio Radar & Real-Time Spherical VFX Probes. & Real-Time Spherical VFX Probes.** Positioning the Key light live in camera-space. As the fixture moves, facial penumbras, contact shadows, and dielectric catchlights update while preserving identity, pose, and garment construction.
+> **Interactive 3D Camera-Space Lighting & Real-Time VFX Probes.** Positioning the Key light live in camera-space. As the fixture moves, facial penumbras, contact shadows, and dielectric catchlights update while preserving identity, pose, and garment construction.
 
 ---
 
-## 💡 Same Subject. Same Prompt. Different Light.
+## Same Subject. Same Prompt. Different Light.
 
 > **Locked Seed:** `424242` | *Identical Base Prompt, Geometry, and Seed across FLUX.1 Krea Dev*
 
@@ -58,7 +58,7 @@ https://github.com/user-attachments/assets/YOUR-VIDEO-ID.mp4
 
 ---
 
-## ⚡ The Problem: Prompt Lottery vs. Spatial Control
+## The Problem: Prompt Lottery vs. Spatial Control
 
 Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic blue rim light on the left"` often triggers severe prompt bleed: facial features shift, clothing changes cut, and colors wash across the entire frame.
 
@@ -78,7 +78,7 @@ Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic
 
 ---
 
-## 🧠 How It Works
+## How It Works
 
 StudioLight splits generation into a **two-stage geometry and relighting pipeline**:
 
@@ -129,7 +129,7 @@ StudioLight splits generation into a **two-stage geometry and relighting pipelin
                                                 (Stochastic Integration | Denoise: 0.55)
                                                            │
                                                            ▼
-                                                 💎 FINAL MASTER RENDER
+                                                 FINAL MASTER RENDER
 ```
 
 1. **Geometry Crystallization (Steps 0–10):** Pass 1 generates an unlit albedo draft to define scene forms, anatomy, and clothing weave without baked directional shadows.
@@ -139,12 +139,12 @@ StudioLight splits generation into a **two-stage geometry and relighting pipelin
 
 ---
 
-## 💡 The Virtual Studio
+## The Virtual Studio
 
 ### 3-Point Light Control
 * **Key, Fill, and Rim Fixtures:** Independent Azimuth ($-180^\circ$ to $+180^\circ$), Elevation ($-30^\circ$ to $+90^\circ$), Stand Distance ($0.5\text{m}$ to $10.0\text{m}$), and Intensity ($0.0$ to $3.0$).
 * **Blackbody Kelvin Curves:** Dial continuous color temperatures from warm tungsten ($2000\text{K}$) to cool skylight ($10000\text{K}$).
-* **Interactive 2D Studio Radar:** Visual top-down radar on the node canvas for rapid fixture positioning.
+* **Interactive Studio Lighting Console:** Visual top-down camera-space controls on the node canvas for rapid fixture positioning.
 * **Dual-Sphere VFX Probes:** Real-time 18% Grey Ball + Mirror Chrome Ball preview cards rendered in `0.03s`.
 
 ### Optical Modifiers & Physical Apertures
@@ -161,7 +161,7 @@ Shadow softness and highlight shapes are driven by virtual modifier diameters vi
 
 ---
 
-## 💎 Showcase Gallery
+## Showcase Gallery
 
 Calibrated production renders executed on FLUX Krea Dev using Method A:
 
@@ -177,15 +177,15 @@ Calibrated production renders executed on FLUX Krea Dev using Method A:
 
 ---
 
-## 📦 The Core Production Suite (Deep Technical Manual)
+## The Core Production Suite (Deep Technical Manual)
 
 ### 1. `StudioLightRig` (`nodes/studio_light.py`)
 The master 3-point photographic lighting console:
-* **Interactive 2D Studio Radar**: Visual top-down radar on the node canvas with click-and-drag angle adjustment.
+* **Interactive Lighting Console**: Visual top-down camera-space controls on the node canvas with click-and-drag angle adjustment.
 * **3-Point Studio Control**: Independent Azimuth ($-180^\circ$ to $+180^\circ$), Elevation ($-30^\circ$ to $+90^\circ$), Stand Distance ($0.5\text{m}$ to $10.0\text{m}$), and Intensity ($0.0$ to $3.0$) for Key, Fill, and Rim lights.
 * **Photographic Modifiers**: Octabox (150cm soft wrap), Silver Beauty Dish, Fresnel Spotlight, Hard Snoot, Stripbox, and Direct On-Camera Flash.
 * **Blackbody-Inspired Kelvin**: Blackbody-inspired Kelvin-to-RGB conversion with linear-light Rec.709 compositing ($2000\text{K} - 10000\text{K}$).
-* **Dual-Sphere VFX Preview**: Real-time 18% Grey Ball + Mirror Chrome Ball + Studio Radar card rendered in 0.03s.
+* **Dual-Sphere VFX Preview**: Real-time 18% Grey Ball + Mirror Chrome Ball preview card rendered in 0.03s.
 * **Curated Studio Presets**: `Rembrandt Classic`, `High-Fashion Beauty`, `Direct On-Camera Flash`, `Cinematic Film Noir`, and `Golden Hour Window`.
 * **4 Dedicated Outputs**: Exposes `relighting_map` (32-bit deferred plate), `specular_pass` (isolated Blinn-Phong lobes), `probe_preview`, and synchronized `lighting_prompt`.
 * **Coordinate Parity Toggles**: `invert_normals_x` (DSINE / OpenGL parity), `invert_normals_y`, and `invert_depth` (near=white vs near=black polarity).
@@ -216,7 +216,7 @@ Automatic albedo decoupling engine: strips high-gloss and specular words from Pa
 
 ---
 
-## 🔬 Empirical Discoveries & Working Rules
+## Empirical Discoveries & Working Rules
 
 * **Rule 1: Pass 1 Functions Best as a Flat Albedo Carrier:** Prompting Pass 1 with directional sun bakes hard contours into base geometry. Use an albedo carrier suffix in Pass 1 (`", flat diffuse ambient lighting, shadowless, albedo"`) to give StudioLight clean geometric control.
 * **Rule 2: Matte Fabrics Require Dedicated Specular Isolation:** Dark wool has albedo near 0.02. High specular kicks cause grazing Fresnel spikes, turning black wool into metallic foil. Wire `specular_pass` directly into `StudioPhotometricComposite`, keep `specular_kick` at `0.30–0.50`, and set `chroma_bleed = 0.00` on dark garments.
@@ -228,7 +228,7 @@ Automatic albedo decoupling engine: strips high-gloss and specular words from Pa
 
 ---
 
-## 🎛️ Production Recipes by Scenario
+## Production Recipes by Scenario
 
 | Setup / Scenario | `specular_kick` | `chroma_bleed` | `filmic_white_point` | Pass 2 Denoise | Recommended Key Modifier |
 | :--- | :---: | :---: | :---: | :---: | :--- |
@@ -240,7 +240,7 @@ Automatic albedo decoupling engine: strips high-gloss and specular words from Pa
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### 1. ComfyUI Manager (Recommended)
 Search for `ComfyUI-StudioLight` in the ComfyUI Manager and install.
@@ -256,7 +256,7 @@ pip install -r ComfyUI-StudioLight/requirements.txt
 * **Preprocessors:** Install `comfyui_controlnet_aux` for `DSINE-NormalMapPreprocessor` and `DepthAnythingV2Preprocessor`.
 * **Models:** Standard `flux1-dev.safetensors` (or `flux1-krea-dev.safetensors`), CLIP text encoders, and VAE.
 
-<h3 id="-automated-test-suite">🧪 Automated Test Suite</h3>
+<h3 id="-automated-test-suite"> Automated Test Suite</h3>
 
 Verify math, photometric color spaces, and shader engines (runs standalone without ComfyUI):
 ```bash
@@ -265,13 +265,13 @@ python test_studiolight.py
 
 ---
 
-<h2 id="-workflows">📁 Master Workflows</h2>
+<h2 id="-workflows"> Master Workflows</h2>
 
 * `workflows/StudioLight_MethodA_Calibrated.json`: Complete production workflow with organized functional zones, live preview cards, and prompt synchronization.
 * `workflows/StudioLight_Production.json`: Streamlined production layout for fast iterations.
 
 ---
 
-## 📄 License
+## License
 
 MIT License. Created by [Maciej Tajber](https://github.com/maciejtajber) // **METAMATERIAL** Applied VFX Systems.
