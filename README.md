@@ -48,10 +48,27 @@ https://github.com/user-attachments/assets/YOUR-VIDEO-ID.mp4
 
 > **Locked Seed:** `424242` | *Identical Base Prompt, Geometry, and Seed across FLUX.1 Krea Dev*
 
-| Hard Key (Fresnel Spotlight) | Sculpted (Beauty Dish) | Soft Wrap (Diffused Octabox) |
-| :---: | :---: | :---: |
-| <img src="assets/showcase_fresnel.png" width="100%" alt="Fresnel Spotlight" /> | <img src="assets/showcase_beauty.png" width="100%" alt="Beauty Dish" /> | <img src="assets/showcase_octabox.png" width="100%" alt="Diffused Octabox" /> |
-| **Fresnel Spotlight (Hard Key)**<br>Key: +30° Azimuth / +25° Elevation<br>Crisp penumbra & sharp dielectric glints | **High-Fashion Beauty Dish**<br>Key: +30° Azimuth / +25° Elevation<br>Carved cheekbones & circular eye catchlights | **Diffused Studio Octabox (140cm)**<br>Key: +30° Azimuth / +25° Elevation<br>Creamy continuous penumbra & wrap fill |
+<table>
+  <thead>
+    <tr>
+      <th width="33.33%" align="center">Hard Key (Fresnel)</th>
+      <th width="33.33%" align="center">Sculpted (Beauty Dish)</th>
+      <th width="33.33%" align="center">Soft Wrap (Octabox)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center"><img src="assets/showcase_fresnel.png" width="100%" alt="Fresnel Spotlight" /></td>
+      <td align="center"><img src="assets/showcase_beauty.png" width="100%" alt="Beauty Dish" /></td>
+      <td align="center"><img src="assets/showcase_octabox.png" width="100%" alt="Diffused Octabox" /></td>
+    </tr>
+    <tr>
+      <td align="center"><sub><b>Fresnel Spotlight</b><br>Key: +30° / +25° &bull; Hard contact shadows</sub></td>
+      <td align="center"><sub><b>Beauty Dish (Silver 55cm)</b><br>Key: +30° / +25° &bull; Carved cheekbones &amp; eye catchlights</sub></td>
+      <td align="center"><sub><b>Diffused Octabox (140cm)</b><br>Key: +30° / +25° &bull; Creamy continuous wrap</sub></td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
