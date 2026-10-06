@@ -63,9 +63,21 @@ https://github.com/user-attachments/assets/YOUR-VIDEO-ID.mp4
       <td align="center"><img src="assets/showcase_octabox.png" width="100%" alt="Diffused Octabox" /></td>
     </tr>
     <tr>
-      <td align="center"><sub><b>Fresnel Spotlight</b><br>Key: +30° / +25° &bull; Hard contact shadows</sub></td>
-      <td align="center"><sub><b>Beauty Dish (Silver 55cm)</b><br>Key: +30° / +25° &bull; Carved cheekbones &amp; eye catchlights</sub></td>
-      <td align="center"><sub><b>Diffused Octabox (140cm)</b><br>Key: +30° / +25° &bull; Creamy continuous wrap</sub></td>
+      <td align="center">
+        <b>Fresnel Spotlight (Hard Key)</b><br>
+        Key: +30° Azimuth / +25° Elevation<br>
+        Crisp penumbra, sharp dielectric glints
+      </td>
+      <td align="center">
+        <b>Beauty Dish (Silver 55cm)</b><br>
+        Key: +30° Azimuth / +25° Elevation<br>
+        Carved cheekbones, crisp eye catchlights
+      </td>
+      <td align="center">
+        <b>Diffused Octabox (140cm)</b><br>
+        Key: +30° Azimuth / +25° Elevation<br>
+        Soft continuous penumbra, creamy coat wrap
+      </td>
     </tr>
   </tbody>
 </table>
