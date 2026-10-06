@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 420" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 640" width="100%" height="100%">
   <defs>
-    <!-- Engraved White Enamel Gradient -->
+    <!-- Pure White Enamel Engraving Gradient -->
     <linearGradient id="whiteEnamel" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#ffffff" />
       <stop offset="85%" stop-color="#f4f4f5" />
-      <stop offset="100%" stop-color="#d4d4d8" />
+      <stop offset="100%" stop-color="#e4e4e7" />
     </linearGradient>
 
     <!-- Hasselblad Lens Orange -->
@@ -13,87 +13,44 @@
       <stop offset="100%" stop-color="#ff6600" />
     </linearGradient>
 
-    <!-- Polished Mirror Chrome Hemisphere Gradient -->
-    <linearGradient id="chromeHemisphere" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" />
-      <stop offset="25%" stop-color="#e4e4e7" />
-      <stop offset="55%" stop-color="#71717a" />
-      <stop offset="85%" stop-color="#27272a" />
-      <stop offset="100%" stop-color="#09090b" />
-    </linearGradient>
-
-    <!-- Mechanical Deboss Shadow for Engraved Metal -->
+    <!-- Mechanical Deboss Shadow -->
     <filter id="engravedMetal" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="2" stdDeviation="0.5" flood-color="#000000" flood-opacity="1" />
+      <feDropShadow dx="0" dy="2.5" stdDeviation="0.8" flood-color="#000000" flood-opacity="1" />
     </filter>
   </defs>
 
-  <!-- PURE MATTE BLACK BACKGROUND (NO BLUE, NO GRADIENT, NO FRAME) -->
-  <rect width="1920" height="420" fill="#000000" />
+  <!-- PURE MATTE BLACK BACKGROUND (NO BLUE, NO FRAME, TALLER 640PX CANVAS) -->
+  <rect width="1920" height="640" fill="#000000" />
 
-  <!-- MAIN CENTERED CAMERA BRANDING LOCKUP -->
-  <g transform="translate(960, 160)" text-anchor="middle">
+  <!-- PURE TYPOGRAPHY LOCKUP (CENTERED, NO LOGO) -->
+  <g transform="translate(960, 270)" text-anchor="middle">
     
-    <!-- TOP ROW: WORDMARK + CALIBRATION EMBLEM -->
-    <g transform="translate(0, 0)">
-      <!-- Main Camera Body Wordmark: StudioLight -->
-      <text x="-55" y="0" 
-            font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'Arial', sans-serif" 
-            font-size="116" 
-            font-weight="900" 
-            fill="url(#whiteEnamel)" 
-            letter-spacing="-2.5" 
-            text-anchor="middle"
-            filter="url(#engravedMetal)">StudioLight</text>
+    <!-- 1. MAIN CAMERA WORDMARK: StudioLight -->
+    <text x="0" y="0" 
+          font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'Arial', sans-serif" 
+          font-size="148" 
+          font-weight="900" 
+          fill="url(#whiteEnamel)" 
+          letter-spacing="-3.5" 
+          filter="url(#engravedMetal)">StudioLight</text>
 
-      <!-- Precision Optical VFX Calibration Ball (Next to Wordmark on the Right) -->
-      <g transform="translate(350, -36)">
-        <!-- Lens Mount Outer Bezel (Pure dark metal) -->
-        <circle cx="0" cy="0" r="46" fill="#050505" stroke="#27272a" stroke-width="1.5" />
-        
-        <!-- Outer Knurled Grip Ring -->
-        <circle cx="0" cy="0" r="42" fill="none" stroke="#18181b" stroke-width="2" stroke-dasharray="2,3" />
-        
-        <!-- Left Hemisphere: 18% Neutral Grey Matte -->
-        <path d="M 0 -36 A 36 36 0 0 0 0 36 Z" fill="#71717a" />
-        <!-- Subtle shadow falloff on grey -->
-        <path d="M 0 -36 A 36 36 0 0 0 0 36 Z" fill="#3f3f46" opacity="0.35" />
-
-        <!-- Right Hemisphere: Mirror Chrome Reflection -->
-        <path d="M 0 -36 A 36 36 0 0 1 0 36 Z" fill="url(#chromeHemisphere)" />
-
-        <!-- Center Split Hairline -->
-        <line x1="0" y1="-36" x2="0" y2="36" stroke="#000000" stroke-width="1.5" />
-
-        <!-- Specular Highlight Catchlight (Key light strike) -->
-        <circle cx="15" cy="-16" r="3.5" fill="#ffffff" />
-        <circle cx="15" cy="-16" r="7" fill="#ff7800" opacity="0.4" />
-
-        <!-- Edge Kicker Catchlight (Rim strike) -->
-        <circle cx="-24" cy="20" r="1.8" fill="#ef4444" />
-
-        <!-- Leica-style Red Alignment Index Dot on Bezel -->
-        <circle cx="0" cy="-42" r="2.5" fill="#ef4444" />
-      </g>
-    </g>
-
-    <!-- SECOND ROW: TECHNICAL SPECIFICATION (Authentic camera engraving typography) -->
-    <text x="0" y="68" 
+    <!-- 2. TECHNICAL SPECIFICATION (Camera Engraving Typography) -->
+    <text x="0" y="92" 
           font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace" 
-          font-size="17" 
+          font-size="19" 
           font-weight="700" 
           fill="#ffffff" 
-          letter-spacing="4">
+          letter-spacing="5.5">
       PROFESSIONAL 3-POINT PHOTOMETRIC LIGHTING CONSOLE FOR FLUX
     </text>
 
-    <!-- THIRD ROW: THE AXIOM (Hasselblad Lens Orange) -->
-    <text x="0" y="122" 
+    <!-- 3. CREATIVE AXIOM (Hasselblad Lens Orange) -->
+    <text x="0" y="160" 
           font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif" 
-          font-size="24" 
+          font-size="28" 
           font-weight="700" 
           fill="url(#hasselbladOrange)" 
-          letter-spacing="0.5">
+          letter-spacing="0.6">
       &quot;Stop prompt gambling. Design the light.&quot;
     </text>
   </g>
