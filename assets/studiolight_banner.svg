@@ -1,5 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 640" width="100%" height="100%">
   <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800;900&amp;family=JetBrains+Mono:wght@700&amp;display=swap');
+    </style>
+
     <!-- Pure White Enamel Engraving Gradient -->
     <linearGradient id="whiteEnamel" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#ffffff" />
@@ -19,39 +23,39 @@
     </filter>
   </defs>
 
-  <!-- PURE MATTE BLACK BACKGROUND (NO BLUE, NO FRAME, TALLER 640PX CANVAS) -->
+  <!-- PURE MATTE BLACK BACKGROUND -->
   <rect width="1920" height="640" fill="#000000" />
 
-  <!-- PURE TYPOGRAPHY LOCKUP (CENTERED, NO LOGO) -->
-  <g transform="translate(960, 270)" text-anchor="middle">
+  <!-- CENTERED CAMERA BRANDING LOCKUP -->
+  <g transform="translate(960, 260)" text-anchor="middle">
     
-    <!-- 1. MAIN CAMERA WORDMARK: StudioLight -->
+    <!-- 1. MAIN CAMERA WORDMARK: StudioLight (Plus Jakarta Sans 900) -->
     <text x="0" y="0" 
-          font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'Arial', sans-serif" 
-          font-size="148" 
+          font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif" 
+          font-size="152" 
           font-weight="900" 
           fill="url(#whiteEnamel)" 
-          letter-spacing="-3.5" 
+          letter-spacing="-4px" 
           filter="url(#engravedMetal)">StudioLight</text>
 
-    <!-- 2. TECHNICAL SPECIFICATION (Camera Engraving Typography) -->
-    <text x="0" y="92" 
+    <!-- 2. TECHNICAL SPECIFICATION (+10% bigger -> 21px) -->
+    <text x="0" y="96" 
           font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace" 
-          font-size="19" 
+          font-size="21" 
           font-weight="700" 
           fill="#ffffff" 
-          letter-spacing="5.5">
+          letter-spacing="5.5px">
       PROFESSIONAL 3-POINT PHOTOMETRIC LIGHTING CONSOLE FOR FLUX
     </text>
 
-    <!-- 3. CREATIVE AXIOM (Hasselblad Lens Orange) -->
-    <text x="0" y="160" 
-          font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif" 
-          font-size="28" 
+    <!-- 3. CREATIVE AXIOM (+10% bigger -> 31px, NO QUOTES/BRACKETS) -->
+    <text x="0" y="166" 
+          font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif" 
+          font-size="31" 
           font-weight="700" 
           fill="url(#hasselbladOrange)" 
-          letter-spacing="0.6">
-      &quot;Stop prompt gambling. Design the light.&quot;
+          letter-spacing="0.5px">
+      Stop prompt gambling. Design the light.
     </text>
   </g>
 </svg>
