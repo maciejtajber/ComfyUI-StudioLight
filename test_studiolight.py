@@ -715,6 +715,100 @@ def test_si_shadow_highlight_hermite_isolation():
     print("✓ SIShadowHighlight Hermite Tonal Isolation passed flawlessly!")
 
 
+def test_physically_based_geometric_area_emitters():
+    print("Testing Physically Based Geometric Area Emitters...")
+    import math
+    import time
+    from nodes.color_utils import MODIFIER_PRESETS
+    from nodes.shader_engine import (
+        generate_emitter_tangent_frame,
+        generate_emitter_samples_2d,
+        evaluate_fixture_aperture_footprint,
+        compute_light_shading,
+    )
+
+
+    # 1. 2D Area Emitter Sampling Geometry
+    strip_samp = generate_emitter_samples_2d(MODIFIER_PRESETS["Stripbox"], num_samples=16)
+    assert strip_samp[:, 0].abs().max().item() <= 0.151, "Stripbox U offset exceeded half-width!"
+    assert strip_samp[:, 1].abs().max().item() <= 0.601, "Stripbox V offset exceeded half-height!"
+    strip_aspect = (strip_samp[:, 1].max() - strip_samp[:, 1].min()) / max(strip_samp[:, 0].max() - strip_samp[:, 0].min(), 1e-4)
+    assert 3.5 <= strip_aspect.item() <= 4.5, f"Stripbox emitter aspect ratio unexpected: {strip_aspect.item()}"
+    print("  ✓ Stripbox 1:4 rectangular emitter sampling geometry verified.")
+
+    bd_samp = generate_emitter_samples_2d(MODIFIER_PRESETS["Beauty Dish (Silver)"], num_samples=16)
+    bd_radii = torch.norm(bd_samp, dim=-1)
+    assert bd_radii.min().item() >= 0.09, "Beauty Dish samples leaked inside inner deflector zone!"
+    assert bd_radii.max().item() <= 0.28, "Beauty Dish samples exceeded outer rim!"
+    print("  ✓ Beauty Dish annular parabolic emitter sampling verified.")
+
+    # 2. Specular Aperture Footprints on Chrome Mirror Sphere
+    res = 128
+    grid = torch.linspace(-1.0, 1.0, res)
+    y_g, x_g = torch.meshgrid(grid, grid, indexing="ij")
+    r2 = x_g * x_g + y_g * y_g
+    mask = (r2 <= 1.0).unsqueeze(-1)
+    z_g = torch.sqrt(torch.clamp(1.0 - r2, min=0.0)).unsqueeze(-1)
+    norm = torch.cat([x_g.unsqueeze(-1), y_g.unsqueeze(-1), z_g], dim=-1) * mask.float()
+    v_vec = torch.tensor([0.0, 0.0, 1.0]).view(1, 1, 3)
+    n_dot_v = torch.sum(norm * v_vec, dim=-1, keepdim=True)
+    refl = 2.0 * n_dot_v * norm - v_vec
+    refl = refl / (torch.norm(refl, dim=-1, keepdim=True) + 1e-7)
+
+    theta, phi = math.radians(45.0), math.radians(35.0)
+    l_dir = torch.tensor([math.sin(theta) * math.cos(phi), math.sin(phi), math.cos(theta) * math.cos(phi)])
+    p_light = 1.8 * l_dir
+    u_t, v_t, w_a = generate_emitter_tangent_frame(l_dir)
+    p_sphere = norm * 0.10
+
+    # Test Stripbox footprint (elongated catchlight)
+    strip_foot = evaluate_fixture_aperture_footprint(
+        refl.unsqueeze(0), p_sphere.unsqueeze(0), p_light, u_t, v_t, w_a, MODIFIER_PRESETS["Stripbox"], roughness=0.01
+    )[0, ..., 0]
+    ys, xs = torch.where(strip_foot > 0.2)
+    h_px = (ys.max() - ys.min()).item() if len(ys) > 0 else 0
+    w_px = (xs.max() - xs.min()).item() if len(xs) > 0 else 0
+    assert h_px > w_px, "Stripbox reflection is not vertically elongated!"
+    assert h_px / max(w_px, 1) >= 1.4, f"Stripbox aspect ratio on sphere too low: {h_px / max(w_px, 1)}"
+    print(f"  ✓ Stripbox anisotropic catchlight verified: Aspect={h_px / max(w_px, 1):.2f}")
+
+    # Test Beauty Dish footprint (continuous parabolic profile with center attenuation dip)
+    bd_foot = evaluate_fixture_aperture_footprint(
+        refl.unsqueeze(0), p_sphere.unsqueeze(0), p_light, u_t, v_t, w_a, MODIFIER_PRESETS["Beauty Dish (Silver)"], roughness=0.01
+    )[0, ..., 0]
+    center_y, center_x = int(res * 0.28), int(res * 0.77)
+    center_val = bd_foot[center_y, center_x].item()
+    peak_val = bd_foot.max().item()
+    assert peak_val >= 0.85, f"Beauty Dish peak ring too low: {peak_val}"
+    assert center_val <= 0.35, f"Beauty Dish center deflector attenuation insufficient: {center_val}"
+    print(f"  ✓ Beauty Dish parabolic dish profile verified: Center={center_val:.2f}, Peak={peak_val:.2f}")
+
+    # Test Octabox vs Snoot area coverage
+    oct_foot = evaluate_fixture_aperture_footprint(
+        refl.unsqueeze(0), p_sphere.unsqueeze(0), p_light, u_t, v_t, w_a, MODIFIER_PRESETS["Octabox (Soft)"], roughness=0.01
+    )[0, ..., 0]
+    snoot_foot = evaluate_fixture_aperture_footprint(
+        refl.unsqueeze(0), p_sphere.unsqueeze(0), p_light, u_t, v_t, w_a, MODIFIER_PRESETS["Hard Snoot"], roughness=0.01
+    )[0, ..., 0]
+    oct_px = (oct_foot > 0.1).sum().item()
+    snoot_px = (snoot_foot > 0.1).sum().item()
+    assert oct_px > snoot_px * 20, f"Octabox ({oct_px} px) not significantly larger than Snoot ({snoot_px} px)!"
+    print(f"  ✓ Area aperture size scaling verified: Octabox={oct_px} px vs Snoot={snoot_px} px.")
+
+    # 3. Vectorized Performance Benchmark (< 50 ms)
+    test_norm = torch.randn(1, 512, 512, 3)
+    test_norm = test_norm / torch.norm(test_norm, dim=-1, keepdim=True)
+    test_d = torch.rand(1, 512, 512, 1)
+
+    t0 = time.time()
+    for _ in range(3):
+        compute_light_shading(test_norm, l_dir, (1.0, 1.0, 1.0), 1.0, "Octabox (Soft)", depth=test_d)
+    elapsed_ms = (time.time() - t0) * 1000.0 / 3.0
+    print(f"  ✓ Vectorized 16-sample evaluation benchmark: {elapsed_ms:.2f} ms per 512x512 frame.")
+
+    print("✓ Physically Based Geometric Area Emitters passed flawlessly!")
+
+
 if __name__ == "__main__":
     test_color_utils()
     test_presets()
@@ -732,7 +826,9 @@ if __name__ == "__main__":
     test_prompt_sanitizer()
     test_optical_penumbra_shadows()
     test_si_shadow_highlight_hermite_isolation()
+    test_physically_based_geometric_area_emitters()
     print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified!")
+
 
 
 

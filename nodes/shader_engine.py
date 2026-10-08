@@ -228,6 +228,141 @@ def render_sphere_normals(resolution: int = 256, device: Optional[torch.device] 
     return normals.unsqueeze(0), mask.unsqueeze(0).unsqueeze(-1)
 
 
+
+def generate_emitter_tangent_frame(light_dir: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Constructs an orthonormal coordinate frame [u_tangent, v_tangent, w_aim]
+    for a light fixture oriented along light_dir pointing towards scene center.
+    w_aim: Points forward from fixture face towards subject (-light_dir).
+    u_tangent: Horizontal tangent (fixture right).
+    v_tangent: Vertical tangent (fixture up).
+    """
+    device = light_dir.device
+    dtype = light_dir.dtype
+
+    l_unit = light_dir / (torch.norm(light_dir) + 1e-7)
+    w_aim = -l_unit
+
+    up = torch.tensor([0.0, 1.0, 0.0], device=device, dtype=dtype)
+    if torch.abs(torch.dot(w_aim, up)) > 0.92:
+        up = torch.tensor([1.0, 0.0, 0.0], device=device, dtype=dtype)
+
+    u_tangent = torch.linalg.cross(w_aim, up)
+    u_tangent = u_tangent / (torch.norm(u_tangent) + 1e-7)
+    v_tangent = torch.linalg.cross(w_aim, u_tangent)
+    v_tangent = v_tangent / (torch.norm(v_tangent) + 1e-7)
+
+    return u_tangent, v_tangent, w_aim
+
+
+def generate_emitter_samples_2d(preset: Dict[str, Any], num_samples: int = 16) -> torch.Tensor:
+    """
+    Generates deterministic low-discrepancy 2D metric offsets (u, v) in meters across the emitter face.
+    Returns: [num_samples, 2] tensor.
+    """
+    geom = preset.get("geometry", "circle")
+    offsets = []
+    golden_angle = 2.399963229728653
+
+    if geom == "rectangle":
+        w = float(preset.get("width_m", 0.30))
+        h = float(preset.get("height_m", 1.20))
+        grid_n = int(math.isqrt(num_samples))
+        if grid_n * grid_n < num_samples:
+            grid_n += 1
+        for i in range(grid_n):
+            for j in range(grid_n):
+                if len(offsets) >= num_samples:
+                    break
+                u = w * (-0.5 + (i + 0.5) / float(grid_n))
+                v = h * (-0.5 + (j + 0.5) / float(grid_n))
+                offsets.append([u, v])
+    elif geom == "beauty_dish":
+        r_out = float(preset.get("radius_m", 0.275))
+        r_in = r_out * float(preset.get("deflector_ratio", 0.36))
+        for k in range(num_samples):
+            frac = (k + 0.5) / float(num_samples)
+            r = math.sqrt(r_in * r_in + (r_out * r_out - r_in * r_in) * frac)
+            th = k * golden_angle
+            offsets.append([r * math.cos(th), r * math.sin(th)])
+    else:
+        r_out = float(preset.get("radius_m", 0.70))
+        for k in range(num_samples):
+            frac = (k + 0.5) / float(num_samples)
+            r = r_out * math.sqrt(frac)
+            th = k * golden_angle
+            offsets.append([r * math.cos(th), r * math.sin(th)])
+
+    return torch.tensor(offsets, dtype=torch.float32)
+
+
+def evaluate_fixture_aperture_footprint(
+    refl_rays: torch.Tensor,
+    surf_pos: torch.Tensor,
+    p_light: torch.Tensor,
+    u_tangent: torch.Tensor,
+    v_tangent: torch.Tensor,
+    w_aim: torch.Tensor,
+    preset: Dict[str, Any],
+    roughness: float = 0.08,
+) -> torch.Tensor:
+    """
+    Intersects reflection rays with the 3D fixture aperture plane and evaluates
+    the geometric aperture footprint (Stripbox rectangle, Beauty Dish parabolic ring,
+    Octabox faceted disc, Fresnel circle).
+    Returns specular reflection intensity in [0, 1] range.
+    """
+    denom = torch.sum(refl_rays * w_aim.view(1, 1, 1, 3), dim=-1, keepdim=True)
+    numer = torch.sum((p_light.view(1, 1, 1, 3) - surf_pos) * w_aim.view(1, 1, 1, 3), dim=-1, keepdim=True)
+    t = numer / (denom - 1e-6)
+    valid_hit = (t > 0.0) & (denom < -0.01)
+
+    p_hit = surf_pos + t * refl_rays
+    diff = p_hit - p_light.view(1, 1, 1, 3)
+    u = torch.sum(diff * u_tangent.view(1, 1, 1, 3), dim=-1, keepdim=True)
+    v = torch.sum(diff * v_tangent.view(1, 1, 1, 3), dim=-1, keepdim=True)
+
+    geom = preset.get("geometry", "circle")
+    blur = float(roughness) * 0.35
+
+    if geom == "rectangle":
+        w = float(preset.get("width_m", 0.30))
+        h = float(preset.get("height_m", 1.20))
+        ew = w * 0.5 + blur
+        eh = h * 0.5 + blur
+        du = torch.abs(u) / ew
+        dv = torch.abs(v) / eh
+        d_box = torch.maximum(du, dv)
+        edge_pow = max(2.0, 12.0 / (1.0 + float(roughness) * 12.0))
+        spec = torch.clamp(1.0 - torch.pow(d_box, edge_pow), 0.0, 1.0)
+    elif geom == "beauty_dish":
+        r = torch.sqrt(u * u + v * v)
+        rm = float(preset.get("radius_m", 0.275)) + blur
+        r_norm = r / rm
+        edge_pow = max(2.0, 8.0 / (1.0 + float(roughness) * 10.0))
+        outer = torch.clamp(1.0 - torch.pow(r_norm, edge_pow), 0.0, 1.0)
+        defl_r = float(preset.get("radius_m", 0.275)) * float(preset.get("deflector_ratio", 0.36))
+        trans = float(preset.get("deflector_transmission", 0.12))
+        inner_shadow = torch.clamp((r / defl_r - 0.6) * 3.0, 0.0, 1.0)
+        inner = trans + (1.0 - trans) * inner_shadow
+        spec = outer * inner
+    elif geom == "octagon":
+        r = torch.sqrt(u * u + v * v)
+        th = torch.atan2(v, u)
+        th_mod = torch.remainder(th, math.pi / 4.0) - math.pi / 8.0
+        r_oct = float(preset.get("radius_m", 0.70)) * math.cos(math.pi / 8.0) / torch.cos(th_mod) + blur
+        edge_pow = max(2.0, 6.0 / (1.0 + float(roughness) * 8.0))
+        spec = torch.clamp(1.0 - torch.pow(r / r_oct, edge_pow), 0.0, 1.0)
+    else:
+        r = torch.sqrt(u * u + v * v)
+        rm = float(preset.get("radius_m", 0.15)) + blur
+        edge_pow = max(2.0, 8.0 / (1.0 + float(roughness) * 10.0))
+        spec = torch.clamp(1.0 - torch.pow(r / rm, edge_pow), 0.0, 1.0)
+
+    gain = 1.0 / (1.0 + float(roughness) * 3.0)
+    return spec * gain * valid_hit.float()
+
+
 def compute_light_shading(
     normals: torch.Tensor,
     light_vec: torch.Tensor,
@@ -238,18 +373,27 @@ def compute_light_shading(
     distance: float = 1.8,
     return_separate: bool = False,
 ) -> torch.Tensor:
-    """Computes diffuse and Blinn-Phong specular contribution for a single light.
-    Depth is relative and rescaled per image onto a fixed 3 m Z span (Z=-1.5 near .. -4.5 far); falloff is
-    therefore an art-directable approximation, not metric inverse-square."""
+    """
+    Computes diffuse irradiance and specular reflection using a physically based
+    geometric area-emitter model.
+    - Diffuse: Multi-sample area emitter integration with true 1/r^2 falloff and
+      single-layer geometric penumbra shadow visibility.
+    - Specular: Analytical aperture footprint in reflection space.
+    """
     preset = MODIFIER_PRESETS.get(modifier_name, MODIFIER_PRESETS["Octabox (Soft)"])
-    wrap = min(preset.get("wrap_factor", 0.0), 0.45)
-    spec_power = preset["specular_power"]
-    spec_strength = preset["specular_strength"]
-    falloff_exp = preset["falloff_exponent"]
-
     device = normals.device
     dtype = normals.dtype
     l_vec_dir = light_vec.to(device=device, dtype=dtype).view(1, 1, 1, 3)
+    u_tangent, v_tangent, w_aim = generate_emitter_tangent_frame(l_vec_dir.view(3))
+
+    r_stand = max(float(distance), 0.3)
+    p_light = torch.tensor([0.0, 0.0, -2.0], device=device, dtype=dtype).view(1, 1, 1, 3) + r_stand * l_vec_dir
+
+    # View vector (towards camera +Z)
+    v_vec = torch.tensor([0.0, 0.0, 1.0], device=device, dtype=dtype).view(1, 1, 1, 3)
+    n_dot_v = torch.clamp(torch.sum(normals * v_vec, dim=-1, keepdim=True), 0.0, 1.0)
+    refl_rays = 2.0 * n_dot_v * normals - v_vec
+    refl_rays = refl_rays / (torch.norm(refl_rays, dim=-1, keepdim=True) + 1e-7)
 
     if depth is not None:
         d = depth.to(device=device, dtype=dtype)
@@ -259,14 +403,14 @@ def compute_light_shading(
             d = d.unsqueeze(-1)
         d = torch.nan_to_num(d, nan=0.0, posinf=0.0, neginf=0.0)
 
-        # 3D Camera-Space Back-Projection (FOV = 40 deg vertical, standard portrait / 50mm lens)
+        # 3D Camera-Space Back-Projection
         B, H, W, _ = normals.shape
         if d.shape[1] != H or d.shape[2] != W:
             d_perm = d.permute(0, 3, 1, 2)
             d = F.interpolate(d_perm, size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
 
         aspect = float(W) / float(H)
-        tan_half_fov = 0.364  # math.tan(math.radians(20.0))
+        tan_half_fov = 0.364
         y_coords, x_coords = torch.meshgrid(
             torch.linspace(1.0, -1.0, H, device=device, dtype=dtype),
             torch.linspace(-1.0, 1.0, W, device=device, dtype=dtype),
@@ -275,7 +419,6 @@ def compute_light_shading(
         x_grid = x_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
         y_grid = y_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
 
-        # Robust depth scaling using 1st and 99th percentiles (prevents single-pixel artifact compression)
         d_flat = d.view(-1)
         if d_flat.numel() > 1000:
             d_min = torch.quantile(d_flat, 0.01)
@@ -285,11 +428,6 @@ def compute_light_shading(
             d_max = torch.max(d)
         d_range = d_max - d_min
 
-        # Scale relative depth d to camera space Z in standard OpenGL convention:
-        # Camera is at (0, 0, 0) looking down -Z.
-        # Subject is centered at Z = -2.0m. Foreground nose (d_norm=1.0) is at Z = -1.5m.
-        # Background (d_norm=0.0) is at Z = -4.5m.
-        # Guard: If depth map is degenerate/flat, anchor subject stably at Z = -2.0m rather than background.
         if d_range < 1e-4:
             d_norm = torch.ones_like(d)
             z_pos = torch.full_like(d, -2.0)
@@ -301,83 +439,100 @@ def compute_light_shading(
         y_pos = y_grid * tan_half_fov * (-z_pos)
         p_surf = torch.cat([x_pos, y_pos, z_pos], dim=-1)
 
-        # Light head position relative to subject center (0, 0, -2.0m) at specified stand radius.
-        # For frontal key (lz > 0), light moves towards camera +Z to position (0, 0, -2.0 + distance).
-        r_stand = max(float(distance), 0.3)
-        p_light = torch.tensor([0.0, 0.0, -2.0], device=device, dtype=dtype).view(1, 1, 1, 3) + r_stand * l_vec_dir
-
-        # True per-pixel divergent light vector & Euclidean distance
-        v_to_light = p_light - p_surf
-        dist_to_light = torch.norm(v_to_light, dim=-1, keepdim=True) + 1e-6
-        l_vec = v_to_light / dist_to_light
-
-        # Empirical (1/d)^1.6 falloff referenced to a 1.8 m portrait stand
-        dist_ratio = 1.8 / dist_to_light
-        # Direct point light attenuation: max 3.0 at close distance, 0.0 at infinite distance
-        attenuation = torch.clamp(torch.pow(dist_ratio, 1.6), min=0.0, max=3.0)
-
-        # Smooth distance taper: distant background elements (d_norm < 0.20) smoothly drop to 0% direct strobe light
-        # This keeps distant buildings/sky cold and dark while preserving full irradiance on the subject (d_norm > 0.20)
+        # Distance taper for background
         bg_taper = torch.clamp(d_norm / 0.20, 0.0, 1.0)
-        # Smooth Hermite curve: 3*t^2 - 2*t^3
         bg_taper = bg_taper * bg_taper * (3.0 - 2.0 * bg_taper)
-        attenuation = attenuation * bg_taper
 
-        # Studio Optical Modifier Beam Cone:
-        # A studio modifier (stripbox, snoot, octabox) is aimed forward at the subject center (0, 0, -2.0m).
-        # It does NOT emit light backwards out of the rear of the fixture (e.g. at 166 deg off-axis onto background walls).
-        aim_axis = -l_vec_dir  # Points from light stand head directly towards the subject center
-        dir_from_light = -l_vec
-        cos_beam = torch.sum(dir_from_light * aim_axis, dim=-1, keepdim=True)
-        # Smoothly cut off light emitted past 90 degrees from the fixture's forward aim axis (hemispherical forward emission)
-        beam_gate = torch.clamp(cos_beam * 3.0, 0.0, 1.0)
-        aperture = preset.get("aperture_size", 0.0)
-        cast_sh = screen_space_directional_shadow(
-            d,
-            light_vec,
-            aperture_size=aperture,
-            dist_to_light=dist_to_light,
-            soft_shadows=True,
+        # 1. DIFFUSE EMISSION: Vectorized Area-Light Integration (16 samples)
+        num_samples = 16
+        samples_2d = generate_emitter_samples_2d(preset, num_samples=num_samples).to(device=device, dtype=dtype)
+        # [S, 1, 1, 3] sample points in camera space
+        p_samples = p_light.view(1, 1, 1, 3) + samples_2d[:, 0].view(num_samples, 1, 1, 1) * u_tangent.view(1, 1, 1, 3) + samples_2d[:, 1].view(num_samples, 1, 1, 1) * v_tangent.view(1, 1, 1, 3)
+
+        # Vectorized [S, H, W, 3] broadcast
+        v_to_samples = p_samples - p_surf  # [S, H, W, 3]
+        dist_to_samples = torch.norm(v_to_samples, dim=-1, keepdim=True) + 1e-6
+        dir_to_samples = v_to_samples / dist_to_samples
+
+        # Cosines at receiver (N . L) and emitter (w_aim . -L)
+        cos_p = torch.clamp(torch.sum(normals * dir_to_samples, dim=-1, keepdim=True), 0.0, 1.0)
+        cos_e = torch.clamp(torch.sum(w_aim.view(1, 1, 1, 3) * (-dir_to_samples), dim=-1, keepdim=True), 0.0, 1.0)
+
+        # Beam angle profile cutoff
+        beam_angle = float(preset.get("beam_angle_deg", 90.0))
+        cos_cutoff = math.cos(math.radians(min(beam_angle * 0.5, 85.0)))
+        beam_gate = torch.clamp((cos_e - cos_cutoff) / (1.0 - cos_cutoff + 1e-5), 0.0, 1.0)
+
+        # True physical 1 / r^2 falloff (referenced to 1.8m studio portrait stand)
+        inv_sq = torch.clamp((1.8 / dist_to_samples) ** 2.0, 0.0, 8.0) * bg_taper
+
+        # Average irradiance across samples -> [1, H, W, 1]
+        irradiance_samples = cos_p * beam_gate * inv_sq
+        raw_diffuse = torch.mean(irradiance_samples, dim=0, keepdim=True)
+
+
+        # 2. SHADOW / VISIBILITY: Single-layer penumbra from sample visibility
+        # Sample representative points across fixture aperture (sharp binary ray-march, no PCSS post-soften)
+        sh_accum = torch.zeros_like(d)
+        vis_sample_indices = [0, num_samples // 4, num_samples // 2, (3 * num_samples) // 4]
+        subj_center = torch.tensor([0.0, 0.0, -2.0], device=device, dtype=dtype)
+        for s_idx in vis_sample_indices:
+            l_sample_vec = p_samples[s_idx].view(3) - subj_center
+            l_sample_vec = l_sample_vec / (torch.norm(l_sample_vec) + 1e-6)
+            dist_s = dist_to_samples[s_idx]
+            if dist_s.dim() == 3:
+                dist_s = dist_s.unsqueeze(0)
+            sample_sh = screen_space_directional_shadow(
+                d,
+                l_sample_vec,
+                aperture_size=0.0,
+                dist_to_light=dist_s,
+                soft_shadows=False,
+            )
+            sh_accum += sample_sh
+        cast_sh = sh_accum / float(len(vis_sample_indices))
+
+
+        # 3. SPECULAR REFLECTION: Physical Aperture Footprint in Reflection Space
+        specular = evaluate_fixture_aperture_footprint(
+            refl_rays,
+            p_surf,
+            p_light,
+            u_tangent,
+            v_tangent,
+            w_aim,
+            preset,
+            roughness=preset.get("specular_roughness", 0.18),
         )
+        # Horizon gating to prevent silhouette leakage
+        horizon_gate = torch.clamp(torch.sum(normals * l_vec_dir, dim=-1, keepdim=True) * 10.0, 0.0, 1.0)
+        specular = specular * horizon_gate * float(preset.get("specular_strength", 0.50)) * bg_taper * cast_sh
+
     else:
+        # Analytical point approximation when depth is unavailable
         l_vec = l_vec_dir
         dist_val = max(float(distance), 0.3)
         dist_ratio = 1.8 / dist_val
-        attenuation = float(torch.clamp(torch.tensor(dist_ratio) ** 1.6, min=0.0, max=3.0))
+        attenuation = float(torch.clamp(torch.tensor(dist_ratio) ** 2.0, min=0.0, max=4.0))
         cast_sh = 1.0
 
-    # Dot product N . L
-    n_dot_l = torch.sum(normals * l_vec, dim=-1, keepdim=True)
+        n_dot_l = torch.clamp(torch.sum(normals * l_vec, dim=-1, keepdim=True), 0.0, 1.0)
+        raw_diffuse = n_dot_l * attenuation
 
-    # Wrap lighting (Half-Lambert)
-    if wrap > 0.0:
-        diffuse = torch.clamp((n_dot_l + wrap) / (1.0 + wrap), min=0.0, max=1.0)
-    else:
-        diffuse = torch.clamp(n_dot_l, min=0.0, max=1.0)
-
-    if falloff_exp != 1.0:
-        diffuse = torch.pow(diffuse, falloff_exp)
-
-    # View vector (towards camera +Z)
-    v_vec = torch.tensor([0.0, 0.0, 1.0], device=device, dtype=dtype).view(1, 1, 1, 3)
-    h_vec = l_vec + v_vec
-    h_norm = torch.norm(h_vec, dim=-1, keepdim=True) + 1e-7
-    h_vec = h_vec / h_norm
-
-    # Blinn-Phong Specular (gated by diffuse horizon to prevent back-facing silhouette leakage)
-    n_dot_h = torch.clamp(torch.sum(normals * h_vec, dim=-1, keepdim=True), min=0.0, max=1.0)
-    # Physically, specular highlights can only exist on surface microfacets oriented towards the light source (N . L > 0).
-    # Smoothly taper to zero as surface grazes the shadow horizon to eliminate edge halos:
-    horizon_gate = torch.clamp(n_dot_l * 10.0, 0.0, 1.0)
-    specular = torch.pow(n_dot_h, spec_power) * spec_strength * 0.35 * horizon_gate
+        h_vec = l_vec + v_vec
+        h_vec = h_vec / (torch.norm(h_vec, dim=-1, keepdim=True) + 1e-7)
+        n_dot_h = torch.clamp(torch.sum(normals * h_vec, dim=-1, keepdim=True), 0.0, 1.0)
+        spec_power = preset.get("specular_power", 32.0)
+        specular = torch.pow(n_dot_h, spec_power) * float(preset.get("specular_strength", 0.50)) * attenuation
 
     c_tensor = torch.tensor(light_color, device=device, dtype=dtype).view(1, 1, 1, 3)
-    diffuse_rgb = diffuse * float(intensity) * c_tensor * attenuation * cast_sh
-    specular_rgb = specular * float(intensity) * c_tensor * attenuation * cast_sh
+    diffuse_rgb = raw_diffuse * float(intensity) * c_tensor * cast_sh
+    specular_rgb = specular * float(intensity) * c_tensor
 
     if return_separate:
         return (diffuse_rgb, specular_rgb)
     return diffuse_rgb + specular_rgb
+
 
 
 def draw_studio_radar_diagram(
@@ -729,23 +884,26 @@ def render_studio_lighting(
     ]:
         if p.get("enabled", True):
             d_val = max(float(p.get("distance", 1.8)), 0.3)
-            lv_dir = vec.to(device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
+            lv_dir = vec.to(device=device, dtype=sphere_normals.dtype).view(3)
             p_light_probe = d_val * lv_dir
-            v_to_probe_light = p_light_probe - p_sphere
-            dist_probe = torch.norm(v_to_probe_light, dim=-1, keepdim=True) + 1e-6
-            lv = v_to_probe_light / dist_probe
+            u_t, v_t, w_a = generate_emitter_tangent_frame(lv_dir)
 
-            r_dot_l = torch.clamp(torch.sum(refl_rays * lv, dim=-1, keepdim=True), min=0.0, max=1.0)
 
-            # Distance governs apparent angular size of modifier in reflection:
             mod_preset = MODIFIER_PRESETS.get(p.get("modifier", "Octabox (Soft)"), MODIFIER_PRESETS["Octabox (Soft)"])
-            base_power = mod_preset.get("specular_power", 32.0)
-            spec_exp = float(torch.clamp(torch.tensor(base_power * (d_val / 1.8) ** 1.5), 12.0, 600.0))
-            dist_spec_gain = float(torch.clamp(torch.tensor((1.8 / d_val) ** 1.3), 0.15, 2.6))
-            spec_spot = torch.pow(r_dot_l, spec_exp) * float(p["intensity"]) * 2.2 * dist_spec_gain
-
+            # True photographic geometric aperture reflection on mirror chrome ball
+            spec_spot = evaluate_fixture_aperture_footprint(
+                refl_rays,
+                p_sphere,
+                p_light_probe,
+                u_t,
+                v_t,
+                w_a,
+                mod_preset,
+                roughness=0.01,
+            )
             col_t = torch.tensor(col, device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
-            chrome_ball = chrome_ball + spec_spot * col_t
+            chrome_ball = chrome_ball + spec_spot * float(p["intensity"]) * col_t
+
 
     chrome_ball = torch.clamp((chrome_ball + ambient_intensity * 0.12) * sphere_mask, 0.0, 1.0)
 

@@ -80,50 +80,91 @@ def kelvin_to_mood(kelvin: float) -> str:
 MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
     "Octabox (Soft)": {
         "token": "soft diffused octabox light, gentle shadow falloff",
+        "geometry": "octagon",
+        "radius_m": 0.70,          # 140 cm diameter
+        "aspect_ratio": 1.0,
+        "beam_angle_deg": 130.0,
+        "edge_softness": 0.35,
         "wrap_factor": 0.38,
         "specular_power": 16.0,
         "specular_strength": 0.20,
+        "specular_roughness": 0.38,
         "falloff_exponent": 1.0,
         "aperture_size": 1.40,
     },
     "Beauty Dish (Silver)": {
         "token": "punchy beauty dish lighting, crisp round catchlights",
+        "geometry": "beauty_dish", # Parabolic dish with center deflector disk
+        "radius_m": 0.275,         # 55 cm diameter
+        "deflector_ratio": 0.36,   # Central deflector disc radius ratio
+        "deflector_transmission": 0.12, # Center attenuation (not hard zero)
+        "aspect_ratio": 1.0,
+        "beam_angle_deg": 85.0,
+        "edge_softness": 0.18,
         "wrap_factor": 0.16,
         "specular_power": 45.0,
         "specular_strength": 0.45,
+        "specular_roughness": 0.18,
         "falloff_exponent": 1.4,
         "aperture_size": 0.55,
     },
     "Fresnel Spotlight": {
         "token": "hard optical fresnel beam, high-contrast chiaroscuro shadows",
+        "geometry": "circle",
+        "radius_m": 0.15,          # 30 cm optical lens
+        "aspect_ratio": 1.0,
+        "beam_angle_deg": 35.0,
+        "edge_softness": 0.08,
         "wrap_factor": 0.04,
         "specular_power": 85.0,
         "specular_strength": 0.70,
+        "specular_roughness": 0.08,
         "falloff_exponent": 2.0,
         "aperture_size": 0.20,
     },
     "Hard Snoot": {
         "token": "tight snoot spotlight, dramatic isolation pool of light",
+        "geometry": "circle",
+        "radius_m": 0.05,          # 10 cm pin-spot aperture
+        "aspect_ratio": 1.0,
+        "beam_angle_deg": 18.0,
+        "edge_softness": 0.04,
         "wrap_factor": 0.0,
         "specular_power": 120.0,
         "specular_strength": 0.85,
+        "specular_roughness": 0.04,
         "falloff_exponent": 2.8,
         "aperture_size": 0.10,
     },
     "Direct On-Camera Flash": {
         "token": "raw direct on-camera flash, hard snapshot micro-shadows, glossy specularity",
+        "geometry": "rectangle",
+        "width_m": 0.08,           # 8 cm × 5 cm compact strobe head
+        "height_m": 0.05,
+        "aspect_ratio": 1.6,
+        "beam_angle_deg": 70.0,
+        "edge_softness": 0.05,
         "wrap_factor": 0.02,
         "specular_power": 90.0,
         "specular_strength": 0.90,
+        "specular_roughness": 0.03,
         "falloff_exponent": 1.8,
         "aperture_size": 0.04,
     },
     "Stripbox": {
         "token": "narrow stripbox kicker, razor edge rim separation",
+        "geometry": "rectangle",
+        "width_m": 0.30,           # 30 cm × 120 cm (1:4 ratio)
+        "height_m": 1.20,
+        "aspect_ratio": 0.25,
+        "beam_angle_deg": 65.0,
+        "edge_softness": 0.15,
         "wrap_factor": 0.12,
         "specular_power": 60.0,
         "specular_strength": 0.55,
+        "specular_roughness": 0.22,
         "falloff_exponent": 1.6,
         "aperture_size": 0.30,
     },
 }
+

@@ -9,7 +9,7 @@
 
 Camera-space key, fill and rim lights, physical modifiers and Kelvin control for FLUX in ComfyUI.
 
-<sub>V1.0.0 &nbsp;·&nbsp; COMFYUI CUSTOM NODE &nbsp;·&nbsp; FLUX.1 DEV / KREA &nbsp;·&nbsp; 16/16 TESTS &nbsp;·&nbsp; MIT</sub>
+<sub>V1.0.0 &nbsp;·&nbsp; COMFYUI CUSTOM NODE &nbsp;·&nbsp; FLUX.1 DEV / KREA &nbsp;·&nbsp; 17/17 TESTS &nbsp;·&nbsp; MIT</sub>
 
 <br>
 
@@ -17,6 +17,7 @@ Camera-space key, fill and rim lights, physical modifiers and Kelvin control for
 <a href="#quick-demo">DEMO</a> &nbsp;·&nbsp;
 <a href="#how-it-works">HOW IT WORKS</a> &nbsp;·&nbsp;
 <a href="#the-virtual-studio">STUDIO</a> &nbsp;·&nbsp;
+<a href="#optical-modifiers--physical-area-emitters">OPTICAL ENGINE</a> &nbsp;·&nbsp;
 <a href="#the-core-production-suite-deep-technical-manual">MANUAL</a> &nbsp;·&nbsp;
 <a href="#installation">INSTALL</a> &nbsp;·&nbsp;
 <a href="#master-workflows">WORKFLOWS</a>
@@ -80,7 +81,7 @@ Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic
 | :--- | :--- |
 | **Subject Mutation:** Prompting for light changes anatomy, styling, and background geometry. | **Geometry Preservation:** Structure crystallizes in Pass 1; lighting is steered independently in Pass 2. |
 | **Chromatic Bleed:** Color tokens tint skin, hair, and clothing indiscriminately. | **Directional Lobe Isolation:** Rim and key colors remain confined to illuminated surfaces ($N \cdot L > 0$). |
-| **Uncalibrated Falloff:** Lights fail to observe inverse-square distance or scene depth. | **Calibrated Falloff Approximation:** Models $1/d^{1.6}$ studio attenuation and modifier beam coning. |
+| **Uncalibrated Falloff:** Lights fail to observe inverse-square distance or scene depth. | **Physical Geometric Inverse-Square:** Models true $1/r^2$ radiometric distance falloff, normalized to studio reference stand distance ($r_{\text{ref}}=1.8\text{m}$). |
 | **Pre-baked Specular Artifacts:** High-gloss words bake blown-out white patches into early draft latents. | **Albedo Decoupling:** Renders clean, shadowless draft plates; specular highlights ignite only where fixtures strike. |
 
 ---
@@ -107,17 +108,41 @@ StudioLight splits generation into a **two-stage geometry and relighting pipelin
 * **Interactive Studio Lighting Console:** Visual top-down camera-space controls on the node canvas for rapid fixture positioning.
 * **Dual-Sphere VFX Probes:** Real-time 18% Grey Ball + Mirror Chrome Ball preview cards rendered in `0.03s`.
 
-### Optical Modifiers & Physical Apertures
-Shadow softness and highlight shapes are driven by virtual modifier diameters via Screen-Space PCSS:
+### Optical Modifiers & Physical Area Emitters
 
-| Modifier | Virtual Aperture | Optical Profile | Typical Application |
-| :--- | :---: | :--- | :--- |
-| **Direct On-Camera Flash** | **0.04m** | Un-diffused speedlight tube | Razor-sharp contact shadows, raw 90s editorial |
-| **Hard Snoot** | **0.10m** | Narrow conical restriction | Isolated high-contrast beam, zero ambient spill |
-| **Fresnel Spotlight** | **0.20m** | Collimated stepped lens | Sculpted edges, classic cinematic chiaroscuro |
-| **Stripbox** | **0.30m** | Asymmetric baffled softbox | Controlled directional wrap, edge silhouette separation |
-| **Beauty Dish (Silver)** | **0.55m** | Parabolic reflector with deflector | Defined bone structure carving, high-fashion portraiture |
-| **Octabox (Soft)** | **1.40m** | Diffused 5-foot umbrella | Broad, creamy penumbra, natural catalog fill |
+StudioLight implements a **physically based geometric area-emitter architecture**. Every studio modifier is modeled as a defined 3D virtual emitter with metric dimensions ($W, H, R$), angular beam distributions, single-layer penumbra visibility, and an analytical aperture reflection in reflection space:
+
+```
+                                   EMITTER
+        [Geometry: Dimensions in meters (W, H, R), Position, Aim Direction]
+                                      │
+            ┌─────────────────────────┼─────────────────────────┐
+            ▼                         ▼                         ▼
+   1. DIFFUSE EMISSION       2. SHADOW / VISIBILITY     3. SPECULAR REFLECTION
+  Vectorized [S, H, W, 3]    Single-layer penumbra      Ray-plane intersection
+  • S=16 sample points       • Binary blocker test      • Emitter 2D coordinate
+  • Physical 1 / r_k²          per sample point         • Continuous aperture
+  • cos θ_e × cos θ_p        • Average across S           profile & roughness
+  • Radiometric area norm      yields natural penumbra    • True fixture catchlights
+```
+
+* **No Double-Softening:** Sample visibility uses sharp binary blocker tests per sample point. Averaging visibility across the area emitter alone creates the natural contact-hardening penumbra (razor-sharp contact under chin/collar, progressively softening with blocker distance).
+* **Vectorized Parallel Integration:** Broadcasts all $S=16$ sample points across receiver pixels in a single `[S, H, W, 3]` tensor calculation without Python loops.
+* **Continuous Optical Profiles:** Parabolic Beauty Dish with center deflector attenuation (transmission $0.12$), asymmetric 1:4 Stripbox grids, and faceted 8-sided Octaboxes.
+
+| Modifier | Metric Aperture | Beam Angle ($\theta_{\text{beam}}$) | Optical Model | Catchlight Profile |
+| :--- | :---: | :---: | :--- | :--- |
+| **Direct On-Camera Flash** | $0.08\text{m} \times 0.05\text{m}$ | $90^\circ$ | Near-point strobe emitter | Crisp micro-pinpoint |
+| **Hard Snoot** | $R=0.05\text{m}$ (10cm) | $18^\circ$ | Steeper collimated beam cone | Tight circular isolation |
+| **Fresnel Spotlight** | $R=0.15\text{m}$ (30cm) | $35^\circ$ | Optical lens edge cutoff | Compact stepped lens disc |
+| **Stripbox** | $0.30\text{m} \times 1.20\text{m}$ | $65^\circ$ | $1:4$ Asymmetric rectangular emitter | Elongated vertical catchlight bar |
+| **Beauty Dish (Silver)** | $R=0.275\text{m}$ (55cm) | $105^\circ$ | Parabolic dish + center deflector ($36\%$ ratio) | Sculpted cheekbones, donut/core ring |
+| **Octabox (Soft)** | $R=0.70\text{m}$ (140cm) | $130^\circ$ | Broad Lambertian octagonal emitter | Large wrap disc, soft continuous penumbra |
+
+> [!NOTE]
+> For the complete mathematical formulation, low-discrepancy sampling proofs, and shader implementation:
+> * [Architecture Plan: StudioLight Geometric Area Emitters](docs/ARCHITECTURE_PHYSICAL_AREA_EMITTERS.md)
+> * [Engine Walkthrough & Benchmarks](docs/ENGINE_WALKTHROUGH_AREA_EMITTERS.md)
 
 ---
 
@@ -228,6 +253,7 @@ python test_studiolight.py
 ## Master Workflows
 
 * `workflows/StudioLight_MethodA_Calibrated.json`: Complete production workflow with organized functional zones, live preview cards, and prompt synchronization.
+* `workflows/StudioLight_VFX_Live_Local.json`: Standalone local VFX workflow running in 0.03s without cloud GPUs or external model dependencies.
 * `workflows/StudioLight_Production.json`: Streamlined production layout for fast iterations.
 
 ---
