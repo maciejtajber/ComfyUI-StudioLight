@@ -16,6 +16,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from typing import Dict, Any, Optional, Tuple
 from .color_utils import kelvin_to_rgb, MODIFIER_PRESETS
+from .metric_shadow import screen_space_directional_shadow_metric
 
 
 def get_preferred_device() -> torch.device:
@@ -372,12 +373,15 @@ def compute_light_shading(
     depth: Optional[torch.Tensor] = None,
     distance: float = 1.8,
     return_separate: bool = False,
+    shadow_samples: int = 12,
+    shadow_steps: int = 24,
 ) -> torch.Tensor:
     """
     Computes diffuse irradiance and specular reflection using a physically based
     geometric area-emitter model.
-    - Diffuse: Multi-sample area emitter integration with true 1/r^2 falloff and
-      single-layer geometric penumbra shadow visibility.
+    - Diffuse: Multi-sample area emitter integration with true 1/r^2 falloff.
+    - Shadow: Metric camera-space 3D shadow raymarching with perspective projection
+      and multi-sample area aperture penumbras (zero self-shadowing, 3D distance gap).
     - Specular: Analytical aperture footprint in reflection space.
     """
     preset = MODIFIER_PRESETS.get(modifier_name, MODIFIER_PRESETS["Octabox (Soft)"])
@@ -471,26 +475,22 @@ def compute_light_shading(
         raw_diffuse = torch.mean(irradiance_samples, dim=0, keepdim=True)
 
 
-        # 2. SHADOW / VISIBILITY: Single-layer penumbra from sample visibility
-        # Sample representative points across fixture aperture (sharp binary ray-march, no PCSS post-soften)
-        sh_accum = torch.zeros_like(d)
-        vis_sample_indices = [0, num_samples // 4, num_samples // 2, (3 * num_samples) // 4]
-        subj_center = torch.tensor([0.0, 0.0, -2.0], device=device, dtype=dtype)
-        for s_idx in vis_sample_indices:
-            l_sample_vec = p_samples[s_idx].view(3) - subj_center
-            l_sample_vec = l_sample_vec / (torch.norm(l_sample_vec) + 1e-6)
-            dist_s = dist_to_samples[s_idx]
-            if dist_s.dim() == 3:
-                dist_s = dist_s.unsqueeze(0)
-            sample_sh = screen_space_directional_shadow(
-                d,
-                l_sample_vec,
-                aperture_size=0.0,
-                dist_to_light=dist_s,
-                soft_shadows=False,
-            )
-            sh_accum += sample_sh
-        cast_sh = sh_accum / float(len(vis_sample_indices))
+        # 2. SHADOW / VISIBILITY: Metric Camera-Space 3D Area Shadow Raymarching
+        # Marches in metric meters toward area-emitter samples, with perspective back-projection
+        # and "strictly between" occlusion test (zero self-shadowing, true 3D distance gap projection).
+        cast_sh_map = screen_space_directional_shadow_metric(
+            surface_xyz=p_surf,
+            scene_depth=-p_surf[..., 2],
+            light_pos=p_light.view(1, 3).expand(B, 3),
+            light_aim=torch.tensor([0.0, 0.0, -2.0], device=device, dtype=dtype).view(1, 3).expand(B, 3),
+            modifier=modifier_name,
+            vertical_fov_deg=40.0,
+            aspect=aspect,
+            num_emitter_samples=shadow_samples,
+            ray_steps=shadow_steps,
+            sample_chunk=4,
+        )
+        cast_sh = cast_sh_map.unsqueeze(-1)
 
 
         # 3. SPECULAR REFLECTION: Physical Aperture Footprint in Reflection Space

@@ -9,7 +9,7 @@
 
 Camera-space key, fill and rim lights, physical modifiers and Kelvin control for FLUX in ComfyUI.
 
-<sub>V1.0.0 &nbsp;·&nbsp; COMFYUI CUSTOM NODE &nbsp;·&nbsp; FLUX.1 DEV / KREA &nbsp;·&nbsp; 17/17 TESTS &nbsp;·&nbsp; MIT</sub>
+<sub>V1.0.0 &nbsp;·&nbsp; COMFYUI CUSTOM NODE &nbsp;·&nbsp; FLUX.1 DEV / KREA &nbsp;·&nbsp; 18/18 TESTS &nbsp;·&nbsp; MIT</sub>
 
 <br>
 
