@@ -9,7 +9,7 @@
 
 Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin control for FLUX in ComfyUI.
 
-<sub>v0.9.0-rc &nbsp;·&nbsp; COMFYUI CUSTOM NODE &nbsp;·&nbsp; FLUX.1 DEV / KREA &nbsp;·&nbsp; 18/18 TESTS PASSING &nbsp;·&nbsp; MIT</sub>
+<sub>v0.9.0-rc &nbsp;·&nbsp; COMFYUI CUSTOM NODE &nbsp;·&nbsp; FLUX.1 DEV / KREA &nbsp;·&nbsp; MIT</sub>
 
 <br>
 
@@ -18,11 +18,11 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 <a href="#same-subject-same-prompt-different-light">SHOWCASE</a> &nbsp;·&nbsp;
 <a href="#from-camera-space-lighting-pass-to-final-flux-render">THE PROOF</a> &nbsp;·&nbsp;
 <a href="#what-makes-studiolight-different">DIFFERENTIATION</a> &nbsp;·&nbsp;
-<a href="#core-production-suite--node-schemas">NODE SCHEMAS</a> &nbsp;·&nbsp;
 <a href="#installation">INSTALL</a> &nbsp;·&nbsp;
+<a href="#core-production-suite--node-schemas">NODE SCHEMAS</a> &nbsp;·&nbsp;
 <a href="#how-it-works">PIPELINE</a> &nbsp;·&nbsp;
 <a href="#3d-camera-space-shadow-raymarching">3D SHADOWS</a> &nbsp;·&nbsp;
-<a href="#optical-modifiers--physical-area-emitters">AREA EMITTERS</a> &nbsp;·&nbsp;
+<a href="#optical-modifiers--sampled-area-emitters">AREA EMITTERS</a> &nbsp;·&nbsp;
 <a href="#known-limitations--engineering-scope">LIMITATIONS</a> &nbsp;·&nbsp;
 <a href="#master-workflows">WORKFLOWS</a>
 </sub>
@@ -139,7 +139,7 @@ ComfyUI-StudioLight integrates image-derived camera-space geometry, screen-space
 ### Defining Capabilities:
 * **Depth-Based Camera-Space Shadowing:** Reconstructs camera-space surface positions from image-derived depth and configured studio scale ($40^\circ$ FOV), evaluating visibility along projected 3D light rays rather than flat screen-space offsets.
 * **Geometric Area-Emitter Sampling:** Models photographic studio modifier apertures (Octabox 1.4m, Stripbox 0.3×1.2m, Beauty Dish 55cm) through Quasi-Monte Carlo Hammersley sampling. Contact-hardening penumbras emerge naturally from sample integration without an artificial PCSS blur pass.
-* **Integrated Photometric Lighting:** Combines directional diffuse shading, Blinn-Phong specular microfacets, distance-dependent $(r_{\text{ref}}/r)^2$ radiometric falloff, and shadow visibility within a unified PyTorch pipeline.
+* **Integrated Photometric Lighting:** Combines directional diffuse shading, Blinn-Phong specular microfacets, distance-dependent $(r_{\text{ref}}/r)^2$ falloff, and shadow visibility within a unified PyTorch pipeline.
 * **Diffusion-Integrated Results:** Uses the computed lighting plate as explicit physical guidance for Pass 2 FLUX.1 Krea Dev latent synthesis, marrying spatial lighting control with generative material synthesis.
 
 > [!NOTE]
@@ -152,9 +152,36 @@ StudioLight builds on established computer-graphics principles and exists alongs
 | Approach / Tool | Documented Technique | StudioLight Distinction |
 | :--- | :--- | :--- |
 | **Learned Relighting**<br>([IC-Light](https://github.com/lllyasviel/ic-light)) | Text-conditioned and background-conditioned diffusion relighting models. | Provides explicit physical studio fixture parameters (stand distance in meters, elevation/azimuth in degrees, blackbody Kelvin, physical modifier geometry). |
-| **Scene-Linear Point Lighting**<br>([FXTD Radiance](https://github.com/FXTD-Studios/radiance)) | Scene-linear math, camera-space calculations, and point lights; multipass node takes a shadow pass as input. | Provides an integrated geometric area-emitter shadow raymarcher and single-view depth reconstruction directly within the lighting rig node. |
+| **Point-Light & Pass Relighting**<br>([FXTD Radiance](https://github.com/FXTD-Studios/radiance)) | Comprehensive VFX toolset featuring scene-linear math, camera-space point lights, and normal-based shading passes. | Provides an integrated geometric area-emitter shadow raymarcher and single-view depth reconstruction directly within the lighting rig node. |
 | **Full 3D Environments**<br>([WAS Node Suite Three.js](https://github.com/WASasquatch/was-node-suite-comfyui)) | Three.js nodes for polygonal geometry, materials, lights, cameras, and path tracing. | Focuses specifically on single-view generative images where no 3D polygonal mesh exists. |
-| **Screen-Space Mask Lighting**<br>([ComfyUI-ReLight](https://github.com/EnragedAntelope/comfyui-relight)) | Vectorized 2D screen-space raymarching over subject masks. | Extends raymarching into 3D camera space with depth-buffer occlusion testing and physical area-emitter apertures. |
+| **Screen-Space Mask Lighting**<br>([ComfyUI-ReLight](https://github.com/EnragedAntelope/comfyui-relight)) | Vectorized 2D screen-space raymarching over subject masks. | Extends raymarching into 3D camera space with depth-buffer occlusion testing and sampled area-emitter apertures. |
+
+---
+
+## Installation
+
+### 1. Manual Installation (Recommended)
+```bash
+cd ComfyUI/custom_nodes
+git clone https://github.com/maciejtajber/ComfyUI-StudioLight.git
+pip install -r ComfyUI-StudioLight/requirements.txt
+```
+*(ComfyUI Manager registry listing is currently pending submission).*
+
+### Hardware & VRAM Requirements
+* **GPU Memory:** Requires $\ge 8\text{ GB}$ VRAM. Runs comfortably on modern consumer GPUs (RTX 3060/3070/4070/4080/4090); stress-tested extensively on RTX 3090 ($469\text{ MB}$ peak shader allocation at $1024^2$).
+* **Recommended Starting Workflow:** Open [`workflows/StudioLight_MethodA_Calibrated.json`](workflows/StudioLight_MethodA_Calibrated.json) first for standard portrait studio relighting.
+
+### Dependencies & Models
+* **Preprocessors:** Install `comfyui_controlnet_aux` for `DSINE-NormalMapPreprocessor` and `DepthAnythingV2Preprocessor`.
+* **Models:** Standard `flux1-dev.safetensors` (or `flux1-krea-dev.safetensors`), CLIP text encoders, and VAE.
+* **Licensing Note:** FLUX.1 [dev] weights are released under Black Forest Labs' Non-Commercial License. Verify licensing terms for commercial deployments.
+
+### Automated Test Suite
+Verify math, photometric color spaces, and shader engines (runs standalone without ComfyUI):
+```bash
+python test_studiolight.py
+```
 
 ---
 
@@ -171,40 +198,15 @@ StudioLight builds on established computer-graphics principles and exists alongs
 
 ---
 
-## Installation
-
-### 1. ComfyUI Manager (Recommended)
-Search for `ComfyUI-StudioLight` in the ComfyUI Manager and install.
-
-### 2. Manual Installation
-```bash
-cd ComfyUI/custom_nodes
-git clone https://github.com/maciejtajber/ComfyUI-StudioLight.git
-pip install -r ComfyUI-StudioLight/requirements.txt
-```
-
-### Dependencies & Models
-* **Preprocessors:** Install `comfyui_controlnet_aux` for `DSINE-NormalMapPreprocessor` and `DepthAnythingV2Preprocessor`.
-* **Models:** Standard `flux1-dev.safetensors` (or `flux1-krea-dev.safetensors`), CLIP text encoders, and VAE.
-* **Licensing Note:** FLUX.1 [dev] weights are released under Black Forest Labs' Non-Commercial License. Verify licensing terms for commercial deployments.
-
-### Automated Test Suite
-Verify math, photometric color spaces, and shader engines (runs standalone without ComfyUI):
-```bash
-python test_studiolight.py
-```
-
----
-
 ## The Problem: Prompt Lottery vs. Spatial Control
 
 Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic blue rim light on the left"` often triggers severe prompt bleed: facial features shift, clothing changes cut, and colors wash across the entire frame.
 
 | Prompt-Based Lighting (Text Only) | StudioLight Spatial Control (VFX Engine) |
 | :--- | :--- |
-| **Subject Mutation:** Prompting for light changes anatomy, styling, and background geometry. | **Geometry Preservation:** Structure crystallizes in Pass 1; lighting is steered independently in Pass 2. |
+| **Subject Mutation:** Prompting for light changes anatomy, styling, and background geometry. | **Geometry Guidance:** Primary scene anatomy, forms, and composition crystallize in Pass 1; Pass 2 applies illumination and textures over that structure. |
 | **Chromatic Bleed:** Color tokens tint skin, hair, and clothing indiscriminately. | **Directional Lobe Isolation in Plate:** Rim and key colors remain confined to illuminated surfaces ($N \cdot L > 0$) in the lighting plate, steering Pass 2 synthesis. |
-| **Uncalibrated Falloff:** Lights fail to observe inverse-square distance or scene depth. | **Physical Geometric Inverse-Square:** Models true $(r_{\text{ref}}/r)^2$ radiometric distance falloff, normalized to studio reference stand distance ($r_{\text{ref}}=1.8\text{m}$). |
+| **Uncalibrated Falloff:** Lights fail to observe inverse-square distance or scene depth. | **Geometric Inverse-Square Falloff:** Models $(r_{\text{ref}}/r)^2$ distance falloff, normalized to studio reference stand distance ($r_{\text{ref}}=1.8\text{m}$). |
 | **Pre-baked Specular Artifacts:** High-gloss words bake blown-out white patches into early draft latents. | **Albedo Decoupling:** Renders clean draft plates with reduced baked highlights; specular kicks align with fixture placement. |
 
 ---
@@ -218,7 +220,7 @@ StudioLight splits generation into a **two-stage geometry and relighting pipelin
 1. **Geometry Crystallization (Steps 0–10):** Pass 1 generates an unlit albedo draft to define scene forms, anatomy, and clothing weave without baked directional shadows.
 2. **Camera-Space 3D Projection:** Extracts surface normals (DSINE) and estimated depth (Depth Anything V2), back-projecting the 2D draft into virtual camera-space ($40^\circ$ portrait FOV calibrated to studio scale).
 3. **Photometric Deferred Shading:** Computes diffuse irradiance, Blinn-Phong specular lobes, and 3D camera-space shadow raymarching from virtual C-stands.
-4. **Stochastic Polish (Pass 2):** Composites the lit plate in linear Rec.709 space, preps tones in the `SIShadowHighlight` darkroom, and feeds it to Pass 2 (denoise `0.55 – 0.60` in Method A two-stage img2img, or midstream trajectory continuation in Method B) to synthesize subsurface skin scattering and photorealistic catchlights.
+4. **Stochastic Polish (Pass 2):** Composites the lit plate in linear Rec.709 space, preps tones in the `SIShadowHighlight` darkroom, and feeds it to Pass 2 (denoise `0.50 – 0.65` in Method A two-stage img2img, or midstream trajectory continuation in Method B) to synthesize subsurface skin scattering and photorealistic catchlights.
 
 ---
 
@@ -231,11 +233,11 @@ P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspect
 ```
 
 * **P0 Front-of-Ray Occlusion Gate ($D_{\text{scene}} \le D_{\text{ray}} - \epsilon$):** Evaluates depth strictly in front of the ray sample, suppressing false shadows and receiver self-shadow acne on curved faces in automated tests while handling camera-side key lights and rear rim kickers symmetrically.
-* **Unbounded 3D Depth Chasms:** Foreground subjects cast geometrically consistent shadows across expanding depth chasms (evaluated up to $24\text{m}$ in calibrated test geometry) onto distant architecture, deforming authentically across fluted columns and background masonry.
+* **Long-Distance Depth Projection:** Evaluated across expanding depth gaps (tested up to $24\text{m}$ in calibrated test geometry) without artificial screen-space search clamping, allowing foreground subjects to cast shadows onto distant architectural backgrounds.
 * **Single-Layer Physical Penumbra:** Soft shadows emerge naturally from multi-sample Quasi-Monte Carlo integration across the physical aperture face (Octabox 1.40m, Stripbox 0.30×1.20m, Beauty Dish 55cm) with **Interleaved Gradient Noise (IGN)** sub-step dither to smooth discrete step transitions—zero artificial PCSS post-blur required.
 
 <div align="center">
-<img src="assets/stress_02_slit_banding_vs_dither.png" width="95%" alt="Metric Shadow Raymarching: Banding vs IGN Dither" />
+<img src="assets/stress_02_slit_banding_vs_dither.png" width="95%" alt="3D Camera-Space Shadow Raymarching: Banding vs IGN Dither" />
 <br>
 <sub>Slit Aperture Penumbra Stress Test (Row 1: S=4 no dither, S=8 no dither, S=4 dither. Row 2: S=8 dither [Balanced Default], S=16 dither [High-End], S=64 Quasi-Monte Carlo Ground Truth).</sub>
 </div>
@@ -260,15 +262,15 @@ P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspect
 
 > [!TIP]
 > For the complete mathematical formulation, low-discrepancy sampling derivations, and shader implementation:
-> * [Mathematical Derivation & Architecture: 3D Camera-Space Shadow Raymarching](docs/ARCHITECTURE_METRIC_3D_SHADOWS.md)
+> * [Mathematical Derivation & Architecture: 3D Camera-Space Shadow Raymarching](docs/ARCHITECTURE_3D_CAMERA_SPACE_SHADOWS.md)
 > * [Architecture Plan: StudioLight Geometric Area Emitters](docs/ARCHITECTURE_PHYSICAL_AREA_EMITTERS.md)
 > * [Engine Walkthrough & Benchmarks](docs/ENGINE_WALKTHROUGH_AREA_EMITTERS.md)
 
 ---
 
-## Optical Modifiers & Physical Area Emitters
+## Optical Modifiers & Sampled Area Emitters
 
-StudioLight implements a **physically based geometric area-emitter architecture**. Every studio modifier is modeled as a defined 3D virtual emitter with metric dimensions ($W, H, R$), angular beam distributions, single-layer penumbra visibility, and an analytical aperture reflection in reflection space:
+StudioLight implements a **geometrically sampled studio area-emitter architecture**. Every studio modifier is modeled as a defined 3D virtual emitter with geometric dimensions ($W, H, R$), angular beam distributions, single-layer penumbra visibility, and an analytical aperture reflection in reflection space:
 
 ```
                                    EMITTER
@@ -279,12 +281,12 @@ StudioLight implements a **physically based geometric area-emitter architecture*
    1. DIFFUSE EMISSION       2. SHADOW / VISIBILITY     3. SPECULAR REFLECTION
   Vectorized [S, H, W, 3]    Single-layer penumbra      Ray-plane intersection
   • S=16 sample points       • Binary blocker test      • Emitter 2D coordinate
-  • Physical 1 / r_k²          per sample point         • Continuous aperture
+  • Geometric 1 / r_k²         per sample point         • Continuous aperture
   • cos θ_e × cos θ_p        • Average across S           profile & roughness
   • Radiometric area norm      yields natural penumbra    • True fixture catchlights
 ```
 
-| Modifier | Metric Aperture | Beam Angle ($\theta_{\text{beam}}$) | Optical Approximation | Catchlight Profile |
+| Modifier | Aperture Dimensions | Beam Angle ($\theta_{\text{beam}}$) | Optical Approximation | Catchlight Profile |
 | :--- | :---: | :---: | :--- | :--- |
 | **Direct On-Camera Flash** | $0.08\text{m} \times 0.05\text{m}$ | $70^\circ$ | Near-point strobe emitter | Crisp micro-pinpoint |
 | **Hard Snoot** | $R=0.05\text{m}$ (10cm) | $18^\circ$ | Collimated beam cone | Tight circular isolation |
@@ -305,8 +307,8 @@ StudioLight implements a **physically based geometric area-emitter architecture*
 * **Rule 3: Radiometric Distance Falloff Replaces Artificial Depth Tapers:** Legacy screen-space shaders often clamp distant geometry (`d_norm < 0.20`) to suppress noise, which accidentally destroys shadows on distant walls. StudioLight evaluates unconstrained physical $(r_{\text{ref}}/r)^2$ radiometric falloff and directional beam profiles ($\cos\theta > 0$), allowing foreground subjects to naturally cast geometric shadows across architectural depth gaps.
 * **Rule 4: Pass 2 Denoise Governs Illumination Integration:**
   * `0.35 – 0.45` (Feature Lock): Soft catalog fill.
-  * `0.50 – 0.75` (Calibrated Range): Working zone for dramatic lighting. Synthesizes skin subsurface scattering, eye catchlights, and leather wrap while anchoring subject structure.
-  * `0.75+` (Hallucination Boundary): May hallucinate physical softbox fixtures in the frame. Keep denoise $\le 0.75$.
+  * `0.50 – 0.65` (Calibrated Range): Working zone for dramatic lighting. Synthesizes skin subsurface scattering, eye catchlights, and leather wrap while anchoring geometry.
+  * `0.70+` (High Drift Boundary): Denoise above 0.70 allows diffusion to drift from the lighting pass, alter colors, or hallucinate physical studio softboxes in the frame. Keep denoise $\le 0.65$.
 
 ---
 
@@ -324,8 +326,9 @@ StudioLight implements a **physically based geometric area-emitter architecture*
 
 ## Known Limitations & Engineering Scope
 
+* **Pre-Baked Specular Highlights on High-Gloss Objects:** When the Pass 1 prompt contains high-gloss tokens (e.g. patent leather, chrome, wet surfaces), diffusion models often bake white specular patches directly into the base albedo. While `StudioPromptSanitizer` mitigates this by replacing high-specular terms with neutral/matte descriptions in Pass 1, deeply baked albedo highlights cannot be completely removed by screen-space shading alone without dedicated inpainting.
 * **Relative Depth Scaling:** Operates on estimated monocular depth (Depth Anything V2), normalized and calibrated to a studio coordinate frame ($Z=-2.0\text{m}$). It does not represent physical millimeter-level LiDAR ground truth.
-* **Single-View Frustum Bounds:** Screen-space raymarching is constrained to surfaces visible in the 2.5D camera buffer; occluded geometries cannot cast shadows onto other objects.
+* **Single-View Frustum Bounds:** Screen-space raymarching is constrained to surfaces visible in the 2.5D camera buffer; occluded geometries behind foreground objects cannot cast shadows.
 * **Pass 2 Latent Interpretation:** StudioLight produces deterministic photometric guidance plates; Pass 2 FLUX latent diffusion interprets these plates generatively. At high denoise ($\ge 0.70$), diffusion may soften shadow contrast or shift colors.
 * **Model Weight Licensing:** FLUX.1 [dev] weights are provided under Black Forest Labs' Non-Commercial License. Verify licensing requirements for commercial deployments.
 
@@ -343,10 +346,10 @@ StudioLight implements a **physically based geometric area-emitter architecture*
 
 | Document | Purpose |
 | :--- | :--- |
-| [`ARCHITECTURE_METRIC_3D_SHADOWS.md`](docs/ARCHITECTURE_METRIC_3D_SHADOWS.md) | Canonical raymarching formulation, P0 occlusion gate, IGN dither derivation, stress benchmarks |
+| [`ARCHITECTURE_3D_CAMERA_SPACE_SHADOWS.md`](docs/ARCHITECTURE_3D_CAMERA_SPACE_SHADOWS.md) | Canonical raymarching formulation, P0 occlusion gate, IGN dither derivation, stress benchmarks |
 | [`ARCHITECTURE_PHYSICAL_AREA_EMITTERS.md`](docs/ARCHITECTURE_PHYSICAL_AREA_EMITTERS.md) | Geometric area apertures, 2D Hammersley sampling, radiometric normalization |
 | [`ENGINE_WALKTHROUGH_AREA_EMITTERS.md`](docs/ENGINE_WALKTHROUGH_AREA_EMITTERS.md) | Vectorized PyTorch shader implementation, memory chunking, profiling |
-| [`DISCOVERY_3D_METRIC_SHADOW_RAYMARCHING.md`](docs/DISCOVERY_3D_METRIC_SHADOW_RAYMARCHING.md) | Empirical discovery notes: 2D screen-space limits vs 3D camera-space |
+| [`DISCOVERY_3D_CAMERA_SPACE_SHADOW_RAYMARCHING.md`](docs/DISCOVERY_3D_CAMERA_SPACE_SHADOW_RAYMARCHING.md) | Empirical discovery notes: 2D screen-space limits vs 3D camera-space |
 
 ---
 

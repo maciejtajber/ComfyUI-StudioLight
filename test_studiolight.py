@@ -459,7 +459,7 @@ def test_external_review_fixes():
 # Workflows known to target the pre-refactor rig (removed conditioning/lit_composite outputs, removed inputs).
 # They are reported, not silently ignored. Rebuild or delete them, then remove them from this list.
 OBSOLETE_WORKFLOWS = {
-    "StudioLight_ICLight_Relighting.json", "StudioLight_Master.json", "StudioLight_Master_Suite.json",
+    "StudioLight_ICLight_Relighting.json", "StudioLight_Master_Suite.json",
     "StudioLight_Phase05_Validation.json", "StudioLight_Probe_Local_Test.json", "StudioLight_T2I_Simple.json",
     "StudioLight_T2I_Simple_api.json", "StudioLight_TwoStage_Master.json", "StudioLight_TwoStage_Master_api.json",
 }
