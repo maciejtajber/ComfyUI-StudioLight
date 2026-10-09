@@ -18,6 +18,7 @@ Camera-space key, fill and rim lights, physical modifiers and Kelvin control for
 <a href="#how-it-works">HOW IT WORKS</a> &nbsp;·&nbsp;
 <a href="#the-virtual-studio">STUDIO</a> &nbsp;·&nbsp;
 <a href="#optical-modifiers--physical-area-emitters">OPTICAL ENGINE</a> &nbsp;·&nbsp;
+<a href="#metric-3d-camera-space-shadow-raymarching">3D SHADOWS</a> &nbsp;·&nbsp;
 <a href="#the-core-production-suite-deep-technical-manual">MANUAL</a> &nbsp;·&nbsp;
 <a href="#installation">INSTALL</a> &nbsp;·&nbsp;
 <a href="#master-workflows">WORKFLOWS</a>
@@ -140,9 +141,39 @@ StudioLight implements a **physically based geometric area-emitter architecture*
 | **Octabox (Soft)** | $R=0.70\text{m}$ (140cm) | $130^\circ$ | Broad Lambertian octagonal emitter | Large wrap disc, soft continuous penumbra |
 
 > [!NOTE]
-> For the complete mathematical formulation, low-discrepancy sampling proofs, and shader implementation:
+> For complete mathematical formulations, low-discrepancy sampling proofs, and raymarching architectures:
 > * [Architecture Plan: StudioLight Geometric Area Emitters](docs/ARCHITECTURE_PHYSICAL_AREA_EMITTERS.md)
+> * [Mathematical Proof: Metric 3D Camera-Space Shadow Raymarching](docs/ARCHITECTURE_METRIC_3D_SHADOWS.md)
 > * [Engine Walkthrough & Benchmarks](docs/ENGINE_WALKTHROUGH_AREA_EMITTERS.md)
+
+### Metric 3D Camera-Space Shadow Raymarching
+
+StudioLight completely replaces legacy 2D screen-space pixel marching and arbitrary 40-pixel ceilings with **canonical 3D camera-space raymarching through metric depth fields**:
+
+```
+P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspective Projection ──► Bilinear Depth Lookup ──► P0 Occlusion Gate
+```
+
+* **P0 Front-of-Ray Occlusion Gate ($D_{\text{scene}} \le D_{\text{ray}} - \epsilon$):** Evaluates depth strictly in front of the ray sample, eliminating false shadows and receiver self-shadow acne on curved faces while handling camera-side key lights and rear rim kickers symmetrically.
+* **Unbounded 3D Depth Chasms:** Foreground subjects cast geometrically accurate shadows across 20m+ depth gaps onto distant architecture, deforming authentically across fluted columns and background masonry.
+* **Single-Layer Physical Penumbra:** Soft shadows emerge naturally from multi-sample Quasi-Monte Carlo integration across the physical aperture face (Octabox 1.40m, Stripbox 0.30×1.20m, Beauty Dish 55cm) with **Interleaved Gradient Noise (IGN)** sub-step dither to eradicate banding—zero artificial PCSS post-blur required.
+
+<div align="center">
+<img src="assets/stress_02_slit_banding_vs_dither.png" width="95%" alt="Metric Shadow Raymarching: Banding vs IGN Dither" />
+<br>
+<sub>Slit Aperture Penumbra Stress Test (Row 1: S=4 no dither, S=8 no dither, S=4 dither. Row 2: S=8 dither [Balanced Default], S=16 dither [High-End], S=64 Quasi-Monte Carlo Ground Truth).</sub>
+</div>
+
+#### NVIDIA RTX 3090 Performance Benchmarks
+
+| Resolution | Preset | Samples ($S$) | Steps | Latency (RTX 3090) | Peak VRAM | Throughput |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **$512 \times 512$** | Fast Preview | 4 | 12 | **12.0 ms** | 113 MB | $1.05 \times 10^9$ steps/sec |
+| | Balanced (Default) | 8 | 16 | **29.6 ms** | 118 MB | $1.14 \times 10^9$ steps/sec |
+| **$1024 \times 1024$** | Fast Preview | 4 | 12 | **32.0 ms** | 450 MB | $1.57 \times 10^9$ steps/sec |
+| | **Balanced (Default)** | **8** | **16** | **83.0 ms** | **469 MB** | **$1.62 \times 10^9$ steps/sec** |
+| | High-End Quality | 16 | 24 | **245.3 ms** | 469 MB | $1.64 \times 10^9$ steps/sec |
+| **$2048 \times 2048$** *(4.2 MP)* | Balanced (Default) | 8 | 16 | **311.5 ms** | 1.87 GB | $1.72 \times 10^9$ steps/sec |
 
 ---
 
