@@ -48,7 +48,9 @@ def migrate_values(wv):
         return list(wv), "current"
     if LEGACY_BASE <= n <= 26 and n in (22, 26):
         base = list(wv[:LEGACY_BASE])
-        out = base[:4]
+        # Legacy layout had framing at index 1: [preset, framing, ambient, invert_y, ...]
+        # Current layout drops framing: [preset, ambient, invert_y, ...]
+        out = [base[0], base[2], base[3]]
         for i in range(3):
             en, az, el, inten, kel, mod = base[4 + 6 * i: 10 + 6 * i]
             out += [en, az, el, 1.8, inten, kel, mod]

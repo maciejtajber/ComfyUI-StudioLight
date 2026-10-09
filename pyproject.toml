@@ -9,6 +9,10 @@ license = { text = "MIT" }
 dependencies = ["torch", "torchvision", "numpy", "pillow"]
 readme = "README.md"
 
+[project.urls]
+Repository = "https://github.com/maciejtajber/ComfyUI-StudioLight"
+Homepage = "https://github.com/maciejtajber/ComfyUI-StudioLight"
+
 [tool.comfy]
 PublisherId = "maciejtajber"
 DisplayName = "ComfyUI-StudioLight"
