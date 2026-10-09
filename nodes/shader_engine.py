@@ -373,8 +373,10 @@ def compute_light_shading(
     depth: Optional[torch.Tensor] = None,
     distance: float = 1.8,
     return_separate: bool = False,
-    shadow_samples: int = 12,
-    shadow_steps: int = 24,
+    shadow_samples: int = 8,
+    shadow_steps: int = 16,
+    target_pos: Optional[torch.Tensor] = None,
+    vertical_fov_deg: float = 40.0,
 ) -> torch.Tensor:
     """
     Computes diffuse irradiance and specular reflection using a physically based
@@ -414,7 +416,7 @@ def compute_light_shading(
             d = F.interpolate(d_perm, size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
 
         aspect = float(W) / float(H)
-        tan_half_fov = 0.364
+        tan_half_fov = math.tan(math.radians(float(vertical_fov_deg)) * 0.5)
         y_coords, x_coords = torch.meshgrid(
             torch.linspace(1.0, -1.0, H, device=device, dtype=dtype),
             torch.linspace(-1.0, 1.0, W, device=device, dtype=dtype),
@@ -477,14 +479,19 @@ def compute_light_shading(
 
         # 2. SHADOW / VISIBILITY: Metric Camera-Space 3D Area Shadow Raymarching
         # Marches in metric meters toward area-emitter samples, with perspective back-projection
-        # and "strictly between" occlusion test (zero self-shadowing, true 3D distance gap projection).
+        # and segment-bounded occlusion test (zero self-shadowing, true 3D distance gap projection).
+        if target_pos is None:
+            aim_point = torch.tensor([0.0, 0.0, -2.0], device=device, dtype=dtype).view(1, 3).expand(B, 3)
+        else:
+            aim_point = target_pos.to(device=device, dtype=dtype).view(1, 3).expand(B, 3)
+
         cast_sh_map = screen_space_directional_shadow_metric(
             surface_xyz=p_surf,
             scene_depth=-p_surf[..., 2],
             light_pos=p_light.view(1, 3).expand(B, 3),
-            light_aim=torch.tensor([0.0, 0.0, -2.0], device=device, dtype=dtype).view(1, 3).expand(B, 3),
+            light_aim=aim_point,
             modifier=modifier_name,
-            vertical_fov_deg=40.0,
+            vertical_fov_deg=float(vertical_fov_deg),
             aspect=aspect,
             num_emitter_samples=shadow_samples,
             ray_steps=shadow_steps,

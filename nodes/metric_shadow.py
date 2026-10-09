@@ -260,19 +260,34 @@ def generate_emitter_samples_3d(
     return points, weights
 
 
-def _between_depths(
-    receiver_depth: torch.Tensor,
+def _evaluate_occlusion(
+    sampled_depth: torch.Tensor,
     ray_depth: torch.Tensor,
-    scene_depth: torch.Tensor,
+    receiver_depth: torch.Tensor,
+    light_depth: torch.Tensor,
     margin: torch.Tensor,
+    max_thickness_m: float = 2.0,
 ) -> torch.Tensor:
-    """True iff sampled scene depth lies strictly between receiver depth and current ray sample depth.
+    """True iff sampled scene depth geometrically occludes the ray.
 
-    Eliminates receiver self-shadowing and background back-occlusion.
+    Guarantees:
+    1. Front-of-ray: sampled_depth <= ray_depth - margin (scene surface is between camera and ray sample).
+    2. Segment-bound: sampled_depth >= min(receiver_depth, light_depth) - margin (occluder not in front of light).
+    3. Thickness-bound: ray_depth - sampled_depth <= max_thickness_m (no phantom shadows from distant foreground).
+    4. Zero self-shadowing: points on receiver surface are strictly outside test margin.
+    5. Zero false shadows: surfaces behind current ray sample are never marked as occluders.
     """
-    lo = torch.minimum(receiver_depth, ray_depth) + margin
-    hi = torch.maximum(receiver_depth, ray_depth) - margin
-    return torch.isfinite(scene_depth) & (scene_depth > lo) & (scene_depth < hi)
+    min_bound = torch.minimum(receiver_depth, light_depth) - margin
+    max_bound = ray_depth - margin
+    is_in_front_of_ray = sampled_depth <= max_bound
+    is_behind_frontmost = sampled_depth >= min_bound
+    within_thickness = (ray_depth - sampled_depth) <= max_thickness_m
+    return (
+        torch.isfinite(sampled_depth)
+        & is_in_front_of_ray
+        & is_behind_frontmost
+        & within_thickness
+    )
 
 
 def metric_shadow_visibility_points(
@@ -281,11 +296,12 @@ def metric_shadow_visibility_points(
     light_points: torch.Tensor,
     camera: CameraModel,
     *,
-    steps: int = 24,
+    steps: int = 16,
     max_distance_m: Optional[float] = None,
     depth_bias_m: float = 0.006,
     ray_start_m: float = 0.012,
     ray_end_m: float = 0.006,
+    max_thickness_m: float = 2.0,
     dither: bool = True,
 ) -> torch.Tensor:
     """Vectorized point-source shadow raymarching for multiple emitter samples.
@@ -300,6 +316,7 @@ def metric_shadow_visibility_points(
         depth_bias_m: base depth margin to suppress self-intersection.
         ray_start_m: offset from receiver surface in meters.
         ray_end_m: offset from light source in meters.
+        max_thickness_m: maximum occluder thickness in meters to prevent phantom shadows.
         dither: if True, applies interleaved gradient noise to break up step striations.
 
     Returns:
@@ -334,6 +351,7 @@ def metric_shadow_visibility_points(
         )
 
     receiver_depth = (-p[..., 2])[:, None]
+    light_depth = (-light_points[..., 2])[:, :, None, None]
     finite_receiver = (
         torch.isfinite(p).all(-1)[:, None]
         & torch.isfinite(scene_depth)[:, None]
@@ -362,6 +380,9 @@ def metric_shadow_visibility_points(
     step_delta = 1.0 / float(steps)
     base_margin = torch.as_tensor(depth_bias_m, device=p.device, dtype=p.dtype)
 
+    receiver_bs = receiver_depth.expand(b, s, h, w).reshape(b * s, h, w)
+    light_bs = light_depth.expand(b, s, h, w).reshape(b * s, h, w)
+
     for step_idx in range(steps):
         if isinstance(step_dither, torch.Tensor):
             a = torch.clamp((step_idx + 0.5 + step_dither) * step_delta, 0.0, 1.0)
@@ -377,13 +398,23 @@ def metric_shadow_visibility_points(
         depth_bs = scene_depth[:, None, :, :].expand(b, s, h, w).reshape(b * s, h, w)
         sampled_depth = _sample_depth(depth_bs, grid, in_bounds)
 
-        receiver_bs = receiver_depth.expand(b, s, h, w).reshape(b * s, h, w)
         margin = base_margin + 0.001 * torch.clamp(ray_depth, min=0.0)
 
-        hit = _between_depths(receiver_bs, ray_depth, sampled_depth, margin)
+        hit = _evaluate_occlusion(
+            sampled_depth=sampled_depth,
+            ray_depth=ray_depth,
+            receiver_depth=receiver_bs,
+            light_depth=light_bs,
+            margin=margin,
+            max_thickness_m=max_thickness_m,
+        )
         hit = hit & in_bounds
         hit = hit.reshape(b, s, h, w) & finite_receiver
         occluded |= hit
+
+        # Early termination if all valid receiver pixels are occluded
+        if (occluded | ~finite_receiver).all():
+            break
 
     return torch.where(
         finite_receiver,
@@ -398,11 +429,12 @@ def metric_shadow_visibility_point(
     light_pos: torch.Tensor,
     camera: CameraModel,
     *,
-    steps: int = 24,
+    steps: int = 16,
     max_distance_m: Optional[float] = None,
     depth_bias_m: float = 0.006,
     ray_start_m: float = 0.012,
     ray_end_m: float = 0.006,
+    max_thickness_m: float = 2.0,
     dither: bool = False,
 ) -> torch.Tensor:
     """Scalar point-light visibility wrapper around metric_shadow_visibility_points."""
@@ -418,6 +450,7 @@ def metric_shadow_visibility_point(
         depth_bias_m=depth_bias_m,
         ray_start_m=ray_start_m,
         ray_end_m=ray_end_m,
+        max_thickness_m=max_thickness_m,
         dither=dither,
     )[:, 0]
 
@@ -430,13 +463,14 @@ def metric_shadow_visibility_area(
     emitter: EmitterSpec,
     camera: CameraModel,
     *,
-    num_emitter_samples: int = 12,
-    ray_steps: int = 24,
+    num_emitter_samples: int = 8,
+    ray_steps: int = 16,
     sample_chunk: int = 4,
     max_distance_m: Optional[float] = None,
     depth_bias_m: float = 0.006,
     ray_start_m: float = 0.012,
     ray_end_m: float = 0.006,
+    max_thickness_m: float = 2.0,
     dither: bool = True,
 ) -> torch.Tensor:
     """Area-emitter soft shadow visibility via multi-sample aperture integration.
@@ -470,6 +504,7 @@ def metric_shadow_visibility_area(
             depth_bias_m=depth_bias_m,
             ray_start_m=ray_start_m,
             ray_end_m=ray_end_m,
+            max_thickness_m=max_thickness_m,
             dither=dither,
         )
         # Weighted accumulation across aperture samples
@@ -488,13 +523,14 @@ def screen_space_directional_shadow_metric(
     *,
     vertical_fov_deg: float = 40.0,
     aspect: Optional[float] = None,
-    num_emitter_samples: int = 12,
-    ray_steps: int = 24,
+    num_emitter_samples: int = 8,
+    ray_steps: int = 16,
     sample_chunk: int = 4,
     max_distance_m: Optional[float] = None,
     depth_bias_m: float = 0.006,
     ray_start_m: float = 0.012,
     ray_end_m: float = 0.006,
+    max_thickness_m: float = 2.0,
     dither: bool = True,
 ) -> torch.Tensor:
     """High-level entry point for StudioLight shader engine.
@@ -525,5 +561,6 @@ def screen_space_directional_shadow_metric(
         depth_bias_m=depth_bias_m,
         ray_start_m=ray_start_m,
         ray_end_m=ray_end_m,
+        max_thickness_m=max_thickness_m,
         dither=dither,
     )
