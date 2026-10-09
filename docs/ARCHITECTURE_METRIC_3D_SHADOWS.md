@@ -1,4 +1,4 @@
-# Mathematical Foundations & Architecture: Metric 3D Camera-Space Shadow Raymarching
+# Mathematical Derivation & Architecture: 3D Camera-Space Shadow Raymarching
 
 **Module:** `nodes/metric_shadow.py` · `nodes/shader_engine.py`  
 **Author:** Maciej Tajber (https://github.com/maciejtajber) // METAMATERIAL  
