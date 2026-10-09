@@ -373,9 +373,11 @@ def run_test_4_rtx3090_benchmark():
             avg_time_ms = float(np.mean(times_ms))
             peak_vram_mb = float(torch.cuda.max_memory_allocated() / (1024 * 1024)) if DEVICE.type == "cuda" else 0.0
             
-            # Rays evaluated per second
-            total_rays = res * res * p["S"] * p["steps"]
-            rps_millions = (total_rays / (avg_time_ms / 1000.0)) / 1e6
+            # Ray-sample evaluations per second: (H * W * S * steps) / time
+            # Note: This measures discrete ray-step evaluations per second across all sampled light rays,
+            # distinct from complete shadow pass latency (avg_time_ms).
+            total_ray_steps = res * res * p["S"] * p["steps"]
+            ray_steps_per_sec_millions = (total_ray_steps / (avg_time_ms / 1000.0)) / 1e6
             
             benchmark_data[f"{res}x{res}"][p["name"]] = {
                 "S": p["S"],
@@ -383,9 +385,9 @@ def run_test_4_rtx3090_benchmark():
                 "chunk": p["chunk"],
                 "latency_ms": round(avg_time_ms, 2),
                 "peak_vram_mb": round(peak_vram_mb, 2),
-                "mega_ray_steps_per_sec": round(rps_millions, 2),
+                "mega_ray_sample_steps_per_sec": round(ray_steps_per_sec_millions, 2),
             }
-            print(f"      [{p['name']}]: {avg_time_ms:.2f} ms | VRAM: {peak_vram_mb:.1f} MB | Throughput: {rps_millions:.2f} M steps/sec")
+            print(f"      [{p['name']}]: {avg_time_ms:.2f} ms | VRAM: {peak_vram_mb:.1f} MB | Ray-sample evals: {ray_steps_per_sec_millions:.2f} M steps/sec")
             
     print(f"    ✓ Test 4 complete.")
     return benchmark_data

@@ -13,21 +13,21 @@ ComfyUI-StudioLight integrates image-derived camera-space geometry, metric scree
 
 Traditional generative relighting tools fall into distinct categories: learned diffusion models (which hallucinate lighting without explicit metric fixture control), 2D mask-based compositors, or full 3D polygonal mesh renderers. Screen-space approximations often clamp shadow search radii at $\sim 40\text{ px}$ or rely on artificial distance fading (`weight = 1.0 - s / steps`), preventing cast shadows from bridging metric depth gaps or wrapping across curved architecture.
 
-StudioLight evaluates visibility by **raymarching directly in physical 3D camera space through the reconstructed metric depth field**. By parameterizing ray vectors in meters ($[X, Y, Z]$) and projecting samples back to Normalized Device Coordinates (NDC), cast shadows accurately bridge large depth gaps, deform across non-planar architecture, and produce contact-hardening penumbras directly from physical area-emitter apertures.
+StudioLight evaluates visibility by **raymarching in 3D camera space through a reconstructed depth field**. By parameterizing ray vectors in meters ($[X, Y, Z]$) and projecting samples back to Normalized Device Coordinates (NDC), cast shadows bridge depth gaps, deform across non-planar architecture, and produce contact-hardening penumbras directly from sampled area-emitter apertures.
 
-> **Scope & Engineering Limits:** StudioLight performs metric screen-space raymarching over an estimated single-view geometry field (Depth Anything V2 + DSINE). It is designed for fast, controllable image relighting—not unrestricted path tracing over a complete multi-view 3D scene.
+> **Scope & Engineering Limits:** StudioLight performs metric screen-space raymarching over an estimated single-view geometry field (Depth Anything V2 + DSINE calibrated to a configured studio scale). Monocular depth estimation provides relative depth, which StudioLight anchors to virtual camera space; it does not claim independently measured laser-metric survey data or unrestricted path tracing over complete multi-view 3D scenes.
 
 ---
 
 ## 2. Canonical Coordinate System & Camera Model
 
-StudioLight operates in OpenGL metric camera space:
+StudioLight operates in an OpenGL-convention metric camera space:
 * **$+X$:** Right (meters)
 * **$+Y$:** Up (meters)
 * **$-Z$:** Forward optical axis into the scene (meters)
 * **$D_{\text{scene}} = -Z > 0$:** Positive metric distance in front of the lens.
 
-Given metric depth $D(u, v)$ from monocular estimation (Depth Anything V2 calibrated to studio space) and camera intrinsics with vertical field of view $\theta_{\text{FOV}}$, any pixel $(x, y) \in [0, W-1] \times [0, H-1]$ is back-projected to world-scale metric camera space:
+Given estimated depth $D(u, v)$ from monocular estimation calibrated to a configured studio scale (by default anchoring the subject plane at $Z = -2.0\text{m}$) and camera intrinsics with vertical field of view $\theta_{\text{FOV}}$ ($40^\circ$ portrait FOV), any pixel $(x, y) \in [0, W-1] \times [0, H-1]$ is back-projected to camera space:
 
 $$\tan\left(\frac{\theta_{\text{FOV}}}{2}\right) = \tan_{\text{half}}$$
 
@@ -70,8 +70,8 @@ StudioLight implements the strict **P0 Front-of-Ray Occlusion Gate**:
 $$\text{Hit}(t_i) = \text{Finite}(D_{\text{sampled}}) \land \underbrace{\left(D_{\text{sampled}} \le D_{\text{ray}}(t_i) - \epsilon\right)}_{\text{1. Front-of-Ray Occluder}} \land \underbrace{\left(D_{\text{sampled}} \ge \min(D_{\text{recv}}, D_{\text{light}}) - \epsilon\right)}_{\text{2. Segment Bound}} \land \text{InBounds}$$
 
 Where:
-* **$\epsilon = \text{base\_margin} + 0.001 \cdot D_{\text{ray}}$:** Adaptive metric depth margin that scales gently with distance, eradicating receiver self-shadow acne on curved faces and flat walls while preventing Peter-Panning (shadow detachment).
-* **Unbounded Ray Thickness ($M_{\text{thickness}} = \infty$):** By eliminating arbitrary 2-meter thickness caps, foreground occluders correctly cast shadows onto massive architectural backdrops 10m to 20m away without light leaks.
+* **$\epsilon = \text{base\_margin} + 0.001 \cdot D_{\text{ray}}$:** Adaptive depth margin scaling with distance, suppressing receiver self-shadow acne on curved faces and flat walls in automated test geometries while guarding against Peter-Panning (shadow detachment).
+* **Unbounded Ray Thickness ($M_{\text{thickness}} = \infty$):** By eliminating arbitrary 2-meter thickness caps, foreground occluders cast shadows across configured architectural depth chasms without artificial thickness cutoffs.
 
 Total binary visibility along ray $k$:
 
@@ -119,37 +119,41 @@ Evaluated a sharp vertical occluder at $Z = -2.0\text{m}$ casting onto a backgro
 * **High-End ($S=16$ with Dither):** Converges monotonically to **$32.46\text{ dB PSNR}$** and **$\text{MAE} = 0.011$** against the 64-sample reference.
 
 ### Test 2: Extreme Depth Chasm Stress ($2\text{m} \to 5\text{m} \to 10\text{m} \to 24\text{m}$)
-Tested a foreground occluding sphere at $Z = -1.5\text{m}$ casting across expanding depth chasms onto walls at $Z = -3.5\text{m}$, $-6.5\text{m}$, $-11.5\text{m}$, and **$-25.5\text{m}$**:
+Tested a foreground occluding sphere at $Z = -1.5\text{m}$ casting across expanding depth chasms onto walls at $Z = -3.5\text{m}$, $-6.5\text{m}$, $-11.5\text{m}$, and **$-25.5\text{m}$** in stress-test camera geometry calibrated to studio scale:
 
 <div align="center">
 <img src="../assets/stress_03_extreme_depth_chasm.png" width="90%" alt="Extreme Depth Chasm" />
 <br>
-<sub>Shadow projection across ΔZ = 2m, 5m, 10m, and 24m depth chasms.</sub>
+<sub>Shadow projection across ΔZ = 2m, 5m, 10m, and 24m depth chasms in calibrated test geometry.</sub>
 </div>
 
-* **Frustum Stability:** Perspective projection remained floating-point stable across all 24 meters with zero NDC clipping.
-* **Continuous Spatial Anchorage:** Cast shadows remain solidly anchored to the light vector without false detachment or light leakage.
+* **Frustum Stability:** Perspective projection remained floating-point stable across all evaluated test distances up to $24\text{m}$ depth delta with zero NDC clipping.
+* **Continuous Spatial Anchorage:** Cast shadows remain anchored to the light vector without false detachment.
 
 ---
 
 ## 7. Hardware Benchmarks on NVIDIA RTX 3090
 
-Timings measured with CUDA synchronization across 5 iterations per configuration:
+Timings measured with CUDA synchronization across 5 warm iterations per configuration via `python tools/run_hardcore_stress_tests.py`:
 
-| Resolution | Preset | Samples ($S$) | Steps | Latency (ms) | Peak VRAM | Throughput (Steps/sec) |
+| Resolution | Preset | Samples ($S$) | Steps | Pass Latency (ms) | Peak VRAM | Mega Ray-Sample Steps / sec |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **$512 \times 512$** | Fast Preview | 4 | 12 | **12.02 ms** | 113 MB | $1.05 \times 10^9$ |
-| | Balanced (Default) | 8 | 16 | **29.56 ms** | 118 MB | $1.14 \times 10^9$ |
-| | High-End Quality | 16 | 24 | **85.17 ms** | 118 MB | $1.18 \times 10^9$ |
-| **$1024 \times 1024$** | Fast Preview | 4 | 12 | **32.03 ms** | 450 MB | $1.57 \times 10^9$ |
-| | **Balanced (Default)** | **8** | **16** | **83.01 ms** | **469 MB** | **$1.62 \times 10^9$** |
-| | High-End Quality | 16 | 24 | **245.29 ms** | 469 MB | $1.64 \times 10^9$ |
-| **$2048 \times 2048$** | Fast Preview | 4 | 12 | **118.65 ms** | 1.80 GB | $1.70 \times 10^9$ |
-| *(4.2 MP!)* | Balanced (Default) | 8 | 16 | **311.49 ms** | 1.87 GB | $1.72 \times 10^9$ |
-| | High-End Quality | 16 | 24 | **922.46 ms** | 1.87 GB | $1.75 \times 10^9$ |
+| **$512 \times 512$** | Fast Preview | 4 | 12 | **12.02 ms** | 113 MB | $1,047.1 \times 10^6$ |
+| | Balanced (Default) | 8 | 16 | **29.56 ms** | 118 MB | $1,135.1 \times 10^6$ |
+| | High-End Quality | 16 | 24 | **85.17 ms** | 118 MB | $1,180.2 \times 10^6$ |
+| **$1024 \times 1024$** | Fast Preview | 4 | 12 | **32.03 ms** | 450 MB | $1,571.3 \times 10^6$ |
+| | **Balanced (Default)** | **8** | **16** | **83.01 ms** | **469 MB** | **$1,616.9 \times 10^6$** |
+| | High-End Quality | 16 | 24 | **245.29 ms** | 469 MB | $1,641.5 \times 10^6$ |
+| **$2048 \times 2048$** | Fast Preview | 4 | 12 | **118.65 ms** | 1.80 GB | $1,698.8 \times 10^6$ |
+| *(4.2 MP!)* | Balanced (Default) | 8 | 16 | **311.49 ms** | 1.87 GB | $1,723.5 \times 10^6$ |
+| | High-End Quality | 16 | 24 | **922.46 ms** | 1.87 GB | $1,749.8 \times 10^6$ |
+
+> [!NOTE]
+> * **Pass Latency** measures complete shadow visibility pass execution time.
+> * **Mega Ray-Sample Steps / sec** measures discrete ray-step evaluations per second across all sampled light rays: $(W \times H \times S \times \text{steps}) / \text{latency}$.
 
 ### Key Performance Findings:
-1. **Production Throughput:** At $1024 \times 1024$, the balanced default computes full 8-sample area lighting in **83 milliseconds** ($\sim 12\text{ FPS}$).
+1. **Production Throughput:** At $1024 \times 1024$, the balanced default computes the complete 8-sample area shadow pass in **83 milliseconds** ($\sim 12\text{ FPS}$).
 2. **Strict VRAM Ceiling:** Batch chunking (`sample_chunk=4`) ensures peak VRAM stays under **470 MB** at $1024^2$ and under **1.88 GB** at full 2K ($2048^2$), leaving maximum headroom for FLUX Krea Dev model weights.
 
 ---
