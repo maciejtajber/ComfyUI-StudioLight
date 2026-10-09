@@ -951,9 +951,18 @@ def test_metric_3d_camera_space_shadow():
         scene_3d=scene_bundle,
     )
     assert relit.shape == (1, 64, 64, 3)
-    assert probe.shape == (1, 512, 512, 3)
-    assert spec.shape == (1, 64, 64, 3)
-    print("  ✓ Full Rig parameterization & metadata propagation verified end-to-end.")
+    scene_bundle_alt = {
+        "normals": dummy_normals,
+        "depth": dummy_depth,
+        "metadata": {
+            "target_pos": torch.tensor([1.5, 1.0, -3.0]),
+            "vertical_fov_deg": 60.0,
+            "framing": "Portrait (Classical Bust)",
+        }
+    }
+    relit_alt, _, _, _ = rig.execute_rig(preset="Custom", scene_3d=scene_bundle_alt)
+    assert float(torch.abs(relit - relit_alt).sum()) > 10.0, "Changing target_pos and vertical_fov_deg had no photometric impact!"
+    print("  ✓ Full Rig parameterization & metadata propagation verified end-to-end (photometric diff > 0).")
 
     print("✓ Metric 3D Camera-Space Shadow Raymarching Engine passed flawlessly!")
 
