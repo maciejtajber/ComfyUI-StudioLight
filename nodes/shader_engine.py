@@ -445,10 +445,6 @@ def compute_light_shading(
         y_pos = y_grid * tan_half_fov * (-z_pos)
         p_surf = torch.cat([x_pos, y_pos, z_pos], dim=-1)
 
-        # Distance taper for background
-        bg_taper = torch.clamp(d_norm / 0.20, 0.0, 1.0)
-        bg_taper = bg_taper * bg_taper * (3.0 - 2.0 * bg_taper)
-
         # 1. DIFFUSE EMISSION: Vectorized Area-Light Integration (16 samples)
         num_samples = 16
         samples_2d = generate_emitter_samples_2d(preset, num_samples=num_samples).to(device=device, dtype=dtype)
@@ -470,7 +466,7 @@ def compute_light_shading(
         beam_gate = torch.clamp((cos_e - cos_cutoff) / (1.0 - cos_cutoff + 1e-5), 0.0, 1.0)
 
         # True physical 1 / r^2 falloff (referenced to 1.8m studio portrait stand)
-        inv_sq = torch.clamp((1.8 / dist_to_samples) ** 2.0, 0.0, 8.0) * bg_taper
+        inv_sq = torch.clamp((1.8 / dist_to_samples) ** 2.0, 0.0, 8.0)
 
         # Average irradiance across samples -> [1, H, W, 1]
         irradiance_samples = cos_p * beam_gate * inv_sq
@@ -513,7 +509,7 @@ def compute_light_shading(
         )
         # Horizon gating to prevent silhouette leakage
         horizon_gate = torch.clamp(torch.sum(normals * l_vec_dir, dim=-1, keepdim=True) * 10.0, 0.0, 1.0)
-        specular = specular * horizon_gate * float(preset.get("specular_strength", 0.50)) * bg_taper * cast_sh
+        specular = specular * horizon_gate * float(preset.get("specular_strength", 0.50)) * cast_sh
 
     else:
         # Analytical point approximation when depth is unavailable
