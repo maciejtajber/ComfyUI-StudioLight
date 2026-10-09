@@ -7,14 +7,15 @@
 
 ---
 
-## 1. Abstract & Executive Summary
+## 1. Abstract & Scope
 
-Standard generative AI relighting tools rely on 2D screen-space pixel approximations (marching fixed fractions in screen $(u, v)$ coordinates) or post-processed blur filters. These approximations collapse when subjects stand in front of architectural geometry:
-1. **The 40-Pixel Horizon:** 2D marchers clamp at $\sim 40\text{ px}$, failing to project cast shadows across real metric depth gaps ($\Delta Z > 0.5\text{m}$).
-2. **Artificial Distance Fade:** Heuristic weights (`1.0 - s / steps`) fade shadows into ambient smudges rather than solid cast silhouettes.
-3. **Planar Blindness:** Shadows cannot deform across curved surfaces, such as the vertical fluting of stone columns.
+ComfyUI-StudioLight integrates image-derived camera-space geometry, metric screen-space shadow raymarching, and sampled photographic area emitters into a controllable lighting workflow for generative image synthesis.
 
-**ComfyUI-StudioLight** completely replaces screen-space heuristics with **canonical 3D camera-space raymarching through metric depth fields**. By evaluating ray paths in physical meters ($[X, Y, Z]$) and projecting samples back to Normalized Device Coordinates (NDC), cast shadows accurately bridge 20m+ depth chasms, deform across non-planar architecture, and produce physically grounded penumbras directly from area-emitter apertures without artificial PCSS post-filters.
+Traditional generative relighting tools fall into distinct categories: learned diffusion models (which hallucinate lighting without explicit metric fixture control), 2D mask-based compositors, or full 3D polygonal mesh renderers. Screen-space approximations often clamp shadow search radii at $\sim 40\text{ px}$ or rely on artificial distance fading (`weight = 1.0 - s / steps`), preventing cast shadows from bridging metric depth gaps or wrapping across curved architecture.
+
+StudioLight evaluates visibility by **raymarching directly in physical 3D camera space through the reconstructed metric depth field**. By parameterizing ray vectors in meters ($[X, Y, Z]$) and projecting samples back to Normalized Device Coordinates (NDC), cast shadows accurately bridge large depth gaps, deform across non-planar architecture, and produce contact-hardening penumbras directly from physical area-emitter apertures.
+
+> **Scope & Engineering Limits:** StudioLight performs metric screen-space raymarching over an estimated single-view geometry field (Depth Anything V2 + DSINE). It is designed for fast, controllable image relighting—not unrestricted path tracing over a complete multi-view 3D scene.
 
 ---
 
