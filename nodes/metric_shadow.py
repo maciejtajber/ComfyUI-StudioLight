@@ -266,14 +266,14 @@ def _evaluate_occlusion(
     receiver_depth: torch.Tensor,
     light_depth: torch.Tensor,
     margin: torch.Tensor,
-    max_thickness_m: float = 2.0,
+    max_thickness_m: Optional[float] = None,
 ) -> torch.Tensor:
     """True iff sampled scene depth geometrically occludes the ray.
 
     Guarantees:
     1. Front-of-ray: sampled_depth <= ray_depth - margin (scene surface is between camera and ray sample).
     2. Segment-bound: sampled_depth >= min(receiver_depth, light_depth) - margin (occluder not in front of light).
-    3. Thickness-bound: ray_depth - sampled_depth <= max_thickness_m (no phantom shadows from distant foreground).
+    3. Unbounded default: max_thickness_m=None preserves distant occluders and massive 3D architecture.
     4. Zero self-shadowing: points on receiver surface are strictly outside test margin.
     5. Zero false shadows: surfaces behind current ray sample are never marked as occluders.
     """
@@ -281,13 +281,14 @@ def _evaluate_occlusion(
     max_bound = ray_depth - margin
     is_in_front_of_ray = sampled_depth <= max_bound
     is_behind_frontmost = sampled_depth >= min_bound
-    within_thickness = (ray_depth - sampled_depth) <= max_thickness_m
-    return (
+    valid_hit = (
         torch.isfinite(sampled_depth)
         & is_in_front_of_ray
         & is_behind_frontmost
-        & within_thickness
     )
+    if max_thickness_m is not None:
+        valid_hit = valid_hit & ((ray_depth - sampled_depth) <= float(max_thickness_m))
+    return valid_hit
 
 
 def metric_shadow_visibility_points(
@@ -301,7 +302,7 @@ def metric_shadow_visibility_points(
     depth_bias_m: float = 0.006,
     ray_start_m: float = 0.012,
     ray_end_m: float = 0.006,
-    max_thickness_m: float = 2.0,
+    max_thickness_m: Optional[float] = None,
     dither: bool = True,
 ) -> torch.Tensor:
     """Vectorized point-source shadow raymarching for multiple emitter samples.
@@ -434,7 +435,7 @@ def metric_shadow_visibility_point(
     depth_bias_m: float = 0.006,
     ray_start_m: float = 0.012,
     ray_end_m: float = 0.006,
-    max_thickness_m: float = 2.0,
+    max_thickness_m: Optional[float] = None,
     dither: bool = False,
 ) -> torch.Tensor:
     """Scalar point-light visibility wrapper around metric_shadow_visibility_points."""
@@ -470,7 +471,7 @@ def metric_shadow_visibility_area(
     depth_bias_m: float = 0.006,
     ray_start_m: float = 0.012,
     ray_end_m: float = 0.006,
-    max_thickness_m: float = 2.0,
+    max_thickness_m: Optional[float] = None,
     dither: bool = True,
 ) -> torch.Tensor:
     """Area-emitter soft shadow visibility via multi-sample aperture integration.
@@ -530,7 +531,7 @@ def screen_space_directional_shadow_metric(
     depth_bias_m: float = 0.006,
     ray_start_m: float = 0.012,
     ray_end_m: float = 0.006,
-    max_thickness_m: float = 2.0,
+    max_thickness_m: Optional[float] = None,
     dither: bool = True,
 ) -> torch.Tensor:
     """High-level entry point for StudioLight shader engine.

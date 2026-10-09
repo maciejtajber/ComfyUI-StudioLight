@@ -627,6 +627,8 @@ def render_studio_lighting(
     return_passes: bool = False,
     invert_normals_x: bool = True,
     invert_depth: bool = False,
+    target_pos: Optional[torch.Tensor] = None,
+    vertical_fov_deg: float = 40.0,
 ) -> Tuple[torch.Tensor, ...]:
     """
     Renders the complete 3-point photographic studio lighting pass and dual-probe preview.
@@ -761,7 +763,9 @@ def render_studio_lighting(
                 d_rgb, s_rgb = compute_light_shading(
                     norm_unit, p_vec, p_col, p_dict["intensity"], p_dict["modifier"], depth,
                     distance=p_dict.get("distance", 1.8),
-                    return_separate=True
+                    return_separate=True,
+                    target_pos=target_pos,
+                    vertical_fov_deg=float(vertical_fov_deg),
                 )
                 total_diffuse = total_diffuse + d_rgb
                 total_specular = total_specular + s_rgb

@@ -274,14 +274,21 @@ class StudioLightRig:
         active_depth = depth_optional
         effective_invert_x = invert_normals_x
         framing = kwargs.get("framing", "Portrait (Classical Bust)")
+        target_pos = kwargs.get("target_pos", None)
+        vertical_fov_deg = float(kwargs.get("vertical_fov_deg", 40.0))
         if scene_3d is not None and isinstance(scene_3d, dict):
             if active_normals is None:
                 active_normals = scene_3d.get("normals")
             if active_depth is None:
                 active_depth = scene_3d.get("depth")
-            if "framing" in scene_3d.get("metadata", {}):
-                framing = scene_3d["metadata"]["framing"]
-            if scene_3d.get("metadata", {}).get("is_stage_asset", False) or scene_3d.get("metadata", {}).get("is_built_in", False):
+            meta = scene_3d.get("metadata", {})
+            if "framing" in meta:
+                framing = meta["framing"]
+            if "target_pos" in meta:
+                target_pos = meta["target_pos"]
+            if "vertical_fov_deg" in meta:
+                vertical_fov_deg = float(meta["vertical_fov_deg"])
+            if meta.get("is_stage_asset", False) or meta.get("is_built_in", False):
                 effective_invert_x = False
 
         key_params = {
@@ -329,6 +336,8 @@ class StudioLightRig:
             return_passes=True,
             invert_normals_x=effective_invert_x,
             invert_depth=bool(invert_depth),
+            target_pos=target_pos,
+            vertical_fov_deg=vertical_fov_deg,
         )
 
         # 3. Synthesize High-Signal Photographic Prompt Tokens
