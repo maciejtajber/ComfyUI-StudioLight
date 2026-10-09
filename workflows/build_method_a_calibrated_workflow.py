@@ -570,7 +570,7 @@ def build_method_a():
 
 if __name__ == "__main__":
     wf = build_method_a()
-    out_path = "/Users/maciejtajber/ComfyUI/custom_nodes/ComfyUI-StudioLight/workflows/StudioLight_MethodA_Calibrated.json"
+    out_path = Path(__file__).resolve().parent / "StudioLight_MethodA_Calibrated.json"
     with open(out_path, "w") as f:
         json.dump(wf, f, indent=2)
     print(f"Successfully generated {out_path} with {len(wf['nodes'])} nodes and {len(wf['links'])} links.")

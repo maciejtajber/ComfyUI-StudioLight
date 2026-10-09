@@ -86,7 +86,7 @@ This isolates pure directional photon energy into high-signal shadow and highlig
 
 ## 🔄 Master Synchronization & Preservation Confirmation
 
-- **Repository Directory:** `/Users/maciejtajber/Library/Mobile Documents/iCloud~md~obsidian/Documents/MACIEJ_OS/SYNTHETIC_IDENTITY/CUSTOM_NODES/ComfyUI-StudioLight`
+- **Repository Directory:** `ComfyUI/custom_nodes/ComfyUI-StudioLight`
 - **Node Python File:** `nodes/si_shadow_highlight.py` & `nodes/shader_engine.py` (Updated)
 - **Node Mappings:** Registered in `nodes/__init__.py` & root `__init__.py`
 - **Documentation:** `PHASE_0_5_RESULTS.md` & `ROADMAP.md` updated with full empirical findings and mathematical extraction engine.

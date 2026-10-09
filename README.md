@@ -153,7 +153,6 @@ StudioLight builds on established computer-graphics principles and exists alongs
 | :--- | :--- | :--- |
 | **Learned Relighting**<br>([IC-Light](https://github.com/lllyasviel/ic-light)) | Text-conditioned and background-conditioned diffusion relighting models. | Provides explicit physical studio fixture parameters (stand distance in meters, elevation/azimuth in degrees, blackbody Kelvin, physical modifier geometry). |
 | **Point-Light & Pass Relighting**<br>([FXTD Radiance](https://github.com/FXTD-Studios/radiance)) | Comprehensive VFX toolset featuring scene-linear math, camera-space point lights, and normal-based shading passes. | Provides an integrated geometric area-emitter shadow raymarcher and single-view depth reconstruction directly within the lighting rig node. |
-| **Full 3D Environments**<br>([WAS Node Suite Three.js](https://github.com/WASasquatch/was-node-suite-comfyui)) | Three.js nodes for polygonal geometry, materials, lights, cameras, and path tracing. | Focuses specifically on single-view generative images where no 3D polygonal mesh exists. |
 | **Screen-Space Mask Lighting**<br>([ComfyUI-ReLight](https://github.com/EnragedAntelope/comfyui-relight)) | Vectorized 2D screen-space raymarching over subject masks. | Extends raymarching into 3D camera space with depth-buffer occlusion testing and sampled area-emitter apertures. |
 
 ---
@@ -169,7 +168,7 @@ pip install -r ComfyUI-StudioLight/requirements.txt
 *(ComfyUI Manager registry listing is currently pending submission).*
 
 ### Hardware & VRAM Requirements
-* **GPU Memory:** Requires $\ge 8\text{ GB}$ VRAM. Runs comfortably on modern consumer GPUs (RTX 3060/3070/4070/4080/4090); stress-tested extensively on RTX 3090 ($469\text{ MB}$ peak shader allocation at $1024^2$).
+* **GPU Memory:** Tested on 24 GB VRAM GPUs (NVIDIA RTX 3090 / A40). For FLUX.1 [dev] paired with full geometry preprocessors (DSINE + Depth Anything V2), 16–24 GB VRAM is recommended (or $\ge 12\text{ GB}$ with fp8 quantized weights). The StudioLight lighting shader itself is lightweight, allocating only $\sim 469\text{ MB}$ at $1024^2$ resolution.
 * **Recommended Starting Workflow:** Open [`workflows/StudioLight_MethodA_Calibrated.json`](workflows/StudioLight_MethodA_Calibrated.json) first for standard portrait studio relighting.
 
 ### Dependencies & Models
@@ -353,6 +352,7 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
 
 ---
 
-## License
+## License & Credits
 
-MIT License. Created by [Maciej Tajber](https://github.com/maciejtajber) // **METAMATERIAL** Applied VFX Systems.
+* **Code & Shaders:** MIT License. Created by [Maciej Tajber](https://github.com/maciejtajber) // **METAMATERIAL** Applied VFX Systems.
+* **Assets:** Mannequin 3D GLB assets in `assets/` (`mannequin_female.glb`, `mannequin_male.glb`) are dedicated to the public domain under Creative Commons Zero (CC0).

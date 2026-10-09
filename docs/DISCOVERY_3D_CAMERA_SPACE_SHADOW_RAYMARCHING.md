@@ -16,7 +16,7 @@ During calibrated live FLUX studio runs on full-body architectural plates (model
 
 ## 2. Mathematical Root Cause Analysis
 
-Inspection of [`nodes/shader_engine.py`](file:///Users/maciejtajber/ComfyUI/custom_nodes/ComfyUI-StudioLight/nodes/shader_engine.py#L125-L165) reveals the exact cause:
+Inspection of [`nodes/shader_engine.py`](../nodes/shader_engine.py) reveals the exact cause:
 
 ```python
 dx = (lx / norm_2d) * (max_dist / steps)

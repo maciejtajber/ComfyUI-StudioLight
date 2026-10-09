@@ -361,7 +361,7 @@ groups = [
     {"title": "3. STUDIOLIGHT MASTER PHOTOMETRIC RIG", "bounding": [260, 40, 1300, 920], "color": "#1f3b2a"}
 ]
 
-out_dir = "/Users/maciejtajber/ComfyUI/custom_nodes/ComfyUI-StudioLight/workflows"
+out_dir = os.path.dirname(os.path.abspath(__file__))
 flow_path = os.path.join(out_dir, "StudioLight_Master.json")
 with open(flow_path, "w") as f:
     json.dump(wb.build_canvas(groups), f, indent=2)

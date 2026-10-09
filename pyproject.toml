@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-studiolight"
+description = "Three-point studio lighting rig with depth-based camera-space shadow raymarching, sampled area emitters, and Kelvin control for FLUX in ComfyUI."
+version = "0.9.0"
+authors = [
+    { name = "Maciej Tajber", email = "maciej@tajber.pl" }
+]
+license = { text = "MIT" }
+dependencies = ["torch", "torchvision", "numpy", "pillow"]
+readme = "README.md"
+
+[tool.comfy]
+PublisherId = "maciejtajber"
+DisplayName = "ComfyUI-StudioLight"
+Icon = ""

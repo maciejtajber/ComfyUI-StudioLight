@@ -341,7 +341,7 @@ workflow_data = {
     "version": 0.4
 }
 
-out_dir = "/Users/maciejtajber/ComfyUI/custom_nodes/ComfyUI-StudioLight/workflows"
+out_dir = os.path.dirname(os.path.abspath(__file__))
 os.makedirs(out_dir, exist_ok=True)
 out_path = os.path.join(out_dir, "StudioLight_T2I_Simple.json")
 with open(out_path, "w", encoding="utf-8") as f:

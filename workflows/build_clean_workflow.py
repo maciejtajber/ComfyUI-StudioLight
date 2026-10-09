@@ -356,7 +356,7 @@ groups = [
 
 workflow_data = wb.build(groups=groups)
 
-out_path = "/Users/maciejtajber/ComfyUI/custom_nodes/ComfyUI-StudioLight/workflows/StudioLight_T2I_Simple.json"
+out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "StudioLight_T2I_Simple.json")
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(workflow_data, f, indent=2)
 

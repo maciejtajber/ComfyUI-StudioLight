@@ -9,9 +9,9 @@ import re
 import json
 from pathlib import Path
 
-repo_dir = Path("/Users/maciejtajber/ComfyUI/custom_nodes/ComfyUI-StudioLight")
+repo_dir = Path(__file__).resolve().parent.parent
 readme_path = repo_dir / "README.md"
-out_html = Path("/Users/maciejtajber/Desktop/STUDIOLIGHT_GITHUB_MIRROR.html")
+out_html = Path.home() / "Desktop" / "STUDIOLIGHT_GITHUB_MIRROR.html"
 
 with open(readme_path, "r", encoding="utf-8") as f:
     md_content = f.read()
