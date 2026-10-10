@@ -9,7 +9,15 @@
 
 Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin control for FLUX in ComfyUI.
 
-<sub>v0.9.0-rc &nbsp;·&nbsp; COMFYUI CUSTOM NODE &nbsp;·&nbsp; FLUX.1 DEV / KREA &nbsp;·&nbsp; MIT</sub>
+<p align="center">
+  <img src="https://img.shields.io/badge/release-v1.0.0-1f2328?style=flat&labelColor=555555" alt="Release v1.0.0" />
+  <img src="https://img.shields.io/badge/ComfyUI-Custom_Node-1f2328?style=flat&labelColor=555555" alt="ComfyUI Custom Node" />
+  <img src="https://img.shields.io/badge/FLUX.1-Dev_%C2%B7_Krea-1f2328?style=flat&labelColor=555555" alt="FLUX.1 Dev / Krea" />
+  <img src="https://img.shields.io/badge/PyTorch-2.0%2B_CUDA_%2F_MPS-1f2328?style=flat&logo=pytorch&logoColor=white&labelColor=555555" alt="PyTorch 2.0+ CUDA / MPS" />
+  <img src="https://img.shields.io/badge/python-3.10%2B-1f2328?style=flat&logo=python&logoColor=white&labelColor=555555" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/tests-20_%2F_20_passing-1f2328?style=flat&labelColor=555555" alt="Tests 20/20 Passing" />
+  <img src="https://img.shields.io/badge/license-MIT-1f2328?style=flat&labelColor=555555" alt="License MIT" />
+</p>
 
 <br>
 
