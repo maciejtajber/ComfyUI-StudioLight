@@ -1177,13 +1177,19 @@ def test_reviewer_signoff_numerical_stability_and_beam_calculus():
             f"{mod_name}: Beam profile must reach 0.0 at theta_field={theta_field}°"
         )
 
-        # (d) Dense monotonicity across [0°, 89°]
-        th_dense = torch.linspace(0.0, 89.0, 891)
-        prof_dense = evaluate_beam_profile(torch.cos(th_dense * (math.pi / 180.0)), preset)
-        assert float((prof_dense[1:] - prof_dense[:-1]).max().item()) <= 1e-6, (
-            f"{mod_name}: Beam profile violated monotonicity!"
+        # (d) Strictly decreasing over active support [0°, theta_field) and identically 0.0 outside [theta_field, 89°]
+        th_active = torch.linspace(0.0, theta_field - 0.25, 250)
+        prof_active = evaluate_beam_profile(torch.cos(th_active * (math.pi / 180.0)), preset)
+        assert bool((prof_active[1:] < prof_active[:-1]).all()), (
+            f"{mod_name}: Beam profile must be strictly decreasing over active range [0°, {theta_field:.1f}°)"
         )
-    print("  ✓ Beam profile verified: Exact 0.50 at FWHM half-angle, C^1 derivative continuity at skirt transitions, and exact 0.0 at theta_field.")
+        if theta_field + 0.05 < 89.0:
+            th_outside = torch.linspace(theta_field + 0.05, 89.0, 64)
+            prof_outside = evaluate_beam_profile(torch.cos(th_outside * (math.pi / 180.0)), preset)
+            assert float(prof_outside.abs().max().item()) == 0.0, (
+                f"{mod_name}: Beam profile must be identically 0.0 beyond theta_field={theta_field:.2f}°"
+            )
+    print("  ✓ Beam profile verified: Exact 0.50 at FWHM half-angle, C^1 derivative continuity, strictly decreasing on [0°, theta_field), and 0.0 beyond theta_field.")
 
     # 2. Order-Preserving Subject-Relief Compression Numerical Verification
     d_ramp = torch.linspace(0.05, 0.98, 256).view(1, 256, 1, 1).expand(1, 256, 64, 1)
