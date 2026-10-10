@@ -449,7 +449,7 @@ def test_external_review_fixes():
     assert out_map.shape == (1, 64, 64, 3)
     assert "SDXL" in prompt or "key light" in prompt
     print(f"  ✓ StudioLightRig 27-widget required schema locked, optional invert_normals_x and target_engine fully operational.")
-    assert list(inputs["optional"])[-1] == "invert_depth", "new widget-type optionals must be APPENDED (found invert_depth not last)"
+    assert list(inputs["optional"])[-3:] == ["invert_depth", "aim_target", "depth_relief_scale"], "new widget-type optionals must be APPENDED in order"
     print("✓ All External Review Fixes passed flawlessly!")
 
 
@@ -967,6 +967,155 @@ def test_metric_3d_camera_space_shadow():
     print("✓ Metric 3D Camera-Space Shadow Raymarching Engine passed flawlessly!")
 
 
+def test_light_aiming_beam_and_depth_relief_validation_gate():
+    """
+    6-Point Review Validation Gate:
+    1. Fresnel at 35° across varied elevations (35°, 55°, 90°): Face remains illuminated when inside beam.
+    2. Key target changes from chest/lower to face: Fixture position, beam, and shadows follow the same target.
+    3. Original (scale=1.0) vs compressed depth (scale=0.30): Unnatural collar-to-face shadow reduces while preserving strict monotonicity.
+    4. Distant wall behind subject: Cast shadow remains present after depth compression.
+    5. Fresnel / Snoot beam-angle sweep: Smooth monotonic intensity transition without a hard step cutoff.
+    6. Octabox, Beauty Dish, and Stripbox: Existing modifier characteristics and off-axis hierarchy remain intact.
+    """
+    import math
+    from nodes.shader_engine import (
+        evaluate_beam_profile,
+        reconstruct_metric_surface,
+        resolve_aim_target,
+        compute_light_shading,
+        azimuth_elevation_to_vector,
+    )
+    from nodes.color_utils import MODIFIER_PRESETS
+
+    print("\nTesting 6-Point Light-Aiming, Beam Profile & Depth Relief Validation Gate...")
+
+    # Gate 5: Fresnel / Snoot beam-angle sweep (FWHM = 0.50 at beam_angle_deg/2, strictly monotonic, no hard cliff)
+    fresnel_p = MODIFIER_PRESETS["Fresnel Spotlight"]
+    snoot_p = MODIFIER_PRESETS["Hard Snoot"]
+    angles_deg = torch.linspace(0.0, 85.0, 171)
+    cos_sweep = torch.cos(angles_deg * (math.pi / 180.0))
+    prof_fresnel = evaluate_beam_profile(cos_sweep, fresnel_p)
+    prof_snoot = evaluate_beam_profile(cos_sweep, snoot_p)
+
+    # Exact FWHM (0.50) at half-beam angle (17.5° for Fresnel, 9.0° for Snoot)
+    cos_17_5 = torch.tensor([math.cos(math.radians(17.5))])
+    cos_9_0 = torch.tensor([math.cos(math.radians(9.0))])
+    assert abs(float(evaluate_beam_profile(cos_17_5, fresnel_p).item()) - 0.50) < 0.02, "Fresnel FWHM at 17.5° must be ~0.50"
+    assert abs(float(evaluate_beam_profile(cos_9_0, snoot_p).item()) - 0.50) < 0.02, "Snoot FWHM at 9.0° must be ~0.50"
+
+    # Non-zero smooth penumbra skirt outside half-angle (e.g. 22° for Fresnel must not be hard-clipped to 0.0)
+    cos_22 = torch.tensor([math.cos(math.radians(22.0))])
+    assert float(evaluate_beam_profile(cos_22, fresnel_p).item()) > 0.25, "Fresnel skirt at 22° must not hard-clip to 0!"
+    # Strictly non-increasing across 0° -> 85°
+    diffs_f = prof_fresnel[1:] - prof_fresnel[:-1]
+    assert float(diffs_f.max().item()) <= 1e-6, "Fresnel beam profile must be monotonically non-increasing!"
+    print("  ✓ Gate 5 verified: Smooth FWHM beam profile (0.50 at half-angle, C^1 penumbra skirt, zero hard cliff).")
+
+    # Gate 6: Modifier hierarchy (Octabox > Beauty Dish > Stripbox > Fresnel > Hard Snoot at 25° off-axis)
+    cos_25 = torch.tensor([math.cos(math.radians(25.0))])
+    g_octa = float(evaluate_beam_profile(cos_25, MODIFIER_PRESETS["Octabox (Soft)"]).item())
+    g_bdish = float(evaluate_beam_profile(cos_25, MODIFIER_PRESETS["Beauty Dish (Silver)"]).item())
+    g_strip = float(evaluate_beam_profile(cos_25, MODIFIER_PRESETS["Stripbox"]).item())
+    g_fres = float(evaluate_beam_profile(cos_25, fresnel_p).item())
+    g_snoot = float(evaluate_beam_profile(cos_25, snoot_p).item())
+    assert g_octa > g_bdish > g_strip > g_fres > g_snoot > 0.0, (
+        f"Modifier beam hierarchy broken at 25°: octa={g_octa:.3f}, bdish={g_bdish:.3f}, strip={g_strip:.3f}, fres={g_fres:.3f}, snoot={g_snoot:.3f}"
+    )
+    print(f"  ✓ Gate 6 verified: Modifier beam hierarchy intact (Octa {g_octa:.2f} > Dish {g_bdish:.2f} > Strip {g_strip:.2f} > Fresnel {g_fres:.2f} > Snoot {g_snoot:.2f}).")
+
+    # Build a synthetic 3/4 portrait scene:
+    # - Background wall: d = 0.08
+    # - Head/Face (upper portrait y in [12..34], x in [48..80]): d = 0.54, 3D curved hemisphere normals
+    # - Coat Collar/Torso (middle y in [35..65], x in [40..88]): d = 0.72
+    # - Foreground Handbag (lower y in [66..100], x in [36..76]): d = 0.88
+    H, W = 128, 128
+    depth_port = torch.full((1, H, W, 1), 0.08)
+    normals_port = torch.zeros((1, H, W, 3))
+    normals_port[..., 2] = 1.0
+
+    # Torso & Collar
+    depth_port[:, 36:66, 40:88, 0] = 0.72
+    normals_port[:, 36:66, 40:88, :] = torch.tensor([0.15, 0.35, 0.92])
+    # Handbag
+    depth_port[:, 66:104, 36:76, 0] = 0.88
+    normals_port[:, 66:104, 36:76, :] = torch.tensor([0.10, 0.45, 0.88])
+    # Head / Face with 3D hemispherical normal relief
+    yy, xx = torch.meshgrid(torch.linspace(-1.0, 1.0, 24), torch.linspace(-1.0, 1.0, 24), indexing="ij")
+    r2 = torch.clamp(xx * xx + yy * yy, 0.0, 0.95)
+    head_n = torch.stack([xx * 0.6, -yy * 0.5 + 0.25, torch.sqrt(1.0 - r2)], dim=-1)
+    head_n = head_n / (torch.norm(head_n, dim=-1, keepdim=True) + 1e-7)
+    normals_port[:, 12:36, 52:76, :] = head_n.unsqueeze(0)
+    depth_port[:, 12:36, 52:76, 0] = 0.54 + 0.03 * (1.0 - r2)
+    normals_port = normals_port / (torch.norm(normals_port, dim=-1, keepdim=True) + 1e-7)
+
+    # Gate 1: Fresnel at 35° across varied elevations (35°, 55°, 90°) — Face remains illuminated
+    for el in [35.0, 55.0, 90.0]:
+        l_vec = azimuth_elevation_to_vector(35.0, el)
+        d_rgb, _ = compute_light_shading(
+            normals_port, l_vec, (1.0, 1.0, 1.0), 1.2, "Fresnel Spotlight",
+            depth=depth_port, distance=1.8, return_separate=True,
+            aim_target="Auto (Face / Upper Focus)", depth_relief_scale=0.30,
+        )
+        face_irr = float(d_rgb[0, 20:28, 60:68, 0].mean().item())
+        assert face_irr > 0.15, f"Fresnel at elevation {el}° failed to illuminate face: {face_irr:.4f}"
+    print("  ✓ Gate 1 verified: Fresnel Spotlight illuminates the face across 35°, 55°, and 90° elevations.")
+
+    # Gate 2: Key target changes from Lower Third (Handbag) to Upper Third (Face)
+    l_vec_35 = azimuth_elevation_to_vector(35.0, 35.0)
+    d_face_aim, s_face_aim = compute_light_shading(
+        normals_port, l_vec_35, (1.0, 1.0, 1.0), 1.2, "Hard Snoot",
+        depth=depth_port, distance=1.8, return_separate=True,
+        aim_target="Auto (Face / Upper Focus)", depth_relief_scale=0.30,
+    )
+    d_bag_aim, s_bag_aim = compute_light_shading(
+        normals_port, l_vec_35, (1.0, 1.0, 1.0), 1.2, "Hard Snoot",
+        depth=depth_port, distance=1.8, return_separate=True,
+        aim_target="Lower Third", depth_relief_scale=0.30,
+    )
+    face_when_aimed_at_face = float(d_face_aim[0, 20:28, 60:68, 0].mean().item())
+    face_when_aimed_at_bag = float(d_bag_aim[0, 20:28, 60:68, 0].mean().item())
+    bag_when_aimed_at_bag = float(d_bag_aim[0, 75:90, 50:65, 0].mean().item())
+    bag_when_aimed_at_face = float(d_face_aim[0, 75:90, 50:65, 0].mean().item())
+    assert face_when_aimed_at_face > face_when_aimed_at_bag * 2.5, "Aiming at Face must strongly boost Face illumination vs aiming at Bag!"
+    assert bag_when_aimed_at_bag > bag_when_aimed_at_face * 2.5, "Aiming at Bag must strongly boost Bag illumination vs aiming at Face!"
+    print(f"  ✓ Gate 2 verified: Unified target aim shifts fixture, beam, and shadows (Face {face_when_aimed_at_face:.3f} vs {face_when_aimed_at_bag:.3f}; Bag {bag_when_aimed_at_bag:.3f} vs {bag_when_aimed_at_face:.3f}).")
+
+    # Gate 3 & Gate 4: Monotonic depth compression reduces collar-to-face shadow while preserving background wall cast shadow
+    ramp_d = torch.linspace(0.0, 1.0, 128).view(1, 128, 1, 1).expand(1, 128, 128, 1)
+    p_comp, _, _ = reconstruct_metric_surface(ramp_d, 128, 128, depth_relief_scale=0.30)
+    z_col = p_comp[0, :, 64, 2]
+    assert bool((z_col[1:] >= z_col[:-1]).all() and (z_col[3:-3][1:] > z_col[3:-3][:-1]).all()), "Compressed depth relief must strictly preserve relative depth ordering (dZ/dd > 0)!"
+
+    # Check chin/neck row just above collar (y=34..36) under low-elevation key light (el=15°)
+    l_vec_low = azimuth_elevation_to_vector(0.0, 15.0)
+    d_uncomp, _ = compute_light_shading(
+        normals_port, l_vec_low, (1.0, 1.0, 1.0), 1.2, "Octabox (Soft)",
+        depth=depth_port, distance=1.8, return_separate=True,
+        aim_target="Legacy Center Target", depth_relief_scale=1.0,
+    )
+    d_comp, _ = compute_light_shading(
+        normals_port, l_vec_low, (1.0, 1.0, 1.0), 1.2, "Octabox (Soft)",
+        depth=depth_port, distance=1.8, return_separate=True,
+        aim_target="Auto (Face / Upper Focus)", depth_relief_scale=0.30,
+    )
+    neck_uncomp = float(d_uncomp[0, 32:36, 58:70, 0].mean().item())
+    neck_comp = float(d_comp[0, 32:36, 58:70, 0].mean().item())
+    assert neck_comp > neck_uncomp * 1.25, f"Compressed depth + face aim must reduce collar shadow on neck ({neck_comp:.3f} vs {neck_uncomp:.3f})"
+
+    # Gate 4: Distant wall behind subject still receives cast shadow from the subject
+    l_vec_side = azimuth_elevation_to_vector(45.0, 20.0)
+    d_wall_test, _ = compute_light_shading(
+        normals_port, l_vec_side, (1.0, 1.0, 1.0), 1.2, "Hard Snoot",
+        depth=depth_port, distance=1.8, return_separate=True,
+        aim_target="Center (Subject Centroid)", depth_relief_scale=0.30,
+    )
+    wall_shadow_zone = float(d_wall_test[0, 50:65, 22:36, 0].mean().item())
+    torso_lit_zone = float(d_wall_test[0, 48:58, 60:75, 0].mean().item())
+    assert torso_lit_zone > wall_shadow_zone * 3.0, "Cast shadow on distant background wall must remain present after depth compression!"
+    print(f"  ✓ Gate 3 & Gate 4 verified: Strict depth monotonicity preserved, collar-to-face shadow reduced ({neck_uncomp:.3f} -> {neck_comp:.3f}), and background wall cast shadow intact.")
+    print("✓ All 6 Review Validation Gates passed flawlessly!")
+
+
 if __name__ == "__main__":
     test_color_utils()
     test_presets()
@@ -986,7 +1135,9 @@ if __name__ == "__main__":
     test_si_shadow_highlight_hermite_isolation()
     test_physically_based_geometric_area_emitters()
     test_metric_3d_camera_space_shadow()
-    print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified (18/18 TESTS)!")
+    test_light_aiming_beam_and_depth_relief_validation_gate()
+    print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified (19/19 TESTS)!")
+
 
 
 

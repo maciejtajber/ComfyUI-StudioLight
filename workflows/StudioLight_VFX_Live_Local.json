@@ -100,7 +100,9 @@
         0.65,
         false,
         "Flux.1",
-        false
+        false,
+        "Auto (Face / Upper Focus)",
+        0.3
       ]
     },
     {

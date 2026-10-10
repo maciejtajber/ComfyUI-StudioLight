@@ -505,7 +505,9 @@
         0.0,
         true,
         "Flux.1",
-        false
+        false,
+        "Auto (Face / Upper Focus)",
+        0.3
       ],
       "title": "StudioLightRig (3-Point Console)"
     },

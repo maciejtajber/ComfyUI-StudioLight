@@ -162,7 +162,9 @@
       "fill_distance": 1.8,
       "rim_distance": 1.8,
       "normal_boost": 1.0,
-      "ao_anchoring": 0.0
+      "ao_anchoring": 0.0,
+      "aim_target": "Auto (Face / Upper Focus)",
+      "depth_relief_scale": 0.3
     }
   },
   "14": {

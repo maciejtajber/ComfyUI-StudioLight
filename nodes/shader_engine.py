@@ -364,6 +364,249 @@ def evaluate_fixture_aperture_footprint(
     return spec * gain * valid_hit.float()
 
 
+AIM_TARGET_OPTIONS = [
+    "Auto (Face / Upper Focus)",
+    "Center (Subject Centroid)",
+    "Upper Third",
+    "Center",
+    "Lower Third",
+    "Legacy Center Target",
+]
+
+
+def evaluate_beam_profile(cos_e: torch.Tensor, preset: Dict[str, Any]) -> torch.Tensor:
+    """
+    Evaluates a smooth, calibrated studio photometric beam profile from emitter off-axis cosine `cos_e`.
+
+    Beam-Angle Convention:
+    ----------------------
+    - `beam_angle_deg` (theta_beam) defines the Full-Width at Half-Maximum (FWHM / 50% intensity cone).
+      At off-axis half-angle `theta_half = theta_beam / 2`, the profile evaluates to `0.50` (not a hard 0 cutoff).
+    - Beyond `theta_half`, intensity decays smoothly via a cosine-power lobe `cos_e ** p_beam` where
+      `p_beam = ln(0.5) / ln(cos(theta_half))`, paired with a C^1 Hermite field-angle skirt (`edge_softness`)
+      that tapers smoothly to zero before the 90° fixture horizon.
+    - Note: This is a smooth, calibrated photometric beam profile designed for stable relighting and
+      modifier differentiation, not a wave-optics Fresnel-lens simulation.
+    """
+    beam_angle = float(preset.get("beam_angle_deg", 90.0))
+    edge_softness = float(preset.get("edge_softness", 0.15))
+
+    theta_half_deg = min(max(beam_angle * 0.5, 4.0), 82.0)
+    cos_half = math.cos(math.radians(theta_half_deg))
+    # Exponent chosen so cos_e == cos_half yields exactly 0.50 (FWHM convention)
+    p_beam = math.log(0.5) / math.log(max(cos_half, 1e-4))
+
+    # Outer field-angle penumbra skirt: 1.0 inside FWHM cone, C^1 Hermite rolloff from theta_half to theta_field
+    theta_field_deg = min(88.0, theta_half_deg * (1.85 + 1.20 * edge_softness) + 12.0)
+    cos_field = math.cos(math.radians(theta_field_deg))
+    skirt_t = torch.clamp((cos_e - cos_field) / max(cos_half - cos_field, 1e-4), 0.0, 1.0)
+    skirt = skirt_t * skirt_t * (3.0 - 2.0 * skirt_t)
+
+    lobe = torch.pow(torch.clamp(cos_e, 1e-6, 1.0), p_beam)
+    return torch.clamp(lobe * skirt, 0.0, 1.0)
+
+
+def reconstruct_metric_surface(
+    depth: torch.Tensor,
+    H: int,
+    W: int,
+    vertical_fov_deg: float = 40.0,
+    depth_relief_scale: float = 0.30,
+) -> Tuple[torch.Tensor, torch.Tensor, float]:
+    """
+    Reconstructs metric camera-space 3D surface positions `p_surf = (X, Y, Z)` from a relative depth map.
+
+    Guarantees:
+    -----------
+    1. Strict Monotonicity (`dZ / dd_norm > 0` everywhere): Relative depth ordering is 100% preserved.
+    2. Adaptive Subject Anchoring: Identifies the foreground subject median `d_subj` and background split
+       `d_split` from the central framing region without brittle fixed thresholds.
+    3. Configurable Subject Relief with Smooth Background Blend: Closed-form C^inf softplus antiderivative
+       compresses foreground subject relief by `depth_relief_scale` around `Z = -2.0m` (preventing 1.4m
+       monocular torso stretch and collar-to-face false occlusion) while smoothly restoring full `3.0m`
+       depth slope for distant background walls (`depth_relief_scale=1.0` reproduces legacy linear ramp).
+    """
+    device = depth.device
+    dtype = depth.dtype
+    d = depth
+    if d.shape[-1] != 1 and len(d.shape) == 4:
+        d = d[..., 0:1]
+    elif len(d.shape) == 3:
+        d = d.unsqueeze(-1)
+    d = torch.nan_to_num(d, nan=0.0, posinf=0.0, neginf=0.0)
+
+    B = d.shape[0]
+    if d.shape[1] != H or d.shape[2] != W:
+        d_perm = d.permute(0, 3, 1, 2)
+        d = F.interpolate(d_perm, size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
+
+    aspect = float(W) / float(H)
+    tan_half_fov = math.tan(math.radians(float(vertical_fov_deg)) * 0.5)
+    y_coords, x_coords = torch.meshgrid(
+        torch.linspace(1.0, -1.0, H, device=device, dtype=dtype),
+        torch.linspace(-1.0, 1.0, W, device=device, dtype=dtype),
+        indexing="ij",
+    )
+    x_grid = x_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
+    y_grid = y_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
+
+    d_flat = d.reshape(-1)
+    if d_flat.numel() > 1000:
+        d_min = torch.quantile(d_flat, 0.01)
+        d_max = torch.quantile(d_flat, 0.99)
+    else:
+        d_min = torch.min(d)
+        d_max = torch.max(d)
+    d_range = d_max - d_min
+
+    if float(d_range) < 1e-4:
+        d_norm = torch.ones_like(d)
+        z_pos = torch.full_like(d, -2.0)
+        d_split_val = 0.5
+    else:
+        d_norm = torch.clamp((d - d_min) / (d_range + 1e-6), 0.0, 1.0)
+        cy0, cy1 = max(0, int(0.10 * H)), min(H, max(1, int(0.88 * H)))
+        cx0, cx1 = max(0, int(0.20 * W)), min(W, max(1, int(0.80 * W)))
+        central = d_norm[:, cy0:cy1, cx0:cx1, 0].reshape(-1)
+        valid_c = central[central > 0.05]
+        if valid_c.numel() > 16:
+            d_split_val = float(torch.clamp(torch.quantile(valid_c, 0.20), 0.18, 0.50))
+            fg_vals = valid_c[valid_c >= d_split_val]
+            d_subj_val = float(torch.median(fg_vals)) if fg_vals.numel() > 0 else 0.65
+        else:
+            d_split_val = 0.35
+            d_subj_val = 0.65
+
+        scale = min(max(float(depth_relief_scale), 0.10), 1.0)
+        if scale >= 0.995:
+            z_pos = -(1.5 + (1.0 - d_norm) * 3.0)
+        else:
+            s_fg = 3.0 * scale
+            s_bg = 3.0
+            tau = 0.06
+            u_d = (d_norm - d_split_val) / tau
+            u_subj = torch.tensor((d_subj_val - d_split_val) / tau, device=device, dtype=dtype)
+            delta_z = s_bg * (d_norm - d_subj_val) + (s_fg - s_bg) * tau * (
+                F.softplus(u_d) - F.softplus(u_subj)
+            )
+            z_pos = torch.clamp(-2.0 + delta_z, min=-6.0, max=-0.35)
+
+    x_pos = x_grid * tan_half_fov * aspect * (-z_pos)
+    y_pos = y_grid * tan_half_fov * (-z_pos)
+    p_surf = torch.cat([x_pos, y_pos, z_pos], dim=-1)
+    return p_surf, d_norm, d_split_val
+
+
+def resolve_aim_target(
+    p_surf: Optional[torch.Tensor],
+    d_norm: Optional[torch.Tensor],
+    normals: Optional[torch.Tensor] = None,
+    aim_mode: str = "Auto (Face / Upper Focus)",
+    d_split: float = 0.35,
+    target_pos: Optional[torch.Tensor] = None,
+    device: Optional[torch.device] = None,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
+    """
+    Resolves the 3D metric aim point `[1, 3]` `(X, Y, Z)` for studio light fixtures.
+
+    Filters for valid foreground reconstructed surface points (`d_norm >= d_split`) inside the target
+    search zone so background wall pixels never skew the aim point. In `"Auto (Face / Upper Focus)"`
+    mode, weights upper-region foreground candidates by interior 3D normal curvature (`|grad N| * exp(-40 |grad d|)`)
+    to lock onto facial relief while rejecting flat angled background walls and silhouette edges.
+    """
+    if p_surf is not None:
+        device = p_surf.device
+        dtype = p_surf.dtype
+    elif normals is not None:
+        device = normals.device
+        dtype = normals.dtype
+    elif device is None:
+        device = torch.device("cpu")
+
+    if target_pos is not None:
+        return target_pos.to(device=device, dtype=dtype).reshape(-1, 3)[:1]
+
+    default_center = torch.tensor([[0.0, 0.0, -2.0]], device=device, dtype=dtype)
+    if p_surf is None or d_norm is None or aim_mode == "Legacy Center Target":
+        return default_center
+
+    B, H, W, _ = p_surf.shape
+    if H < 16 or W < 16:
+        return default_center
+
+    dn = d_norm[0, :, :, 0]
+    ps = p_surf[0]
+    fg_mask = (dn >= d_split) & (dn > 0.10)
+
+    def _region_fg_median(y0_f: float, y1_f: float, x0_f: float, x1_f: float) -> Optional[torch.Tensor]:
+        y0, y1 = max(0, int(y0_f * H)), min(H, max(1, int(y1_f * H)))
+        x0, x1 = max(0, int(x0_f * W)), min(W, max(1, int(x1_f * W)))
+        sub_fg = fg_mask[y0:y1, x0:x1]
+        min_px = max(8, int(0.015 * (y1 - y0) * (x1 - x0)))
+        if int(sub_fg.sum().item()) < min_px:
+            return None
+        pts = ps[y0:y1, x0:x1][sub_fg]
+        return torch.median(pts, dim=0).values.view(1, 3)
+
+    if aim_mode == "Auto (Face / Upper Focus)":
+        y0, y1 = max(0, int(0.05 * H)), min(H, max(1, int(0.30 * H)))
+        x0, x1 = max(0, int(0.22 * W)), min(W, max(1, int(0.78 * W)))
+        sub_fg = fg_mask[y0:y1, x0:x1]
+        min_px = max(8, int(0.015 * (y1 - y0) * (x1 - x0)))
+        is_uniform_plane = float(fg_mask.float().mean().item()) > 0.92
+        if int(sub_fg.sum().item()) >= min_px:
+            if normals is not None and normals.shape[1] == H and normals.shape[2] == W:
+                n0 = normals[0:1]
+                dn_dx = torch.norm(n0[:, :, 1:, :] - n0[:, :, :-1, :], dim=-1, keepdim=True)
+                dn_dy = torch.norm(n0[:, 1:, :, :] - n0[:, :-1, :, :], dim=-1, keepdim=True)
+                curv = F.pad(dn_dx, (0, 0, 0, 1, 0, 0)) + F.pad(dn_dy, (0, 0, 0, 0, 0, 1))
+                d0 = d_norm[0:1]
+                dd_dx = torch.abs(d0[:, :, 1:, :] - d0[:, :, :-1, :])
+                dd_dy = torch.abs(d0[:, 1:, :, :] - d0[:, :-1, :, :])
+                grad_d = F.pad(dd_dx, (0, 0, 0, 1, 0, 0)) + F.pad(dd_dy, (0, 0, 0, 0, 0, 1))
+                interior_curv = curv * torch.exp(-grad_d * 40.0)
+                k_sz = max(3, min(21, (min(H, W) // 48) * 2 + 1))
+                curv_smooth = F.avg_pool2d(
+                    interior_curv.permute(0, 3, 1, 2),
+                    kernel_size=k_sz,
+                    stride=1,
+                    padding=k_sz // 2,
+                ).permute(0, 2, 3, 1)[0, y0:y1, x0:x1, 0]
+                score = curv_smooth * sub_fg.float()
+                fg_scores = score[sub_fg]
+                if fg_scores.numel() > 0 and float(fg_scores.max().item()) > 1e-4:
+                    q_cut = torch.quantile(fg_scores, 0.75)
+                    salient_mask = sub_fg & (score >= q_cut)
+                    if int(salient_mask.sum().item()) >= 4:
+                        pts = ps[y0:y1, x0:x1][salient_mask]
+                        return torch.median(pts, dim=0).values.view(1, 3)
+            if not is_uniform_plane:
+                pts = ps[y0:y1, x0:x1][sub_fg]
+                return torch.median(pts, dim=0).values.view(1, 3)
+        # Fallback to subject centroid if upper portrait zone is empty or scene is a uniform flat plane
+        res_c = _region_fg_median(0.10, 0.90, 0.15, 0.85)
+        return res_c if res_c is not None else default_center
+
+    if aim_mode == "Center (Subject Centroid)":
+        res_c = _region_fg_median(0.10, 0.90, 0.15, 0.85)
+        return res_c if res_c is not None else default_center
+
+    if aim_mode == "Upper Third":
+        res_u = _region_fg_median(0.06, 0.34, 0.20, 0.80)
+        return res_u if res_u is not None else torch.tensor([[0.0, 0.42, -2.0]], device=device, dtype=dtype)
+
+    if aim_mode == "Center":
+        res_m = _region_fg_median(0.34, 0.66, 0.20, 0.80)
+        return res_m if res_m is not None else default_center
+
+    if aim_mode == "Lower Third":
+        res_l = _region_fg_median(0.64, 0.92, 0.20, 0.80)
+        return res_l if res_l is not None else torch.tensor([[0.0, -0.42, -2.0]], device=device, dtype=dtype)
+
+    return default_center
+
+
 def compute_light_shading(
     normals: torch.Tensor,
     light_vec: torch.Tensor,
@@ -377,23 +620,28 @@ def compute_light_shading(
     shadow_steps: int = 16,
     target_pos: Optional[torch.Tensor] = None,
     vertical_fov_deg: float = 40.0,
+    aim_target: str = "Auto (Face / Upper Focus)",
+    depth_relief_scale: float = 0.30,
 ) -> torch.Tensor:
     """
     Computes diffuse irradiance and specular reflection using a physically based
     geometric area-emitter model.
-    - Diffuse: Multi-sample area emitter integration with true 1/r^2 falloff.
+    - Aiming: Resolves `aim_point` once and uses `p_light = aim_point + distance * stand_direction`
+      and `beam_axis = normalize(aim_point - p_light)` across diffuse, specular, and 3D shadows.
+    - Diffuse: Multi-sample area emitter integration with pure Lambertian `max(N·L, 0)`,
+      smooth FWHM beam profile (`evaluate_beam_profile`), and 1/r^2 falloff.
     - Shadow: Metric camera-space 3D shadow raymarching with perspective projection
-      and multi-sample area aperture penumbras (zero self-shadowing, 3D distance gap).
+      and multi-sample area aperture penumbras.
     - Specular: Analytical aperture footprint in reflection space.
     """
     preset = MODIFIER_PRESETS.get(modifier_name, MODIFIER_PRESETS["Octabox (Soft)"])
     device = normals.device
     dtype = normals.dtype
-    l_vec_dir = light_vec.to(device=device, dtype=dtype).view(1, 1, 1, 3)
-    u_tangent, v_tangent, w_aim = generate_emitter_tangent_frame(l_vec_dir.view(3))
 
+    # Unit stand direction from aim_point toward the light fixture
+    l_vec_raw = light_vec.to(device=device, dtype=dtype).view(1, 1, 1, 3)
+    stand_direction = l_vec_raw / (torch.norm(l_vec_raw, dim=-1, keepdim=True) + 1e-7)
     r_stand = max(float(distance), 0.3)
-    p_light = torch.tensor([0.0, 0.0, -2.0], device=device, dtype=dtype).view(1, 1, 1, 3) + r_stand * l_vec_dir
 
     # View vector (towards camera +Z)
     v_vec = torch.tensor([0.0, 0.0, 1.0], device=device, dtype=dtype).view(1, 1, 1, 3)
@@ -402,68 +650,53 @@ def compute_light_shading(
     refl_rays = refl_rays / (torch.norm(refl_rays, dim=-1, keepdim=True) + 1e-7)
 
     if depth is not None:
-        d = depth.to(device=device, dtype=dtype)
-        if d.shape[-1] != 1 and len(d.shape) == 4:
-            d = d[..., 0:1]
-        elif len(d.shape) == 3:
-            d = d.unsqueeze(-1)
-        d = torch.nan_to_num(d, nan=0.0, posinf=0.0, neginf=0.0)
-
-        # 3D Camera-Space Back-Projection
         B, H, W, _ = normals.shape
-        if d.shape[1] != H or d.shape[2] != W:
-            d_perm = d.permute(0, 3, 1, 2)
-            d = F.interpolate(d_perm, size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
-
         aspect = float(W) / float(H)
-        tan_half_fov = math.tan(math.radians(float(vertical_fov_deg)) * 0.5)
-        y_coords, x_coords = torch.meshgrid(
-            torch.linspace(1.0, -1.0, H, device=device, dtype=dtype),
-            torch.linspace(-1.0, 1.0, W, device=device, dtype=dtype),
-            indexing="ij"
+        p_surf, d_norm, d_split = reconstruct_metric_surface(
+            depth.to(device=device, dtype=dtype),
+            H=H,
+            W=W,
+            vertical_fov_deg=float(vertical_fov_deg),
+            depth_relief_scale=float(depth_relief_scale),
         )
-        x_grid = x_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
-        y_grid = y_coords.unsqueeze(0).unsqueeze(-1).expand(B, -1, -1, -1)
 
-        d_flat = d.view(-1)
-        if d_flat.numel() > 1000:
-            d_min = torch.quantile(d_flat, 0.01)
-            d_max = torch.quantile(d_flat, 0.99)
-        else:
-            d_min = torch.min(d)
-            d_max = torch.max(d)
-        d_range = d_max - d_min
-
-        if d_range < 1e-4:
-            d_norm = torch.ones_like(d)
-            z_pos = torch.full_like(d, -2.0)
-        else:
-            d_norm = torch.clamp((d - d_min) / (d_range + 1e-6), 0.0, 1.0)
-            z_pos = -(1.5 + (1.0 - d_norm) * 3.0)
-
-        x_pos = x_grid * tan_half_fov * aspect * (-z_pos)
-        y_pos = y_grid * tan_half_fov * (-z_pos)
-        p_surf = torch.cat([x_pos, y_pos, z_pos], dim=-1)
+        # Resolve unified 3D aim_point [1, 3] and place fixture relative to aim_point
+        aim_point_13 = resolve_aim_target(
+            p_surf=p_surf,
+            d_norm=d_norm,
+            normals=normals,
+            aim_mode=aim_target,
+            d_split=d_split,
+            target_pos=target_pos,
+            device=device,
+            dtype=dtype,
+        )
+        p_light = aim_point_13.view(1, 1, 1, 3) + r_stand * stand_direction
+        beam_axis_vec = aim_point_13.view(1, 1, 1, 3) - p_light
+        beam_axis_vec = beam_axis_vec / (torch.norm(beam_axis_vec, dim=-1, keepdim=True) + 1e-7)
+        u_tangent, v_tangent, w_aim = generate_emitter_tangent_frame(-beam_axis_vec.view(3))
 
         # 1. DIFFUSE EMISSION: Vectorized Area-Light Integration (16 samples)
         num_samples = 16
         samples_2d = generate_emitter_samples_2d(preset, num_samples=num_samples).to(device=device, dtype=dtype)
         # [S, 1, 1, 3] sample points in camera space
-        p_samples = p_light.view(1, 1, 1, 3) + samples_2d[:, 0].view(num_samples, 1, 1, 1) * u_tangent.view(1, 1, 1, 3) + samples_2d[:, 1].view(num_samples, 1, 1, 1) * v_tangent.view(1, 1, 1, 3)
+        p_samples = (
+            p_light.view(1, 1, 1, 3)
+            + samples_2d[:, 0].view(num_samples, 1, 1, 1) * u_tangent.view(1, 1, 1, 3)
+            + samples_2d[:, 1].view(num_samples, 1, 1, 1) * v_tangent.view(1, 1, 1, 3)
+        )
 
         # Vectorized [S, H, W, 3] broadcast
         v_to_samples = p_samples - p_surf  # [S, H, W, 3]
         dist_to_samples = torch.norm(v_to_samples, dim=-1, keepdim=True) + 1e-6
         dir_to_samples = v_to_samples / dist_to_samples
 
-        # Cosines at receiver (N . L) and emitter (w_aim . -L)
+        # Pure Lambertian cosine at receiver max(N . L, 0) and emitter off-axis cosine (w_aim . -L)
         cos_p = torch.clamp(torch.sum(normals * dir_to_samples, dim=-1, keepdim=True), 0.0, 1.0)
         cos_e = torch.clamp(torch.sum(w_aim.view(1, 1, 1, 3) * (-dir_to_samples), dim=-1, keepdim=True), 0.0, 1.0)
 
-        # Beam angle profile cutoff
-        beam_angle = float(preset.get("beam_angle_deg", 90.0))
-        cos_cutoff = math.cos(math.radians(min(beam_angle * 0.5, 85.0)))
-        beam_gate = torch.clamp((cos_e - cos_cutoff) / (1.0 - cos_cutoff + 1e-5), 0.0, 1.0)
+        # Smooth calibrated FWHM + penumbra skirt beam profile
+        beam_gate = evaluate_beam_profile(cos_e, preset)
 
         # True physical 1 / r^2 falloff (referenced to 1.8m studio portrait stand)
         inv_sq = torch.clamp((1.8 / dist_to_samples) ** 2.0, 0.0, 8.0)
@@ -472,15 +705,8 @@ def compute_light_shading(
         irradiance_samples = cos_p * beam_gate * inv_sq
         raw_diffuse = torch.mean(irradiance_samples, dim=0, keepdim=True)
 
-
         # 2. SHADOW / VISIBILITY: Metric Camera-Space 3D Area Shadow Raymarching
-        # Marches in metric meters toward area-emitter samples, with perspective back-projection
-        # and segment-bounded occlusion test (zero self-shadowing, true 3D distance gap projection).
-        if target_pos is None:
-            aim_point = torch.tensor([0.0, 0.0, -2.0], device=device, dtype=dtype).view(1, 3).expand(B, 3)
-        else:
-            aim_point = target_pos.to(device=device, dtype=dtype).view(1, 3).expand(B, 3)
-
+        aim_point = aim_point_13.expand(B, 3)
         cast_sh_map = screen_space_directional_shadow_metric(
             surface_xyz=p_surf,
             scene_depth=-p_surf[..., 2],
@@ -495,7 +721,6 @@ def compute_light_shading(
         )
         cast_sh = cast_sh_map.unsqueeze(-1)
 
-
         # 3. SPECULAR REFLECTION: Physical Aperture Footprint in Reflection Space
         specular = evaluate_fixture_aperture_footprint(
             refl_rays,
@@ -507,13 +732,15 @@ def compute_light_shading(
             preset,
             roughness=preset.get("specular_roughness", 0.18),
         )
-        # Horizon gating to prevent silhouette leakage
-        horizon_gate = torch.clamp(torch.sum(normals * l_vec_dir, dim=-1, keepdim=True) * 10.0, 0.0, 1.0)
+        # Horizon gating using local surface-to-fixture vector to prevent silhouette leakage
+        v_to_center = p_light - p_surf
+        l_local_dir = v_to_center / (torch.norm(v_to_center, dim=-1, keepdim=True) + 1e-6)
+        horizon_gate = torch.clamp(torch.sum(normals * l_local_dir, dim=-1, keepdim=True) * 10.0, 0.0, 1.0)
         specular = specular * horizon_gate * float(preset.get("specular_strength", 0.50)) * cast_sh
 
     else:
         # Analytical point approximation when depth is unavailable
-        l_vec = l_vec_dir
+        l_vec = stand_direction
         dist_val = max(float(distance), 0.3)
         dist_ratio = 1.8 / dist_val
         attenuation = float(torch.clamp(torch.tensor(dist_ratio) ** 2.0, min=0.0, max=4.0))
@@ -537,17 +764,18 @@ def compute_light_shading(
     return diffuse_rgb + specular_rgb
 
 
-
 def draw_studio_radar_diagram(
     key_params: Dict[str, Any],
     fill_params: Dict[str, Any],
     rim_params: Dict[str, Any],
     width: int = 512,
     height: int = 256,
+    aim_point: Optional[torch.Tensor] = None,
+    aim_target: str = "Auto (Face / Upper Focus)",
 ) -> torch.Tensor:
     """
     Renders an informative 2D photographic studio radar compass showing Key, Fill,
-    and Rim angles relative to Camera and Subject.
+    and Rim angles relative to Camera and Subject, plus the active 3D Aim Target HUD.
     Returns: [1, height, width, 3] float tensor in [0, 1] range.
     """
     img = Image.new("RGB", (width, height), color=(18, 18, 20))
@@ -570,8 +798,33 @@ def draw_studio_radar_diagram(
         gy = cy + int(radius * math.cos(rad))
         draw.line([cx, cy, gx, gy], fill=(32, 32, 36), width=1)
 
-    # Subject center marker
-    draw.ellipse([cx - 7, cy - 7, cx + 7, cy + 7], fill=(220, 220, 225), outline=(100, 100, 105), width=2)
+    # Subject center / aim target marker
+    ax_val, ay_val, az_val = 0.0, 0.0, -2.0
+    if aim_point is not None and aim_point.numel() >= 3:
+        ap = aim_point.detach().cpu().reshape(-1)
+        ax_val, ay_val, az_val = float(ap[0]), float(ap[1]), float(ap[2])
+
+    aim_px = cx + int(max(-1.0, min(1.0, ax_val)) * (radius * 0.45))
+    aim_py = cy + int(max(-1.0, min(1.0, (az_val + 2.0))) * (radius * 0.35))
+    draw.ellipse([cx - 7, cy - 7, cx + 7, cy + 7], fill=(90, 90, 98), outline=(65, 65, 72), width=1)
+    # Active 3D Aim Target crosshair
+    draw.ellipse([aim_px - 6, aim_py - 6, aim_px + 6, aim_py + 6], fill=(40, 235, 140), outline=(255, 255, 255), width=2)
+    draw.line([aim_px - 10, aim_py, aim_px + 10, aim_py], fill=(40, 235, 140), width=1)
+    draw.line([aim_px, aim_py - 10, aim_px, aim_py + 10], fill=(40, 235, 140), width=1)
+
+    # Vertical Elevation Target Gauge (Right margin)
+    gauge_x = width - 22
+    g_top = 28
+    g_bot = height - 28
+    draw.rectangle([gauge_x - 4, g_top, gauge_x + 4, g_bot], fill=(28, 28, 34), outline=(70, 70, 80), width=1)
+    y_norm_aim = max(0.0, min(1.0, 0.5 - (ay_val / 1.2)))
+    gy_marker = int(g_top + y_norm_aim * (g_bot - g_top))
+    draw.rectangle([gauge_x - 7, gy_marker - 3, gauge_x + 7, gy_marker + 3], fill=(40, 235, 140), outline=(255, 255, 255), width=1)
+    draw.text((gauge_x - 24, g_top - 12), "AIM Y", fill=(150, 220, 175))
+
+    # Top-left telemetry badge showing active aim mode & 3D coordinates
+    short_mode = aim_target.split(" (")[0] if aim_target else "Auto"
+    draw.text((8, 6), f"AIM [{short_mode}]: ({ax_val:+.2f}, {ay_val:+.2f}, {az_val:.2f}m)", fill=(130, 235, 165))
 
     # Bottom Camera marker (0°)
     cam_y = cy + radius + 14
@@ -589,8 +842,8 @@ def draw_studio_radar_diagram(
         lx = cx + int(actual_r * math.sin(ang_rad))
         ly = cy + int(actual_r * math.cos(ang_rad))
 
-        # Ray line
-        draw.line([cx, cy, lx, ly], fill=color_rgb, width=3)
+        # Ray line aimed at active target marker
+        draw.line([aim_px, aim_py, lx, ly], fill=color_rgb, width=3)
         # Light head node
         draw.ellipse([lx - 9, ly - 9, lx + 9, ly + 9], fill=color_rgb, outline=(255, 255, 255), width=2)
         # Degree and distance label
@@ -625,6 +878,8 @@ def render_studio_lighting(
     invert_depth: bool = False,
     target_pos: Optional[torch.Tensor] = None,
     vertical_fov_deg: float = 40.0,
+    aim_target: str = "Auto (Face / Upper Focus)",
+    depth_relief_scale: float = 0.30,
 ) -> Tuple[torch.Tensor, ...]:
     """
     Renders the complete 3-point photographic studio lighting pass and dual-probe preview.
@@ -750,6 +1005,27 @@ def render_studio_lighting(
         total_diffuse = torch.zeros_like(norm_unit)
         total_specular = torch.zeros_like(norm_unit)
 
+        resolved_aim_point = target_pos
+        if resolved_aim_point is None and depth is not None:
+            B_n, H_n, W_n, _ = norm_unit.shape
+            p_surf_tmp, d_norm_tmp, d_split_tmp = reconstruct_metric_surface(
+                depth.to(device=norm_unit.device, dtype=norm_unit.dtype),
+                H=H_n,
+                W=W_n,
+                vertical_fov_deg=float(vertical_fov_deg),
+                depth_relief_scale=float(depth_relief_scale),
+            )
+            resolved_aim_point = resolve_aim_target(
+                p_surf=p_surf_tmp,
+                d_norm=d_norm_tmp,
+                normals=norm_unit,
+                aim_mode=aim_target,
+                d_split=d_split_tmp,
+                target_pos=target_pos,
+                device=norm_unit.device,
+                dtype=norm_unit.dtype,
+            )
+
         for p_dict, p_vec, p_col in [
             (key_params, key_vec, key_col),
             (fill_params, fill_vec, fill_col),
@@ -760,8 +1036,10 @@ def render_studio_lighting(
                     norm_unit, p_vec, p_col, p_dict["intensity"], p_dict["modifier"], depth,
                     distance=p_dict.get("distance", 1.8),
                     return_separate=True,
-                    target_pos=target_pos,
+                    target_pos=resolved_aim_point,
                     vertical_fov_deg=float(vertical_fov_deg),
+                    aim_target=aim_target,
+                    depth_relief_scale=float(depth_relief_scale),
                 )
                 total_diffuse = total_diffuse + d_rgb
                 total_specular = total_specular + s_rgb
@@ -918,7 +1196,16 @@ def render_studio_lighting(
     top_half = torch.cat([grey_ball, chrome_ball], dim=2)  # [1, half_h, probe_res, 3]
 
     # Bottom half: 2D Studio Radar Diagram
-    bottom_half = draw_studio_radar_diagram(key_params, fill_params, rim_params, width=probe_res, height=half_h)
+    radar_aim = resolved_aim_point if "resolved_aim_point" in locals() else target_pos
+    bottom_half = draw_studio_radar_diagram(
+        key_params,
+        fill_params,
+        rim_params,
+        width=probe_res,
+        height=half_h,
+        aim_point=radar_aim,
+        aim_target=aim_target,
+    )
     bottom_half = bottom_half.to(device=device)
 
     # Complete square probe preview card

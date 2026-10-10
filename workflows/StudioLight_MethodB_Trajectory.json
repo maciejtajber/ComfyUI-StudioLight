@@ -583,7 +583,9 @@
         0.0,
         true,
         "Flux.1",
-        false
+        false,
+        "Auto (Face / Upper Focus)",
+        0.3
       ],
       "title": "ZONE 3: StudioLightRig (Directional 45\u00b0 Console)"
     },
