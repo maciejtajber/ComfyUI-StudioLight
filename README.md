@@ -23,7 +23,7 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 <a href="#optical-modifiers--sampled-area-emitters">AREA EMITTERS</a> &nbsp;·&nbsp;
 <a href="#core-production-suite">CORE SUITE</a> &nbsp;·&nbsp;
 <a href="#installation">INSTALL</a> &nbsp;·&nbsp;
-<a href="#master-workflows">WORKFLOWS</a> &nbsp;·&nbsp;
+<a href="#master-workflow">WORKFLOW</a> &nbsp;·&nbsp;
 <a href="#known-limitations--engineering-scope">LIMITATIONS</a>
 </sub>
 
@@ -171,7 +171,7 @@ StudioLight splits generation into a **two-stage geometry and relighting pipelin
 1. **Geometry Crystallization (Steps 0–10):** Pass 1 generates an unlit albedo draft to define scene forms, anatomy, and clothing weave without baked directional shadows.
 2. **Camera-Space 3D Projection:** Extracts surface normals (DSINE) and estimated depth (Depth Anything V2), back-projecting the 2D draft into virtual camera-space ($40^\circ$ portrait FOV calibrated to studio scale).
 3. **Photometric Deferred Shading:** Computes diffuse irradiance, Blinn-Phong specular lobes, and 3D camera-space shadow raymarching from virtual C-stands.
-4. **Stochastic Polish (Pass 2):** Composites the lit plate in linear Rec.709 space, preps tones in the `SIShadowHighlight` darkroom, and feeds it to Pass 2 (denoise `0.25 – 0.85` in Method A two-stage img2img, or midstream trajectory continuation in Method B) to synthesize subsurface skin scattering and photorealistic catchlights.
+4. **Stochastic Polish (Pass 2):** Composites the lit plate in linear Rec.709 space, preps tones in the `SIShadowHighlight` darkroom, and feeds it to Pass 2 (`denoise 0.25 – 0.85+`) to synthesize subsurface skin scattering and photorealistic catchlights.
 
 ---
 
@@ -456,7 +456,7 @@ pip install -r ComfyUI-StudioLight/requirements.txt
 
 ### Hardware & VRAM Requirements
 * **GPU Memory:** Tested on 24 GB VRAM GPUs (NVIDIA RTX 3090 / A40). For FLUX.1 [dev] paired with full geometry preprocessors (DSINE + Depth Anything V2), 16–24 GB VRAM is recommended (or $\ge 12\text{ GB}$ with fp8 quantized weights). The StudioLight lighting shader itself is lightweight, allocating only $\sim 469\text{ MB}$ at $1024^2$ resolution.
-* **Recommended Starting Workflow:** Open [`workflows/StudioLight_MethodA_Calibrated.json`](workflows/StudioLight_MethodA_Calibrated.json) first for standard portrait studio relighting.
+* **Master Workflow:** Open [`workflows/StudioLight_Master.json`](workflows/StudioLight_Master.json) for the complete 2-stage studio relighting pipeline.
 
 ### Dependencies & Models
 * **Preprocessors:** Install `comfyui_controlnet_aux` for `DSINE-NormalMapPreprocessor` and `DepthAnythingV2Preprocessor`.
@@ -471,11 +471,9 @@ python test_studiolight.py
 
 ---
 
-## Master Workflows
+## Master Workflow
 
-* [`workflows/StudioLight_Master.json`](workflows/StudioLight_Master.json): Complete 2-Stage FLUX.1 Krea Dev production pipeline with prompt decoupling and shadow raymarching.
-* [`workflows/StudioLight_MethodA_Calibrated.json`](workflows/StudioLight_MethodA_Calibrated.json): Fast portrait studio relighting workflow with interactive console gizmo and live VFX sphere probes.
-* [`workflows/StudioLight_MethodB_Trajectory.json`](workflows/StudioLight_MethodB_Trajectory.json): `[Experimental - Video/Latent Trajectory]` Camera-space lighting trajectory for animated sequences (experimental exploration; validation ongoing).
+* [`workflows/StudioLight_Master.json`](workflows/StudioLight_Master.json): Complete 2-Stage FLUX.1 Krea Dev production pipeline with prompt decoupling, 3D camera-space shadow raymarching, photometric compositing, and live VFX sphere probes.
 
 ---
 

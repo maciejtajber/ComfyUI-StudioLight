@@ -998,20 +998,20 @@ def render_studio_lighting(
 
         assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
         if "Portrait" in effective_framing:
-            asset_file = "mannequin_bust_normal.png"
+            asset_file, fallback_hw = "mannequin_bust_normal.png", (1024, 1024)
         elif "American" in effective_framing:
-            asset_file = "mannequin_medium_normal.png"
+            asset_file, fallback_hw = "mannequin_medium_normal.png", (1200, 896)
         elif "Full Body" in effective_framing:
-            asset_file = "mannequin_full_normal.png"
+            asset_file, fallback_hw = "mannequin_full_normal.png", (1264, 848)
         elif "Tabletop" in effective_framing or "Perfume" in effective_framing:
-            asset_file = "product_perfume_normal.png"
+            asset_file, fallback_hw = "product_perfume_normal.png", (1024, 1024)
         elif "Industrial" in effective_framing or "Chair" in effective_framing:
-            asset_file = "product_chair_normal.png"
+            asset_file, fallback_hw = "product_chair_normal.png", (1024, 1024)
         elif "Automotive" in effective_framing or "Car" in effective_framing:
-            asset_file = "product_car_normal.png"
+            asset_file, fallback_hw = "product_car_normal.png", None
         else:
             # Volumetric Cyc (rendered procedurally)
-            asset_file = None
+            asset_file, fallback_hw = None, None
 
         if asset_file:
             asset_path = os.path.join(assets_dir, asset_file)
@@ -1028,6 +1028,21 @@ def render_studio_lighting(
                     arr_asset = np.array(img_asset).astype(np.float32) / 255.0
                     normals = torch.from_numpy(arr_asset).unsqueeze(0).to(device)
                     asset_mask = None
+            elif fallback_hw is not None:
+                fh, fw = fallback_hw
+                gy, gx = torch.meshgrid(
+                    torch.linspace(-1.0, 1.0, fh, device=device),
+                    torch.linspace(-1.0, 1.0, fw, device=device),
+                    indexing="ij",
+                )
+                r2 = (gx / 0.55) ** 2 + (gy / 0.65) ** 2
+                inside = (r2 <= 1.0).float()
+                nz = torch.sqrt(torch.clamp(1.0 - r2, min=0.0))
+                nx = (gx / 0.55) * inside
+                ny = (-gy / 0.65) * inside
+                nz = nz * inside + (1.0 - inside)
+                normals = torch.stack([(nx + 1.0) * 0.5, (ny + 1.0) * 0.5, (nz + 1.0) * 0.5], dim=-1).unsqueeze(0)
+                asset_mask = inside.unsqueeze(0).unsqueeze(-1)
 
     if normals is not None:
         n = normals.clone()
