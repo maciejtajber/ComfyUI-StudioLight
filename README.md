@@ -14,7 +14,6 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 <br>
 
 <sub>
-<a href="#interactive-camera-space-lighting-in-action">DEMO</a> &nbsp;·&nbsp;
 <a href="#same-subject-same-prompt-different-light">SHOWCASE</a> &nbsp;·&nbsp;
 <a href="#the-problem-prompt-lottery-vs-spatial-control">THE PROBLEM</a> &nbsp;·&nbsp;
 <a href="#what-makes-studiolight-different">DIFFERENTIATION</a> &nbsp;·&nbsp;
@@ -22,7 +21,7 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 <a href="#from-camera-space-lighting-pass-to-final-flux-render">THE PROOF</a> &nbsp;·&nbsp;
 <a href="#3d-camera-space-shadow-raymarching">3D SHADOWS</a> &nbsp;·&nbsp;
 <a href="#optical-modifiers--sampled-area-emitters">AREA EMITTERS</a> &nbsp;·&nbsp;
-<a href="#core-production-suite--node-schemas">NODE SCHEMAS</a> &nbsp;·&nbsp;
+<a href="#core-production-suite">CORE SUITE</a> &nbsp;·&nbsp;
 <a href="#installation">INSTALL</a> &nbsp;·&nbsp;
 <a href="#master-workflows">WORKFLOWS</a> &nbsp;·&nbsp;
 <a href="#known-limitations--engineering-scope">LIMITATIONS</a>
@@ -31,22 +30,6 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 </div>
 
 <br>
-
----
-
-## Interactive Camera-Space Lighting in Action
-
-<div align="center">
-
-<a href="assets/demo.mp4">
-  <img src="assets/demo.gif" width="60%" alt="StudioLight Real-Time Camera-Space Gizmo Demo" />
-</a>
-
-<br>
-<sub><b>Live 3-Point Studio Console Manipulation & Dual-Sphere VFX Probes</b><br>
-Real-time Stand Distance ($r$), Azimuth ($\theta$), Elevation ($\phi$), and Kelvin temperature response in 0.03s. Click preview to open raw MP4 (<a href="assets/demo.mp4"><code>assets/demo.mp4</code></a>).</sub>
-
-</div>
 
 ---
 
@@ -458,69 +441,6 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
   * `0.35 – 0.45` (Feature Lock & Subtle Fill): Preserves exact identity, original micro-textures, and fine facial features with a gentle lighting wash.
   * `0.50 – 0.65` (Balanced Relighting): Default zone for studio lighting integration—synthesizes skin subsurface scattering, specular eye catchlights, and realistic fabric wraps while anchoring geometry.
   * `0.70 – 0.85+` (Dramatic Transformation & Deep Re-Shading): Allows diffusion full creative freedom to completely re-illuminate complex scenes, repaint albedo, and create intense chiaroscuro contrast. Adjust according to creative intent.
-
----
-
-## Production Recipes by Scenario
-
-<table>
-  <thead>
-    <tr>
-      <th align="left">Setup / Scenario</th>
-      <th align="center"><code>specular_kick</code></th>
-      <th align="center"><code>chroma_bleed</code></th>
-      <th align="center"><code>filmic_white_point</code></th>
-      <th align="center">Pass 2 Denoise</th>
-      <th align="left">Recommended Key Modifier</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="left"><b>High-Fashion Beauty (Skin &amp; Soft Fill)</b></td>
-      <td align="center">0.40 – 0.50</td>
-      <td align="center">0.40 – 0.45</td>
-      <td align="center">3.5</td>
-      <td align="center">0.50 – 0.55</td>
-      <td align="left">Beauty Dish (Silver) or Octabox</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Commercial Catalog (Mixed Fabrics &amp; Leather)</b></td>
-      <td align="center">0.40 – 0.50</td>
-      <td align="center">0.35</td>
-      <td align="center">3.5</td>
-      <td align="center">0.55 – 0.60</td>
-      <td align="left">Beauty Dish or Stripbox</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Dark Tailored Apparel (Matte Wool / Velvet)</b></td>
-      <td align="center">0.00 – 0.20</td>
-      <td align="center">0.00</td>
-      <td align="center">2.5</td>
-      <td align="center">0.55 – 0.60</td>
-      <td align="left">Octabox (Soft)</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Cinematic Film Noir (High Chiaroscuro)</b></td>
-      <td align="center">0.50 – 0.60</td>
-      <td align="center">0.50</td>
-      <td align="center">2.0 – 2.5</td>
-      <td align="center">0.60 – 0.65</td>
-      <td align="left">Fresnel Spotlight or Hard Snoot</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Isolated Metallic / Chrome Props (Macro)</b></td>
-      <td align="center">1.00 – 1.50</td>
-      <td align="center">0.10</td>
-      <td align="center">5.0 – 6.0</td>
-      <td align="center">0.60 – 0.65</td>
-      <td align="left">Direct Flash or Hard Snoot</td>
-    </tr>
-  </tbody>
-</table>
 
 ---
 
