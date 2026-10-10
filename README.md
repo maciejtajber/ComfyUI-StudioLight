@@ -68,6 +68,7 @@ Real-time Stand Distance ($r$), Azimuth ($\theta$), Elevation ($\phi$), and Kelv
       <td align="center"><img src="assets/showcase_beauty.png" width="100%" alt="Beauty Dish" /></td>
       <td align="center"><img src="assets/showcase_octabox.png" width="100%" alt="Diffused Octabox" /></td>
     </tr>
+    <tr></tr>
     <tr>
       <td align="center">
         <b>Fresnel Spotlight (Hard Key)</b><br>
@@ -94,12 +95,35 @@ Real-time Stand Distance ($r$), Azimuth ($\theta$), Elevation ($\phi$), and Kelv
 
 Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic blue rim light on the left"` often triggers severe prompt bleed: facial features shift, clothing changes cut, and colors wash across the entire frame.
 
-| Prompt-Based Lighting (Text Only) | StudioLight Spatial Control (VFX Engine) |
-| :--- | :--- |
-| **Subject Mutation:** Prompting for light changes anatomy, styling, and background geometry. | **Geometry Guidance:** Primary scene anatomy, forms, and composition crystallize in Pass 1; Pass 2 applies illumination and textures over that structure. |
-| **Chromatic Bleed:** Color tokens tint skin, hair, and clothing indiscriminately. | **Directional Lobe Isolation in Plate:** Rim and key colors remain confined to illuminated surfaces ($N \cdot L > 0$) in the lighting plate, steering Pass 2 synthesis. |
-| **Uncalibrated Falloff:** Lights fail to observe inverse-square distance or scene depth. | **Geometric Inverse-Square Falloff:** Models $(r_{\text{ref}}/r)^2$ distance falloff, normalized to studio reference stand distance ($r_{\text{ref}}=1.8\text{m}$). |
-| **Pre-baked Specular Artifacts:** High-gloss words bake blown-out white patches into early draft latents. | **Albedo Decoupling:** Renders clean draft plates with reduced baked highlights; specular kicks align with fixture placement. |
+<table>
+  <thead>
+    <tr>
+      <th width="50%" align="left">Prompt-Based Lighting (Text Only)</th>
+      <th width="50%" align="left">StudioLight Spatial Control (VFX Engine)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><b>Subject Mutation:</b> Prompting for light changes anatomy, styling, and background geometry.</td>
+      <td align="left"><b>Geometry Guidance:</b> Primary scene anatomy, forms, and composition crystallize in Pass 1; Pass 2 applies illumination and textures over that structure.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Chromatic Bleed:</b> Color tokens tint skin, hair, and clothing indiscriminately.</td>
+      <td align="left"><b>Directional Lobe Isolation in Plate:</b> Rim and key colors remain confined to illuminated surfaces (N · L &gt; 0) in the lighting plate, steering Pass 2 synthesis.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Uncalibrated Falloff:</b> Lights fail to observe inverse-square distance or scene depth.</td>
+      <td align="left"><b>Geometric Inverse-Square Falloff:</b> Models (r<sub>ref</sub> / r)² distance falloff, normalized to studio reference stand distance (r<sub>ref</sub> = 1.8m).</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Pre-baked Specular Artifacts:</b> High-gloss words bake blown-out white patches into early draft latents.</td>
+      <td align="left"><b>Albedo Decoupling:</b> Renders clean draft plates with reduced baked highlights; specular kicks align with fixture placement.</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
@@ -120,11 +144,34 @@ ComfyUI-StudioLight integrates image-derived camera-space geometry, screen-space
 
 StudioLight builds on established computer-graphics principles and exists alongside valuable ComfyUI lighting tools:
 
-| Approach / Tool | Documented Technique | StudioLight Distinction |
-| :--- | :--- | :--- |
-| **Learned Relighting**<br>([IC-Light](https://github.com/lllyasviel/ic-light)) | Text-conditioned and background-conditioned diffusion relighting models. | Provides explicit physical studio fixture parameters (stand distance in meters, elevation/azimuth in degrees, blackbody Kelvin, physical modifier geometry). |
-| **Point-Light & Pass Relighting**<br>([FXTD Radiance](https://github.com/FXTD-Studios/radiance)) | Comprehensive VFX toolset featuring scene-linear math, camera-space point lights, and normal-based shading passes. | Provides an integrated geometric area-emitter shadow raymarcher and single-view depth reconstruction directly within the lighting rig node. |
-| **Screen-Space Mask Lighting**<br>([ComfyUI-ReLight](https://github.com/EnragedAntelope/comfyui-relight)) | Vectorized 2D screen-space raymarching over subject masks. | Extends raymarching into 3D camera space with depth-buffer occlusion testing and sampled area-emitter apertures. |
+<table>
+  <thead>
+    <tr>
+      <th width="24%" align="left">Approach&nbsp;/&nbsp;Tool</th>
+      <th width="36%" align="left">Documented Technique</th>
+      <th width="40%" align="left">StudioLight Distinction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><b>Learned Relighting</b><br>(<a href="https://github.com/lllyasviel/ic-light">IC-Light</a>)</td>
+      <td align="left">Text-conditioned and background-conditioned diffusion relighting models.</td>
+      <td align="left">Provides explicit physical studio fixture parameters (stand distance in meters, elevation/azimuth in degrees, blackbody Kelvin, physical modifier geometry).</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Point-Light &amp; Pass Relighting</b><br>(<a href="https://github.com/FXTD-Studios/radiance">FXTD Radiance</a>)</td>
+      <td align="left">Comprehensive VFX toolset featuring scene-linear math, camera-space point lights, and normal-based shading passes.</td>
+      <td align="left">Provides an integrated geometric area-emitter shadow raymarcher and single-view depth reconstruction directly within the lighting rig node.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Screen-Space Mask Lighting</b><br>(<a href="https://github.com/EnragedAntelope/comfyui-relight">ComfyUI-ReLight</a>)</td>
+      <td align="left">Vectorized 2D screen-space raymarching over subject masks.</td>
+      <td align="left">Extends raymarching into 3D camera space with depth-buffer occlusion testing and sampled area-emitter apertures.</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
@@ -162,6 +209,7 @@ StudioLight splits generation into a **two-stage geometry and relighting pipelin
       <td align="center"><img src="assets/hero_split_deferred.png" width="100%" alt="Deferred 3D Shading Pass" /></td>
       <td align="center"><img src="assets/hero_split_flux.jpg" width="100%" alt="Final FLUX Latent Synthesis" /></td>
     </tr>
+    <tr></tr>
     <tr>
       <td align="left">
         <b>Deterministic Physical Lighting Guidance:</b><br>
@@ -203,14 +251,80 @@ P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspect
 
 *Measured via `tools/run_hardcore_stress_tests.py` on an NVIDIA GeForce RTX 3090 (PyTorch 2.13, CUDA 12.6, 5 warm runs averaged with `torch.cuda.synchronize()`):*
 
-| Resolution | Preset | Samples ($S$) | Steps | Pass Latency (RTX 3090) | Peak VRAM | Ray-Sample Steps / sec |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **$512 \times 512$** | Fast Preview | 4 | 12 | **12.0 ms** | 113 MB | **1,047 M/s** |
-| | Balanced (Default) | 8 | 16 | **29.6 ms** | 118 MB | **1,135 M/s** |
-| **$1024 \times 1024$** | Fast Preview | 4 | 12 | **32.0 ms** | 450 MB | **1,571 M/s** |
-| | **Balanced (Default)** | **8** | **16** | **83.0 ms** | **469 MB** | **1,617 M/s** |
-| | High-End Quality | 16 | 24 | **245.3 ms** | 469 MB | **1,642 M/s** |
-| **$2048 \times 2048$** *(4.2 MP)* | Balanced (Default) | 8 | 16 | **311.5 ms** | 1.87 GB | **1,724 M/s** |
+<table>
+  <thead>
+    <tr>
+      <th align="left">Resolution</th>
+      <th align="left">Preset</th>
+      <th align="center">Samples&nbsp;(S)</th>
+      <th align="center">Steps</th>
+      <th align="center">Pass&nbsp;Latency (RTX&nbsp;3090)</th>
+      <th align="center">Peak&nbsp;VRAM</th>
+      <th align="center">Ray-Sample Steps&nbsp;/&nbsp;sec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left">512&nbsp;×&nbsp;512</td>
+      <td align="left">Fast Preview</td>
+      <td align="center">4</td>
+      <td align="center">12</td>
+      <td align="center">12.0 ms</td>
+      <td align="center">113 MB</td>
+      <td align="center">1,047 M/s</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"></td>
+      <td align="left">Balanced (Default)</td>
+      <td align="center">8</td>
+      <td align="center">16</td>
+      <td align="center">29.6 ms</td>
+      <td align="center">118 MB</td>
+      <td align="center">1,135 M/s</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left">1024&nbsp;×&nbsp;1024</td>
+      <td align="left">Fast Preview</td>
+      <td align="center">4</td>
+      <td align="center">12</td>
+      <td align="center">32.0 ms</td>
+      <td align="center">450 MB</td>
+      <td align="center">1,571 M/s</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"></td>
+      <td align="left">Balanced (Default)</td>
+      <td align="center">8</td>
+      <td align="center">16</td>
+      <td align="center">83.0 ms</td>
+      <td align="center">469 MB</td>
+      <td align="center">1,617 M/s</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"></td>
+      <td align="left">High-End Quality</td>
+      <td align="center">16</td>
+      <td align="center">24</td>
+      <td align="center">245.3 ms</td>
+      <td align="center">469 MB</td>
+      <td align="center">1,642 M/s</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left">2048&nbsp;×&nbsp;2048 (4.2&nbsp;MP)</td>
+      <td align="left">Balanced (Default)</td>
+      <td align="center">8</td>
+      <td align="center">16</td>
+      <td align="center">311.5 ms</td>
+      <td align="center">1.87 GB</td>
+      <td align="center">1,724 M/s</td>
+    </tr>
+  </tbody>
+</table>
 
 > [!NOTE]
 > * **Pass Latency:** Complete shadow visibility pass execution time.
@@ -235,14 +349,66 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
 </div>
 <br>
 
-| Modifier | Aperture Dimensions | Beam Angle ($\theta_{\text{beam}}$) | Optical Approximation | Catchlight Profile |
-| :--- | :---: | :---: | :--- | :--- |
-| **Direct On-Camera Flash** | $0.08\text{m} \times 0.05\text{m}$ | $70^\circ$ | Near-point strobe emitter | Crisp micro-pinpoint |
-| **Hard Snoot** | $R=0.05\text{m}$ (10cm) | $18^\circ$ | Collimated beam cone | Tight circular isolation |
-| **Fresnel Spotlight** | $R=0.15\text{m}$ (30cm) | $35^\circ$ | Optical lens edge cutoff | Compact stepped lens disc |
-| **Stripbox** | $0.30\text{m} \times 1.20\text{m}$ | $65^\circ$ | 1:4 Asymmetric rectangular emitter | Elongated vertical catchlight bar |
-| **Beauty Dish (Silver)** | $R=0.275\text{m}$ (55cm) | $85^\circ$ | Parabolic dish + center deflector ($36\%$ radius ratio, $12\%$ center transmission) | Sculpted cheekbones, donut catchlight ring |
-| **Octabox (Soft)** | $R=0.70\text{m}$ (140cm) | $130^\circ$ | Broad Lambertian octagonal emitter | Large wrap disc, soft continuous penumbra |
+<table>
+  <thead>
+    <tr>
+      <th align="left">Modifier</th>
+      <th align="center">Aperture&nbsp;Dimensions</th>
+      <th align="center">Beam&nbsp;Angle</th>
+      <th align="left">Optical Approximation</th>
+      <th align="left">Catchlight Profile</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><b>Direct On-Camera Flash</b></td>
+      <td align="center">0.08m × 0.05m</td>
+      <td align="center">70°</td>
+      <td align="left">Near-point strobe emitter</td>
+      <td align="left">Crisp micro-pinpoint</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Hard Snoot</b></td>
+      <td align="center">R = 0.05m (10cm)</td>
+      <td align="center">18°</td>
+      <td align="left">Collimated beam cone</td>
+      <td align="left">Tight circular isolation</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Fresnel Spotlight</b></td>
+      <td align="center">R = 0.15m (30cm)</td>
+      <td align="center">35°</td>
+      <td align="left">Optical lens edge cutoff</td>
+      <td align="left">Compact stepped lens disc</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Stripbox</b></td>
+      <td align="center">0.30m × 1.20m</td>
+      <td align="center">65°</td>
+      <td align="left">1:4 Asymmetric rectangular emitter</td>
+      <td align="left">Elongated vertical catchlight bar</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Beauty Dish (Silver)</b></td>
+      <td align="center">R = 0.275m (55cm)</td>
+      <td align="center">85°</td>
+      <td align="left">Parabolic dish + center deflector (36% radius ratio, 12% center transmission)</td>
+      <td align="left">Sculpted cheekbones, donut catchlight ring</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Octabox (Soft)</b></td>
+      <td align="center">R = 0.70m (140cm)</td>
+      <td align="center">130°</td>
+      <td align="left">Broad Lambertian octagonal emitter</td>
+      <td align="left">Large wrap disc, soft continuous penumbra</td>
+    </tr>
+  </tbody>
+</table>
 
 > [!NOTE]
 > All studio modifiers represent photographic approximations and virtual emitter geometries calibrated for photographic lighting control, rather than full laboratory optical simulations.
@@ -253,12 +419,50 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
 
 *Extracted directly from node classes (`nodes/*.py`):*
 
-| Node Name | Category | Inputs | Outputs | Core Purpose |
-| :--- | :--- | :--- | :--- | :--- |
-| **`StudioLightRig`** | `StudioLight/Rig` | **Required:** `preset`, `ambient_intensity`, `invert_normals_y`, Key light controls (`enabled`, `azimuth`, `elevation`, `distance`, `intensity`, `kelvin`, `modifier`), Fill controls, Rim controls, `normal_boost`, `ao_anchoring`<br>**Optional:** `scene_3d`, `normals_optional`, `depth_optional`, `invert_normals_x`, `target_engine`, `invert_depth` | `relighting_map` *(IMAGE)*<br>`probe_preview` *(IMAGE)*<br>`lighting_prompt` *(STRING)*<br>`specular_pass` *(IMAGE)* | Master 3-point photographic lighting console with 3D camera-space coordinates, physical modifier selection, Kelvin color temperature, and live dual-sphere VFX preview. |
-| **`StudioPhotometricComposite`** | `StudioLight/Photometric` | **Required:** `image` *(IMAGE)*, `lighting_map` *(IMAGE)*, `lighting_strength`, `ambient_floor`, `specular_kick`, `chroma_bleed`, `filmic_white_point`<br>**Optional:** `specular_map` *(IMAGE, from Rig specular_pass)* | `lit_image` *(IMAGE)* | Linear Rec.709 photometric shading engine with rational shoulder tonemapping, lobe-accurate specular integration, and chromatic midtone bleed. |
-| **`SIShadowHighlight`** | `StudioLight/Photometric` | **Required:** `image` *(IMAGE)*, `shadow_amount`, `highlight_amount`, `shadow_tonal_width`, `highlight_tonal_width`, `midtone_contrast` | `IMAGE` *(IMAGE)* | Latent preparation darkroom with bilateral Hermite tonal isolation (isolated shadows and highlights, zero midtone bleed) and bounded sigmoidal midtone contrast. |
-| **`StudioPromptSanitizer`** | `StudioLight/Utility` | **Required:** `master_prompt` *(STRING)*<br>**Optional:** `albedo_suffix` *(STRING)* | `pass1_albedo_prompt` *(STRING)*<br>`pass2_lit_prompt` *(STRING)* | Albedo decoupling utility that strips specular and lighting keywords from Pass 1 draft latents while passing the complete prompt to Pass 2. |
+<table>
+  <thead>
+    <tr>
+      <th align="left">Node Name</th>
+      <th align="left">Category</th>
+      <th align="left">Inputs</th>
+      <th align="left">Outputs</th>
+      <th align="left">Core Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><b><code>StudioLightRig</code></b></td>
+      <td align="left"><code>StudioLight/Rig</code></td>
+      <td align="left"><b>Required:</b> <code>preset</code>, <code>ambient_intensity</code>, <code>invert_normals_y</code>, Key light controls (<code>enabled</code>, <code>azimuth</code>, <code>elevation</code>, <code>distance</code>, <code>intensity</code>, <code>kelvin</code>, <code>modifier</code>), Fill controls, Rim controls, <code>normal_boost</code>, <code>ao_anchoring</code><br><b>Optional:</b> <code>scene_3d</code>, <code>normals_optional</code>, <code>depth_optional</code>, <code>invert_normals_x</code>, <code>target_engine</code>, <code>invert_depth</code></td>
+      <td align="left"><code>relighting_map</code> <i>(IMAGE)</i><br><code>probe_preview</code> <i>(IMAGE)</i><br><code>lighting_prompt</code> <i>(STRING)</i><br><code>specular_pass</code> <i>(IMAGE)</i></td>
+      <td align="left">Master 3-point photographic lighting console with 3D camera-space coordinates, physical modifier selection, Kelvin color temperature, and live dual-sphere VFX preview.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b><code>StudioPhotometricComposite</code></b></td>
+      <td align="left"><code>StudioLight/Photometric</code></td>
+      <td align="left"><b>Required:</b> <code>image</code> <i>(IMAGE)</i>, <code>lighting_map</code> <i>(IMAGE)</i>, <code>lighting_strength</code>, <code>ambient_floor</code>, <code>specular_kick</code>, <code>chroma_bleed</code>, <code>filmic_white_point</code><br><b>Optional:</b> <code>specular_map</code> <i>(IMAGE, from Rig specular_pass)</i></td>
+      <td align="left"><code>lit_image</code> <i>(IMAGE)</i></td>
+      <td align="left">Linear Rec.709 photometric shading engine with rational shoulder tonemapping, lobe-accurate specular integration, and chromatic midtone bleed.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b><code>SIShadowHighlight</code></b></td>
+      <td align="left"><code>StudioLight/Photometric</code></td>
+      <td align="left"><b>Required:</b> <code>image</code> <i>(IMAGE)</i>, <code>shadow_amount</code>, <code>highlight_amount</code>, <code>shadow_tonal_width</code>, <code>highlight_tonal_width</code>, <code>midtone_contrast</code></td>
+      <td align="left"><code>IMAGE</code> <i>(IMAGE)</i></td>
+      <td align="left">Latent preparation darkroom with bilateral Hermite tonal isolation (isolated shadows and highlights, zero midtone bleed) and bounded sigmoidal midtone contrast.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b><code>StudioPromptSanitizer</code></b></td>
+      <td align="left"><code>StudioLight/Utility</code></td>
+      <td align="left"><b>Required:</b> <code>master_prompt</code> <i>(STRING)</i><br><b>Optional:</b> <code>albedo_suffix</code> <i>(STRING)</i></td>
+      <td align="left"><code>pass1_albedo_prompt</code> <i>(STRING)</i><br><code>pass2_lit_prompt</code> <i>(STRING)</i></td>
+      <td align="left">Albedo decoupling utility that strips specular and lighting keywords from Pass 1 draft latents while passing the complete prompt to Pass 2.</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
@@ -276,13 +480,64 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
 
 ## Production Recipes by Scenario
 
-| Setup / Scenario | `specular_kick` | `chroma_bleed` | `filmic_white_point` | Pass 2 Denoise | Recommended Key Modifier |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **High-Fashion Beauty (Skin & Soft Fill)** | `0.40 – 0.50` | `0.40 – 0.45` | `3.5` | `0.50 – 0.55` | `Beauty Dish (Silver)` or `Octabox` |
-| **Commercial Catalog (Mixed Fabrics & Leather)** | `0.40 – 0.50` | `0.35` | `3.5` | `0.55 – 0.60` | `Beauty Dish` or `Stripbox` |
-| **Dark Tailored Apparel (Matte Wool / Velvet)** | `0.00 – 0.20` | `0.00` | `2.5` | `0.55 – 0.60` | `Octabox (Soft)` |
-| **Cinematic Film Noir (High Chiaroscuro)** | `0.50 – 0.60` | `0.50` | `2.0 – 2.5` | `0.60 – 0.65` | `Fresnel Spotlight` or `Hard Snoot` |
-| **Isolated Metallic / Chrome Props (Macro)** | `1.00 – 1.50` | `0.10` | `5.0 – 6.0` | `0.60 – 0.65` | `Direct Flash` or `Hard Snoot` |
+<table>
+  <thead>
+    <tr>
+      <th align="left">Setup / Scenario</th>
+      <th align="center"><code>specular_kick</code></th>
+      <th align="center"><code>chroma_bleed</code></th>
+      <th align="center"><code>filmic_white_point</code></th>
+      <th align="center">Pass 2 Denoise</th>
+      <th align="left">Recommended Key Modifier</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><b>High-Fashion Beauty (Skin &amp; Soft Fill)</b></td>
+      <td align="center">0.40 – 0.50</td>
+      <td align="center">0.40 – 0.45</td>
+      <td align="center">3.5</td>
+      <td align="center">0.50 – 0.55</td>
+      <td align="left">Beauty Dish (Silver) or Octabox</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Commercial Catalog (Mixed Fabrics &amp; Leather)</b></td>
+      <td align="center">0.40 – 0.50</td>
+      <td align="center">0.35</td>
+      <td align="center">3.5</td>
+      <td align="center">0.55 – 0.60</td>
+      <td align="left">Beauty Dish or Stripbox</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Dark Tailored Apparel (Matte Wool / Velvet)</b></td>
+      <td align="center">0.00 – 0.20</td>
+      <td align="center">0.00</td>
+      <td align="center">2.5</td>
+      <td align="center">0.55 – 0.60</td>
+      <td align="left">Octabox (Soft)</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Cinematic Film Noir (High Chiaroscuro)</b></td>
+      <td align="center">0.50 – 0.60</td>
+      <td align="center">0.50</td>
+      <td align="center">2.0 – 2.5</td>
+      <td align="center">0.60 – 0.65</td>
+      <td align="left">Fresnel Spotlight or Hard Snoot</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Isolated Metallic / Chrome Props (Macro)</b></td>
+      <td align="center">1.00 – 1.50</td>
+      <td align="center">0.10</td>
+      <td align="center">5.0 – 6.0</td>
+      <td align="center">0.60 – 0.65</td>
+      <td align="left">Direct Flash or Hard Snoot</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
@@ -333,12 +588,35 @@ python test_studiolight.py
 
 ## Technical Documentation Index
 
-| Document | Purpose |
-| :--- | :--- |
-| [`ARCHITECTURE_3D_CAMERA_SPACE_SHADOWS.md`](docs/ARCHITECTURE_3D_CAMERA_SPACE_SHADOWS.md) | Canonical raymarching formulation, P0 occlusion gate, IGN dither derivation, stress benchmarks |
-| [`ARCHITECTURE_PHYSICAL_AREA_EMITTERS.md`](docs/ARCHITECTURE_PHYSICAL_AREA_EMITTERS.md) | Geometric area apertures, 2D Hammersley sampling, radiometric normalization |
-| [`ENGINE_WALKTHROUGH_AREA_EMITTERS.md`](docs/ENGINE_WALKTHROUGH_AREA_EMITTERS.md) | Vectorized PyTorch shader implementation, memory chunking, profiling |
-| [`DISCOVERY_3D_CAMERA_SPACE_SHADOW_RAYMARCHING.md`](docs/DISCOVERY_3D_CAMERA_SPACE_SHADOW_RAYMARCHING.md) | Empirical discovery notes: 2D screen-space limits vs 3D camera-space |
+<table>
+  <thead>
+    <tr>
+      <th width="48%" align="left">Document</th>
+      <th width="52%" align="left">Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><a href="docs/ARCHITECTURE_3D_CAMERA_SPACE_SHADOWS.md"><code>ARCHITECTURE_3D_CAMERA_SPACE_SHADOWS.md</code></a></td>
+      <td align="left">Canonical raymarching formulation, P0 occlusion gate, IGN dither derivation, stress benchmarks</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><a href="docs/ARCHITECTURE_PHYSICAL_AREA_EMITTERS.md"><code>ARCHITECTURE_PHYSICAL_AREA_EMITTERS.md</code></a></td>
+      <td align="left">Geometric area apertures, 2D Hammersley sampling, radiometric normalization</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><a href="docs/ENGINE_WALKTHROUGH_AREA_EMITTERS.md"><code>ENGINE_WALKTHROUGH_AREA_EMITTERS.md</code></a></td>
+      <td align="left">Vectorized PyTorch shader implementation, memory chunking, profiling</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><a href="docs/DISCOVERY_3D_CAMERA_SPACE_SHADOW_RAYMARCHING.md"><code>DISCOVERY_3D_CAMERA_SPACE_SHADOW_RAYMARCHING.md</code></a></td>
+      <td align="left">Empirical discovery notes: 2D screen-space limits vs 3D camera-space</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
