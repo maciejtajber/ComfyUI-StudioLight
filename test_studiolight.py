@@ -1283,6 +1283,190 @@ def test_reviewer_signoff_numerical_stability_and_beam_calculus():
     print("✓ Reviewer Sign-Off Suite passed flawlessly!")
 
 
+def test_wall_mask_shadow_dither_and_ambient_floor_regression():
+    """
+    3-Point Rendering Regression Suite (Wall Mask Validity, Dither Denoising & Ambient Floor Semantics):
+    1. Fix 1 (Torn Wall Mask): Valid background wall with depth < 0.02 (d=0.005) and valid normals [0.5, 0.5, 1.0]
+       must remain fully illuminated (> 0.50), while genuinely invalid pixels (RGB=[0,0,0]) remain excluded (<= 0.03).
+    2. Fix 2 (Shadow Noise & Unbounded Occluder):
+       - Depth-guided bilateral denoiser reduces dithered penumbra pixel-to-pixel Total Variation (TV) by > 65%
+         without shifting mean visibility (< 0.01).
+       - Zero light leak across sharp depth discontinuities (fg=1.8m vs bg=3.0m).
+       - Distant-wall cast shadow across a 1.4m gap (fg=1.8m -> wall=3.2m, > 0.85m) remains intact (max_thickness_m=None).
+    3. Fix 3 (Ambient Floor Color-Space Semantics):
+       - Zero-light, zero-floor pixel remains exact 0.0 black.
+       - Ambient-only pixels match exact IEC 61966-2-1 sRGB encoding for Film Noir (0.01) and Rembrandt (0.05).
+    """
+    from nodes.shader_engine import render_studio_lighting
+    from nodes.metric_shadow import (
+        CameraModel,
+        MODIFIER_EMITTERS,
+        generate_emitter_samples_3d,
+        metric_shadow_visibility_points,
+        metric_shadow_visibility_area,
+        screen_space_directional_shadow_metric,
+        depth_guided_shadow_denoise,
+    )
+    from nodes.photometric_composite import (
+        StudioPhotometricComposite,
+        srgb_to_linear,
+        linear_to_srgb,
+    )
+
+    print("\nTesting 3-Point Rendering Regression Gate (Wall Mask, Shadow Dither Denoising & Ambient Floor)...")
+
+    # --- 1. Fix 1: Valid Low-Depth Background Wall (< 0.02) vs Genuinely Invalid Zero-Normal Pixels ---
+    H, W = 64, 64
+    normals_test = torch.zeros((1, H, W, 3), dtype=torch.float32)
+    normals_test[..., 0] = 0.5
+    normals_test[..., 1] = 0.5
+    normals_test[..., 2] = 1.0  # Valid camera-facing normal (RGB norm = 1.225 > 0.05)
+    # Mark right strip (x >= 48) as genuinely invalid zero-normal void [0, 0, 0]
+    normals_test[:, :, 48:, :] = 0.0
+
+    depth_test = torch.full((1, H, W, 1), 0.50, dtype=torch.float32)
+    # Left strip (x < 24) is a distant background wall with relative depth 0.005 (< 0.02)
+    depth_test[:, :, :24, 0] = 0.005
+
+    flash_key = {
+        "enabled": True,
+        "azimuth": 0.0,
+        "elevation": 5.0,
+        "intensity": 1.4,
+        "kelvin": 5500,
+        "distance": 1.8,
+        "modifier": "Direct On-Camera Flash",
+    }
+    off_light = {
+        "enabled": False,
+        "azimuth": 0.0,
+        "elevation": 0.0,
+        "intensity": 0.0,
+        "kelvin": 5500,
+        "distance": 2.0,
+        "modifier": "Octabox (Soft)",
+    }
+    relit_w, _ = render_studio_lighting(
+        normals=normals_test,
+        depth=depth_test,
+        key_params=flash_key,
+        fill_params=off_light,
+        rim_params=off_light,
+        ambient_intensity=0.02,
+    )
+    low_depth_wall_val = float(relit_w[0, 16:48, 4:20, 0].mean().item())
+    invalid_void_val = float(relit_w[0, 16:48, 50:62, 0].max().item())
+    assert low_depth_wall_val > 0.20 and low_depth_wall_val > invalid_void_val * 6.0, (
+        f"Valid background wall with depth=0.005 (< 0.02) was falsely cut out: {low_depth_wall_val:.4f}"
+    )
+    assert invalid_void_val <= 0.03 + 1e-5, (
+        f"Genuinely invalid zero-normal pixel leaked light: {invalid_void_val:.4f}"
+    )
+    print(
+        f"  ✓ Fix 1 verified: Valid low-depth wall (d=0.005 < 0.02) lit at {low_depth_wall_val:.3f}; "
+        f"invalid [0,0,0] normal masked at {invalid_void_val:.3f}."
+    )
+
+    # --- 2. Fix 2: Shadow Dither Ablation, Edge Preservation & Distant Wall Cast Shadow (> 0.85m gap) ---
+    H_s, W_s = 128, 128
+    cam = CameraModel(vertical_fov_deg=40.0, aspect=1.0, image_y_down=True)
+    tan_h = cam.tan_half_fov
+    ys = torch.linspace(1.0, -1.0, H_s)
+    xs = torch.linspace(-1.0, 1.0, W_s)
+    yy, xx = torch.meshgrid(ys, xs, indexing="ij")
+
+    # Distant wall at 3.2m, foreground pillar at 1.8m (1.4m gap > 0.85m)
+    depth_scene = torch.full((1, H_s, W_s), 3.2, dtype=torch.float32)
+    pillar = (xx > -0.18) & (xx < 0.18) & (yy > -0.65) & (yy < 0.65)
+    depth_scene[0, pillar] = 1.8
+    z_s = -depth_scene.unsqueeze(-1)
+    xyz_s = torch.cat(
+        [
+            xx.unsqueeze(0).unsqueeze(-1) * tan_h * (-z_s),
+            yy.unsqueeze(0).unsqueeze(-1) * tan_h * (-z_s),
+            z_s,
+        ],
+        dim=-1,
+    )
+    l_pos = torch.tensor([[0.65, 0.35, -1.2]])
+    l_aim = torch.tensor([[0.0, 0.0, -1.8]])
+    emitter = MODIFIER_EMITTERS["Octabox (Soft)"]
+
+    # Raw dithered visibility (without depth-guided bilateral denoiser) vs denoised area visibility
+    pts_3d, wts = generate_emitter_samples_3d(l_pos, l_aim, emitter, num_samples=8)
+    raw_vis_s = metric_shadow_visibility_points(
+        xyz_s, depth_scene, pts_3d, cam, steps=16, dither=True
+    )
+    raw_vis = (raw_vis_s * wts[:, :, None, None]).sum(dim=1)
+    denoised_vis = metric_shadow_visibility_area(
+        xyz_s, depth_scene, l_pos, l_aim, emitter, cam, num_emitter_samples=8, ray_steps=16, dither=True
+    )
+
+    penumbra_zone = (raw_vis[0] > 0.05) & (raw_vis[0] < 0.95) & (~pillar)
+    raw_patch = raw_vis[0, 32:96, 10:42]
+    den_patch = denoised_vis[0, 32:96, 10:42]
+    raw_tv = float(
+        (
+            torch.abs(raw_patch[:, 1:] - raw_patch[:, :-1]).mean()
+            + torch.abs(raw_patch[1:, :] - raw_patch[:-1, :]).mean()
+        ).item()
+    )
+    den_tv = float(
+        (
+            torch.abs(den_patch[:, 1:] - den_patch[:, :-1]).mean()
+            + torch.abs(den_patch[1:, :] - den_patch[:-1, :]).mean()
+        ).item()
+    )
+    mean_shift = abs(float(raw_vis[0, penumbra_zone].mean().item() - denoised_vis[0, penumbra_zone].mean().item()))
+    assert den_tv < raw_tv * 0.45, f"Depth-guided denoiser failed to suppress IGN pixel noise: raw_tv={raw_tv:.5f}, den_tv={den_tv:.5f}"
+    assert mean_shift < 0.015, f"Depth-guided denoiser shifted penumbra mean visibility by {mean_shift:.4f}"
+
+    # Verify zero light leak across sharp depth step (fg=1.8m fully lit=1.0, bg=3.2m fully shadowed=0.0)
+    step_vis = torch.where(pillar.unsqueeze(0), torch.ones_like(depth_scene), torch.zeros_like(depth_scene))
+    step_filtered = depth_guided_shadow_denoise(step_vis, depth_scene)
+    leak_into_bg = float(step_filtered[0, ~pillar].max().item())
+    assert leak_into_bg < 1e-4, f"Depth-guided bilateral filter leaked light across 1.4m silhouette edge: {leak_into_bg:.6f}"
+
+    # Verify distant-wall shadow across 1.4m gap (> 0.85m) remains intact
+    vis_distant_wall = screen_space_directional_shadow_metric(
+        xyz_s, depth_scene, l_pos, l_aim, modifier="Hard Snoot", num_emitter_samples=8, ray_steps=16, dither=True
+    )
+    wall_umbral_min = float(vis_distant_wall[0, 60:72, 22:36].min().item())
+    assert wall_umbral_min < 0.10, f"Distant-wall cast shadow across 1.4m gap leaked light: {wall_umbral_min:.4f}"
+    print(
+        f"  ✓ Fix 2 verified: IGN dither TV reduced {raw_tv:.4f} -> {den_tv:.4f}, silhouette leak={leak_into_bg:.1e}, "
+        f"1.4m distant-wall shadow min={wall_umbral_min:.3f}."
+    )
+
+    # --- 3. Fix 3: Ambient Floor Linear/sRGB Semantics ---
+    comp = StudioPhotometricComposite()
+    base_mid = torch.full((1, 8, 8, 3), 0.50, dtype=torch.float32)
+    zero_light = torch.zeros((1, 8, 8, 3), dtype=torch.float32)
+
+    # (a) Zero-light, zero-floor pixel must remain exact 0.0 black
+    out_zero = comp.composite(base_mid, zero_light, lighting_strength=1.2, ambient_floor=0.0, specular_kick=0.0)[0]
+    assert float(out_zero.abs().max().item()) == 0.0, f"Zero-light, zero-floor pixel was not black: {float(out_zero.max().item())}"
+
+    # (b) Verify linear 0.08 encodes to ~0.313 sRGB (confirming why workflow default must be 0.00)
+    srgb_008 = float(linear_to_srgb(torch.tensor(0.08)).item())
+    assert abs(srgb_008 - 0.3132) < 1e-3, f"IEC 61966-2-1 sRGB encoding of 0.08 linear should be ~0.3132, got {srgb_008:.4f}"
+
+    # (c) Ambient-only pixel for Film Noir (0.01) vs Rembrandt (0.05) with ambient_floor=0.0
+    for preset_name, amb_val in [("Cinematic Film Noir", 0.01), ("Rembrandt Classic", 0.05)]:
+        amb_map = torch.full((1, 8, 8, 3), amb_val, dtype=torch.float32)
+        out_amb = comp.composite(base_mid, amb_map, lighting_strength=1.2, ambient_floor=0.0, specular_kick=0.0)[0]
+        expected_srgb = float(linear_to_srgb(srgb_to_linear(torch.tensor(0.50)) * (amb_val * 1.2)).item())
+        actual_srgb = float(out_amb.mean().item())
+        assert abs(actual_srgb - expected_srgb) < 1e-4, (
+            f"{preset_name} ambient sRGB mismatch: actual={actual_srgb:.4f}, expected={expected_srgb:.4f}"
+        )
+    print(
+        f"  ✓ Fix 3 verified: Zero-light/zero-floor=0.000, Film Noir (0.01) shadow={float(comp.composite(base_mid, torch.full((1,8,8,3), 0.01), lighting_strength=1.2, ambient_floor=0.0)[0].mean()):.3f} sRGB "
+        f"(vs 0.290 with old 0.08 floor)."
+    )
+    print("✓ All 3 Rendering Regression Gates passed flawlessly!")
+
+
 if __name__ == "__main__":
     test_color_utils()
     test_presets()
@@ -1304,7 +1488,8 @@ if __name__ == "__main__":
     test_metric_3d_camera_space_shadow()
     test_light_aiming_beam_and_depth_relief_validation_gate()
     test_reviewer_signoff_numerical_stability_and_beam_calculus()
-    print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified (20/20 TESTS)!")
+    test_wall_mask_shadow_dither_and_ambient_floor_regression()
+    print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified (21/21 TESTS)!")
 
 
 

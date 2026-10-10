@@ -456,6 +456,53 @@ def metric_shadow_visibility_point(
     )[:, 0]
 
 
+def depth_guided_shadow_denoise(
+    vis_bhw: torch.Tensor,
+    scene_depth_bhw: torch.Tensor,
+    sigma_spatial: float = 1.5,
+    sigma_depth_m: float = 0.035,
+) -> torch.Tensor:
+    """Edge-preserving 2-pass separable 5x5 depth-guided bilateral filter for dithered shadow visibility.
+
+    Suppresses per-pixel Interleaved Gradient Noise (IGN step_dither) within continuous surfaces
+    while strictly preserving sharp occlusion silhouettes across depth discontinuities (|Δd| > sigma_depth_m).
+    """
+    inv_2sd2 = 1.0 / (2.0 * max(float(sigma_depth_m), 1e-4) ** 2)
+    offsets = (-2, -1, 0, 1, 2)
+    sp_weights = tuple(
+        math.exp(-(o * o) / (2.0 * max(float(sigma_spatial), 1e-4) ** 2))
+        for o in offsets
+    )
+
+    _, h_dim, w_dim = vis_bhw.shape
+
+    # Pass 1: Horizontal 1x5 depth-guided bilateral pass
+    v_pad_h = F.pad(vis_bhw, (2, 2, 0, 0), mode="replicate")
+    d_pad_h = F.pad(scene_depth_bhw, (2, 2, 0, 0), mode="replicate")
+    num_h = torch.zeros_like(vis_bhw)
+    den_h = torch.zeros_like(vis_bhw)
+    for o, ws in zip(offsets, sp_weights):
+        v_s = v_pad_h[:, :, 2 + o : 2 + o + w_dim]
+        d_s = d_pad_h[:, :, 2 + o : 2 + o + w_dim]
+        w = ws * torch.exp(-((d_s - scene_depth_bhw) ** 2) * inv_2sd2)
+        num_h = num_h + v_s * w
+        den_h = den_h + w
+    vis_h = num_h / torch.clamp(den_h, min=_EPS)
+
+    # Pass 2: Vertical 5x1 depth-guided bilateral pass
+    v_pad_v = F.pad(vis_h, (0, 0, 2, 2), mode="replicate")
+    d_pad_v = F.pad(scene_depth_bhw, (0, 0, 2, 2), mode="replicate")
+    num_v = torch.zeros_like(vis_bhw)
+    den_v = torch.zeros_like(vis_bhw)
+    for o, ws in zip(offsets, sp_weights):
+        v_s = v_pad_v[:, 2 + o : 2 + o + h_dim, :]
+        d_s = d_pad_v[:, 2 + o : 2 + o + h_dim, :]
+        w = ws * torch.exp(-((d_s - scene_depth_bhw) ** 2) * inv_2sd2)
+        num_v = num_v + v_s * w
+        den_v = den_v + w
+    return torch.clamp(num_v / torch.clamp(den_v, min=_EPS), 0.0, 1.0)
+
+
 def metric_shadow_visibility_area(
     surface_xyz: torch.Tensor,
     scene_depth: torch.Tensor,
@@ -476,7 +523,9 @@ def metric_shadow_visibility_area(
 ) -> torch.Tensor:
     """Area-emitter soft shadow visibility via multi-sample aperture integration.
 
-    Penumbra forms naturally from geometric integration of S ray paths without PCSS post-blur.
+    Penumbra forms naturally from geometric integration of S ray paths. When `dither=True`,
+    a lightweight edge-preserving depth-guided bilateral pass removes per-pixel IGN step noise
+    without blurring across occlusion boundaries.
     """
     surface_xyz = _ensure_bhw3(surface_xyz, "surface_xyz")
     scene_depth = _ensure_bhw(scene_depth, "scene_depth")
@@ -512,7 +561,10 @@ def metric_shadow_visibility_area(
         chunk_vis = chunk_vis * chunk_weights[:, :, None, None]
         visibility = visibility + chunk_vis.sum(dim=1)
 
-    return torch.clamp(visibility, 0.0, 1.0)
+    visibility = torch.clamp(visibility, 0.0, 1.0)
+    if dither:
+        visibility = depth_guided_shadow_denoise(visibility, scene_depth)
+    return visibility
 
 
 def screen_space_directional_shadow_metric(

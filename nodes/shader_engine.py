@@ -1064,21 +1064,23 @@ def render_studio_lighting(
         norm_len = torch.norm(norm_unpacked, dim=-1, keepdim=True) + 1e-7
         norm_unit = norm_unpacked / norm_len
 
-        # Precise solid alpha mask (eliminates holes 100%)
+        # Separate surface validity from relative depth magnitude:
+        # In real scenes (e.g. DepthAnythingV2 normalized to [0, 1]), depth values < 0.02 belong to
+        # the farthest background wall, not empty void. Pixels are excluded only when an explicit
+        # alpha mask is present, when using a built-in mannequin backdrop, or when the normal map
+        # encodes genuinely invalid zero-length pixels (RGB norm <= 0.05).
         if asset_mask is not None:
             subject_mask = asset_mask
-        elif depth is not None:
-            d_mask = depth.to(device=norm_unit.device, dtype=norm_unit.dtype)
-            if d_mask.shape[-1] != 1 and len(d_mask.shape) == 4:
-                d_mask = d_mask[..., 0:1]
-            subject_mask = (d_mask > 0.02).float()
         elif is_built_in_mannequin:
             corner_val = norm_unit[:, :6, :6, :].mean(dim=(1, 2), keepdim=True)
             diff_from_corner = torch.norm(norm_unit - corner_val, dim=-1, keepdim=True)
             subject_mask = (diff_from_corner > 0.04).float()
         else:
-            # User-supplied normal map: do not assume corners are background
-            subject_mask = torch.ones_like(norm_unit[..., :1])
+            raw_rgb_norm = torch.norm(n, dim=-1, keepdim=True)
+            if bool((raw_rgb_norm > 0.05).any()):
+                subject_mask = (raw_rgb_norm > 0.05).float()
+            else:
+                subject_mask = torch.ones_like(norm_unit[..., :1])
 
         total_diffuse = torch.zeros_like(norm_unit)
         total_specular = torch.zeros_like(norm_unit)

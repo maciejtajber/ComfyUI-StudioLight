@@ -84,6 +84,7 @@ class StudioPhotometricComposite:
                     "min": 0.0,
                     "max": 0.50,
                     "step": 0.01,
+                    "tooltip": "Scene-referred Linear Rec.709 floor (default 0.00 so StudioLightRig.ambient_intensity controls true shadow density without double-flooring; note 0.08 linear encodes to ~0.313 sRGB).",
                 }),
                 "specular_kick": ("FLOAT", {
                     "default": 0.0,
@@ -147,11 +148,13 @@ class StudioPhotometricComposite:
         else:
             light_resized = light
 
-        # 2. Linearize Base plate; Lighting map is already pure linear physical radiance from StudioLightRig
+        # 2. Linearize Base plate (IEC 61966-2-1 sRGB -> Linear Rec.709);
+        #    lighting_map is already scene-referred linear radiance from StudioLightRig (including ambient_intensity).
         base_linear = srgb_to_linear(img)
         light_linear = light_resized * float(lighting_strength)
 
-        # 3. Dynamic Ambient Modulation (Zero double-flooring: physical ambient already exists in lighting_map)
+        # 3. Dynamic Linear Ambient Modulation (default ambient_floor = 0.00 prevents double-flooring
+        #    StudioLightRig's ambient_intensity; in Linear Rec.709, e.g. 0.08 lifts black to ~0.313 sRGB).
         amb = max(float(ambient_floor), 0.0)
         if amb > 0.0:
             effective_gain = amb + (1.0 - amb) * light_linear
