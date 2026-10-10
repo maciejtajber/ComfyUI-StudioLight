@@ -16,11 +16,11 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 <sub>
 <a href="#interactive-camera-space-lighting-in-action">DEMO</a> &nbsp;·&nbsp;
 <a href="#same-subject-same-prompt-different-light">SHOWCASE</a> &nbsp;·&nbsp;
-<a href="#from-camera-space-lighting-pass-to-final-flux-render">THE PROOF</a> &nbsp;·&nbsp;
 <a href="#what-makes-studiolight-different">DIFFERENTIATION</a> &nbsp;·&nbsp;
 <a href="#installation">INSTALL</a> &nbsp;·&nbsp;
 <a href="#core-production-suite--node-schemas">NODE SCHEMAS</a> &nbsp;·&nbsp;
 <a href="#how-it-works">PIPELINE</a> &nbsp;·&nbsp;
+<a href="#from-camera-space-lighting-pass-to-final-flux-render">THE PROOF</a> &nbsp;·&nbsp;
 <a href="#3d-camera-space-shadow-raymarching">3D SHADOWS</a> &nbsp;·&nbsp;
 <a href="#optical-modifiers--sampled-area-emitters">AREA EMITTERS</a> &nbsp;·&nbsp;
 <a href="#known-limitations--engineering-scope">LIMITATIONS</a> &nbsp;·&nbsp;
@@ -82,42 +82,6 @@ Real-time Stand Distance ($r$), Azimuth ($\theta$), Elevation ($\phi$), and Kelv
         <b>Diffused Octabox (140cm)</b><br>
         Key: +30° Azimuth / +25° Elevation<br>
         Soft continuous penumbra, coat wrap
-      </td>
-    </tr>
-  </tbody>
-</table>
-
----
-
-## From Camera-Space Lighting Pass to Final FLUX Render
-
-> **Identical Camera Intrinsics ($40^\circ$ Portrait FOV) & Studio Rig Coordinates.**  
-> Left: Deferred lighting pass preview (computed in float32 PyTorch raymarcher). Right: Final FLUX.1 Krea Dev latent synthesis.
-
-<table>
-  <thead>
-    <tr>
-      <th width="50%" align="center">1. Deferred 3D Shading Pass (PyTorch Raymarcher)</th>
-      <th width="50%" align="center">2. Final FLUX Synthesis (Generative Diffusion Interpretation)</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center"><img src="assets/hero_split_deferred.png" width="100%" alt="Deferred 3D Shading Pass" /></td>
-      <td align="center"><img src="assets/hero_split_flux.jpg" width="100%" alt="Final FLUX Latent Synthesis" /></td>
-    </tr>
-    <tr>
-      <td align="left">
-        <b>Deterministic Physical Lighting Guidance:</b><br>
-        • Canonical 3D camera-space raymarching through estimated depth field<br>
-        • Optical contact-hardening under knuckles and coat collar<br>
-        • Diverging physical penumbra cast across 2m background chasm
-      </td>
-      <td align="left">
-        <b>Generative Material Synthesis:</b><br>
-        • High-contrast dielectric specular catchlights on patent leather<br>
-        • Preserves dark black wool texture without crushed blacks or self-shadow acne<br>
-        • Fluted neoclassical stone grain and ambient occlusion interpretation
       </td>
     </tr>
   </tbody>
@@ -213,6 +177,42 @@ StudioLight splits generation into a **two-stage geometry and relighting pipelin
 2. **Camera-Space 3D Projection:** Extracts surface normals (DSINE) and estimated depth (Depth Anything V2), back-projecting the 2D draft into virtual camera-space ($40^\circ$ portrait FOV calibrated to studio scale).
 3. **Photometric Deferred Shading:** Computes diffuse irradiance, Blinn-Phong specular lobes, and 3D camera-space shadow raymarching from virtual C-stands.
 4. **Stochastic Polish (Pass 2):** Composites the lit plate in linear Rec.709 space, preps tones in the `SIShadowHighlight` darkroom, and feeds it to Pass 2 (denoise `0.50 – 0.65` in Method A two-stage img2img, or midstream trajectory continuation in Method B) to synthesize subsurface skin scattering and photorealistic catchlights.
+
+---
+
+## From Camera-Space Lighting Pass to Final FLUX Render
+
+> **Identical Camera Intrinsics ($40^\circ$ Portrait FOV) & Studio Rig Coordinates.**  
+> Left: Deferred lighting pass preview (computed in float32 PyTorch raymarcher). Right: Final FLUX.1 Krea Dev latent synthesis.
+
+<table>
+  <thead>
+    <tr>
+      <th width="50%" align="center">1. Deferred 3D Shading Pass (PyTorch Raymarcher)</th>
+      <th width="50%" align="center">2. Final FLUX Synthesis (Generative Diffusion Interpretation)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center"><img src="assets/hero_split_deferred.png" width="100%" alt="Deferred 3D Shading Pass" /></td>
+      <td align="center"><img src="assets/hero_split_flux.jpg" width="100%" alt="Final FLUX Latent Synthesis" /></td>
+    </tr>
+    <tr>
+      <td align="left">
+        <b>Deterministic Physical Lighting Guidance:</b><br>
+        • Canonical 3D camera-space raymarching through estimated depth field<br>
+        • Optical contact-hardening under knuckles and coat collar<br>
+        • Diverging physical penumbra cast across 2m background chasm
+      </td>
+      <td align="left">
+        <b>Generative Material Synthesis:</b><br>
+        • High-contrast dielectric specular catchlights on patent leather<br>
+        • Preserves dark black wool texture without crushed blacks or self-shadow acne<br>
+        • Fluted neoclassical stone grain and ambient occlusion interpretation
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
