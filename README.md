@@ -526,4 +526,3 @@ python test_studiolight.py
 ## License & Credits
 
 * **Code & Shaders:** MIT License. Created by [Maciej Tajber](https://github.com/maciejtajber) // **METAMATERIAL** Applied VFX Systems.
-* **Assets:** Mannequin 3D GLB assets in `assets/` (`mannequin_female.glb`, `mannequin_male.glb`) are dedicated to the public domain under Creative Commons Zero (CC0).
