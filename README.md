@@ -352,17 +352,17 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
 <table>
   <thead>
     <tr>
-      <th align="left">Modifier</th>
-      <th align="center">Aperture&nbsp;Dimensions</th>
-      <th align="center">Beam&nbsp;Angle</th>
-      <th align="left">Optical Approximation</th>
-      <th align="left">Catchlight Profile</th>
+      <th width="18%" align="left">Modifier</th>
+      <th width="20%" align="center">Aperture<br>Dimensions</th>
+      <th width="14%" align="center">Beam&nbsp;Angle<br>(&theta;<sub>beam</sub>)</th>
+      <th width="26%" align="left">Optical Approximation</th>
+      <th width="22%" align="left">Catchlight Profile</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td align="left"><b>Direct On-Camera Flash</b></td>
-      <td align="center">0.08m × 0.05m</td>
+      <td align="center">0.08m&nbsp;×&nbsp;0.05m</td>
       <td align="center">70°</td>
       <td align="left">Near-point strobe emitter</td>
       <td align="left">Crisp micro-pinpoint</td>
@@ -370,7 +370,7 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
     <tr></tr>
     <tr>
       <td align="left"><b>Hard Snoot</b></td>
-      <td align="center">R = 0.05m (10cm)</td>
+      <td align="center">R&nbsp;=&nbsp;0.05m<br>(10cm)</td>
       <td align="center">18°</td>
       <td align="left">Collimated beam cone</td>
       <td align="left">Tight circular isolation</td>
@@ -378,7 +378,7 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
     <tr></tr>
     <tr>
       <td align="left"><b>Fresnel Spotlight</b></td>
-      <td align="center">R = 0.15m (30cm)</td>
+      <td align="center">R&nbsp;=&nbsp;0.15m<br>(30cm)</td>
       <td align="center">35°</td>
       <td align="left">Optical lens edge cutoff</td>
       <td align="left">Compact stepped lens disc</td>
@@ -386,7 +386,7 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
     <tr></tr>
     <tr>
       <td align="left"><b>Stripbox</b></td>
-      <td align="center">0.30m × 1.20m</td>
+      <td align="center">0.30m&nbsp;×&nbsp;1.20m</td>
       <td align="center">65°</td>
       <td align="left">1:4 Asymmetric rectangular emitter</td>
       <td align="left">Elongated vertical catchlight bar</td>
@@ -394,7 +394,7 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
     <tr></tr>
     <tr>
       <td align="left"><b>Beauty Dish (Silver)</b></td>
-      <td align="center">R = 0.275m (55cm)</td>
+      <td align="center">R&nbsp;=&nbsp;0.275m<br>(55cm)</td>
       <td align="center">85°</td>
       <td align="left">Parabolic dish + center deflector (36% radius ratio, 12% center transmission)</td>
       <td align="left">Sculpted cheekbones, donut catchlight ring</td>
@@ -402,7 +402,7 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
     <tr></tr>
     <tr>
       <td align="left"><b>Octabox (Soft)</b></td>
-      <td align="center">R = 0.70m (140cm)</td>
+      <td align="center">R&nbsp;=&nbsp;0.70m<br>(140cm)</td>
       <td align="center">130°</td>
       <td align="left">Broad Lambertian octagonal emitter</td>
       <td align="left">Large wrap disc, soft continuous penumbra</td>
