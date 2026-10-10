@@ -415,51 +415,34 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
 
 ---
 
-## Core Production Suite & Node Schemas
-
-*Extracted directly from node classes (`nodes/*.py`):*
+## Core Production Suite
 
 <table>
   <thead>
     <tr>
-      <th align="left">Node Name</th>
-      <th align="left">Category</th>
-      <th align="left">Inputs</th>
-      <th align="left">Outputs</th>
-      <th align="left">Core Purpose</th>
+      <th width="28%" align="left">Node</th>
+      <th width="72%" align="left">Role &amp; Engineering Architecture</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td align="left"><b><code>StudioLightRig</code></b></td>
-      <td align="left"><code>StudioLight/Rig</code></td>
-      <td align="left"><b>Required:</b> <code>preset</code>, <code>ambient_intensity</code>, <code>invert_normals_y</code>, Key light controls (<code>enabled</code>, <code>azimuth</code>, <code>elevation</code>, <code>distance</code>, <code>intensity</code>, <code>kelvin</code>, <code>modifier</code>), Fill controls, Rim controls, <code>normal_boost</code>, <code>ao_anchoring</code><br><b>Optional:</b> <code>scene_3d</code>, <code>normals_optional</code>, <code>depth_optional</code>, <code>invert_normals_x</code>, <code>target_engine</code>, <code>invert_depth</code></td>
-      <td align="left"><code>relighting_map</code> <i>(IMAGE)</i><br><code>probe_preview</code> <i>(IMAGE)</i><br><code>lighting_prompt</code> <i>(STRING)</i><br><code>specular_pass</code> <i>(IMAGE)</i></td>
-      <td align="left">Master 3-point photographic lighting console with 3D camera-space coordinates, physical modifier selection, Kelvin color temperature, and live dual-sphere VFX preview.</td>
+      <td align="left"><b><code>StudioLightRig</code></b><br><sub>3-Point Lighting Console</sub></td>
+      <td align="left">Master photographic lighting console with 3D camera-space C-stand coordinates (azimuth, elevation, distance in meters), physical modifier apertures (Octabox, Stripbox, Beauty Dish, Fresnel, Snoot, Flash), blackbody Kelvin temperature (2000K–10000K), and 3D shadow raymarching. Outputs the diffuse relighting map, isolated specular pass, dual-sphere VFX probe preview, and synchronized lighting prompt.</td>
     </tr>
     <tr></tr>
     <tr>
-      <td align="left"><b><code>StudioPhotometricComposite</code></b></td>
-      <td align="left"><code>StudioLight/Photometric</code></td>
-      <td align="left"><b>Required:</b> <code>image</code> <i>(IMAGE)</i>, <code>lighting_map</code> <i>(IMAGE)</i>, <code>lighting_strength</code>, <code>ambient_floor</code>, <code>specular_kick</code>, <code>chroma_bleed</code>, <code>filmic_white_point</code><br><b>Optional:</b> <code>specular_map</code> <i>(IMAGE, from Rig specular_pass)</i></td>
-      <td align="left"><code>lit_image</code> <i>(IMAGE)</i></td>
-      <td align="left">Linear Rec.709 photometric shading engine with rational shoulder tonemapping, lobe-accurate specular integration, and chromatic midtone bleed.</td>
+      <td align="left"><b><code>StudioPhotometricComposite</code></b><br><sub>Linear Rec.709 Compositor</sub></td>
+      <td align="left">Scene-linear photometric shading engine (<code>sRGB → Linear Rec.709 → sRGB</code>). Integrates the diffuse irradiance plate and isolated specular lobe (<code>specular_kick</code>) over the Pass 1 albedo draft, applying chromatic midtone bleed (<code>chroma_bleed</code>) and rational filmic shoulder tonemapping (<code>filmic_white_point</code>) to prevent hard highlight clipping.</td>
     </tr>
     <tr></tr>
     <tr>
-      <td align="left"><b><code>SIShadowHighlight</code></b></td>
-      <td align="left"><code>StudioLight/Photometric</code></td>
-      <td align="left"><b>Required:</b> <code>image</code> <i>(IMAGE)</i>, <code>shadow_amount</code>, <code>highlight_amount</code>, <code>shadow_tonal_width</code>, <code>highlight_tonal_width</code>, <code>midtone_contrast</code></td>
-      <td align="left"><code>IMAGE</code> <i>(IMAGE)</i></td>
-      <td align="left">Latent preparation darkroom with bilateral Hermite tonal isolation (isolated shadows and highlights, zero midtone bleed) and bounded sigmoidal midtone contrast.</td>
+      <td align="left"><b><code>SIShadowHighlight</code></b><br><sub>Latent Preparation Darkroom</sub></td>
+      <td align="left">Pre-diffusion tonal darkroom using bilateral Hermite cubic splines (<code>3t² − 2t³</code>) to independently recover deep shadows and compress specular highlights with zero midtone bleed, paired with bounded sigmoidal midtone contrast before Pass 2 VAE encoding.</td>
     </tr>
     <tr></tr>
     <tr>
-      <td align="left"><b><code>StudioPromptSanitizer</code></b></td>
-      <td align="left"><code>StudioLight/Utility</code></td>
-      <td align="left"><b>Required:</b> <code>master_prompt</code> <i>(STRING)</i><br><b>Optional:</b> <code>albedo_suffix</code> <i>(STRING)</i></td>
-      <td align="left"><code>pass1_albedo_prompt</code> <i>(STRING)</i><br><code>pass2_lit_prompt</code> <i>(STRING)</i></td>
-      <td align="left">Albedo decoupling utility that strips specular and lighting keywords from Pass 1 draft latents while passing the complete prompt to Pass 2.</td>
+      <td align="left"><b><code>StudioPromptSanitizer</code></b><br><sub>Pass 1 Albedo Decoupler</sub></td>
+      <td align="left">Prompt-splitting utility that automatically strips directional lighting, rim-light, and high-gloss specular tokens from the Pass 1 draft prompt (appending a flat shadowless albedo carrier suffix) while routing the full unedited master prompt to Pass 2.</td>
     </tr>
   </tbody>
 </table>
