@@ -378,15 +378,19 @@ def evaluate_beam_profile(cos_e: torch.Tensor, preset: Dict[str, Any]) -> torch.
     """
     Evaluates a smooth, calibrated studio photometric beam profile from emitter off-axis cosine `cos_e`.
 
-    Beam-Angle Convention:
-    ----------------------
-    - `beam_angle_deg` (theta_beam) defines the Full-Width at Half-Maximum (FWHM / 50% intensity cone).
-      At off-axis half-angle `theta_half = theta_beam / 2`, the profile evaluates to `0.50` (not a hard 0 cutoff).
-    - Beyond `theta_half`, intensity decays smoothly via a cosine-power lobe `cos_e ** p_beam` where
-      `p_beam = ln(0.5) / ln(cos(theta_half))`, paired with a C^1 Hermite field-angle skirt (`edge_softness`)
-      that tapers smoothly to zero before the 90° fixture horizon.
-    - Note: This is a smooth, calibrated photometric beam profile designed for stable relighting and
-      modifier differentiation, not a wave-optics Fresnel-lens simulation.
+    Parameter-Semantics & Calibration Note:
+    ---------------------------------------
+    - `beam_angle_deg` (theta_beam) defines the Full-Width at Half-Maximum (FWHM / 50% intensity cone):
+      at off-axis half-angle `theta_half = theta_beam / 2`, the profile evaluates to exactly `0.50`
+      (replacing the legacy hard 0.0 step cutoff at `theta_half`).
+    - Because the penumbra skirt extends smoothly beyond `theta_half` out to `theta_field`, the visible
+      illuminated footprint is wider than the legacy hard step cutoff for identical `beam_angle_deg`.
+    - Continuity: Inside `[0, theta_half]`, `skirt == 1.0` and `skirt'(theta_half) == 0.0`; across
+      `[theta_half, theta_field]`, the cubic Hermite polynomial `3*t^2 - 2*t^3` joins with continuous
+      value (C^0) and continuous first derivative (C^1) at both `theta_half` and `theta_field`, reaching
+      exact `0.0` for `theta >= theta_field`.
+    - Note: This is a smooth, calibrated photometric beam profile for virtual studio relighting and
+      modifier differentiation, not a physical wave-optics Fresnel-lens simulation.
     """
     beam_angle = float(preset.get("beam_angle_deg", 90.0))
     edge_softness = float(preset.get("edge_softness", 0.15))
@@ -414,17 +418,22 @@ def reconstruct_metric_surface(
     depth_relief_scale: float = 0.30,
 ) -> Tuple[torch.Tensor, torch.Tensor, float]:
     """
-    Reconstructs metric camera-space 3D surface positions `p_surf = (X, Y, Z)` from a relative depth map.
+    Reconstructs calibrated camera-space 3D surface positions `p_surf = (X, Y, Z)` from a relative depth map.
 
-    Guarantees:
-    -----------
-    1. Strict Monotonicity (`dZ / dd_norm > 0` everywhere): Relative depth ordering is 100% preserved.
-    2. Adaptive Subject Anchoring: Identifies the foreground subject median `d_subj` and background split
-       `d_split` from the central framing region without brittle fixed thresholds.
-    3. Configurable Subject Relief with Smooth Background Blend: Closed-form C^inf softplus antiderivative
-       compresses foreground subject relief by `depth_relief_scale` around `Z = -2.0m` (preventing 1.4m
-       monocular torso stretch and collar-to-face false occlusion) while smoothly restoring full `3.0m`
-       depth slope for distant background walls (`depth_relief_scale=1.0` reproduces legacy linear ramp).
+    Assumptions & Properties:
+    -------------------------
+    1. Calibrated Virtual Studio Coordinate Frame: Because monocular depth maps (`DepthAnythingV2`, `Marigold`)
+       provide uncalibrated relative depth `d_norm in [0, 1]` rather than physical range data, coordinates
+       expressed in meters represent a calibrated virtual studio reconstruction anchored at `Z_subj = -2.0m`
+       under `vertical_fov_deg`, not guaranteed real-world physical distances.
+    2. Order-Preserving Subject-Relief Compression (`dZ / dd_norm > 0` everywhere): Relative front-to-back
+       depth ordering is strictly preserved across `[0, 1]`, while foreground subject relief is intentionally
+       compressed by `depth_relief_scale` around `Z = -2.0m` (mitigating exaggerated monocular torso-to-face
+       depth stretch and false upward collar shadows) and smoothly blended via a closed-form C^inf softplus
+       antiderivative into the full `3.0m` background depth slope (`depth_relief_scale=1.0` reproduces the
+       uncompressed linear ramp).
+    3. Adaptive Subject Anchoring: Estimates the foreground/background split `d_split` and subject median
+       `d_subj` from the central framing region rather than relying solely on fixed `d_norm` thresholds.
     """
     device = depth.device
     dtype = depth.dtype
@@ -508,12 +517,18 @@ def resolve_aim_target(
     dtype: torch.dtype = torch.float32,
 ) -> torch.Tensor:
     """
-    Resolves the 3D metric aim point `[1, 3]` `(X, Y, Z)` for studio light fixtures.
+    Resolves the 3D calibrated camera-space aim point `[1, 3]` `(X, Y, Z)` for studio light fixtures.
 
-    Filters for valid foreground reconstructed surface points (`d_norm >= d_split`) inside the target
-    search zone so background wall pixels never skew the aim point. In `"Auto (Face / Upper Focus)"`
-    mode, weights upper-region foreground candidates by interior 3D normal curvature (`|grad N| * exp(-40 |grad d|)`)
-    to lock onto facial relief while rejecting flat angled background walls and silhouette edges.
+    Scale-Invariant Auto-Aim & Confidence Fallback:
+    -----------------------------------------------
+    - Evaluates surface normal curvature `|grad_c N|` and depth step edges `|grad_c d|` on a fixed
+      canonical `128x128` grid so gradient magnitudes and exponential edge suppression `exp(-8 * |grad_c d|)`
+      are invariant to image resolution (`256x256` through `4096x4096`) and resilient to pixel-level noise.
+    - Confidence Gate (`p90_score >= 0.015`): Requires genuine 3D surface curvature in the upper portrait
+      region (satisfied by both detailed human faces and smooth curved synthetic/android heads, while
+      rejecting flat architectural walls where `|grad_c N| < 0.005`).
+    - When curvature confidence is low (e.g. a flat upper background wall above a lower tabletop object),
+      automatically falls back to the full-frame foreground Subject Centroid.
     """
     if p_surf is not None:
         device = p_surf.device
@@ -546,6 +561,14 @@ def resolve_aim_target(
         min_px = max(8, int(0.015 * (y1 - y0) * (x1 - x0)))
         if int(sub_fg.sum().item()) < min_px:
             return None
+        dn_sub = dn[y0:y1, x0:x1]
+        fg_d = dn_sub[sub_fg]
+        q90 = float(torch.quantile(fg_d, 0.90).item())
+        q20 = float(torch.quantile(fg_d, 0.20).item())
+        if q90 - q20 > 0.15:
+            closer_mask = sub_fg & (dn_sub >= 0.5 * (q90 + q20))
+            if int(closer_mask.sum().item()) >= 4:
+                sub_fg = closer_mask
         pts = ps[y0:y1, x0:x1][sub_fg]
         return torch.median(pts, dim=0).values.view(1, 3)
 
@@ -557,34 +580,74 @@ def resolve_aim_target(
         is_uniform_plane = float(fg_mask.float().mean().item()) > 0.92
         if int(sub_fg.sum().item()) >= min_px:
             if normals is not None and normals.shape[1] == H and normals.shape[2] == W:
-                n0 = normals[0:1]
-                dn_dx = torch.norm(n0[:, :, 1:, :] - n0[:, :, :-1, :], dim=-1, keepdim=True)
-                dn_dy = torch.norm(n0[:, 1:, :, :] - n0[:, :-1, :, :], dim=-1, keepdim=True)
-                curv = F.pad(dn_dx, (0, 0, 0, 1, 0, 0)) + F.pad(dn_dy, (0, 0, 0, 0, 0, 1))
-                d0 = d_norm[0:1]
-                dd_dx = torch.abs(d0[:, :, 1:, :] - d0[:, :, :-1, :])
-                dd_dy = torch.abs(d0[:, 1:, :, :] - d0[:, :-1, :, :])
-                grad_d = F.pad(dd_dx, (0, 0, 0, 1, 0, 0)) + F.pad(dd_dy, (0, 0, 0, 0, 0, 1))
-                interior_curv = curv * torch.exp(-grad_d * 40.0)
-                k_sz = max(3, min(21, (min(H, W) // 48) * 2 + 1))
-                curv_smooth = F.avg_pool2d(
-                    interior_curv.permute(0, 3, 1, 2),
-                    kernel_size=k_sz,
+                # Evaluate finite differences on a fixed canonical 128x128 grid for resolution invariance
+                c_res = 128
+                n_c = F.interpolate(
+                    normals[0:1].permute(0, 3, 1, 2),
+                    size=(c_res, c_res),
+                    mode="bilinear",
+                    align_corners=False,
+                ).permute(0, 2, 3, 1)
+                n_c = n_c / (torch.norm(n_c, dim=-1, keepdim=True) + 1e-7)
+                d_c = F.interpolate(
+                    d_norm[0:1].permute(0, 3, 1, 2),
+                    size=(c_res, c_res),
+                    mode="bilinear",
+                    align_corners=False,
+                ).permute(0, 2, 3, 1)
+
+                dn_dx = torch.norm(n_c[:, :, 1:, :] - n_c[:, :, :-1, :], dim=-1, keepdim=True)
+                dn_dy = torch.norm(n_c[:, 1:, :, :] - n_c[:, :-1, :, :], dim=-1, keepdim=True)
+                curv_c = F.pad(dn_dx, (0, 0, 0, 1, 0, 0)) + F.pad(dn_dy, (0, 0, 0, 0, 0, 1))
+
+                dd_dx = torch.abs(d_c[:, :, 1:, :] - d_c[:, :, :-1, :])
+                dd_dy = torch.abs(d_c[:, 1:, :, :] - d_c[:, :-1, :, :])
+                grad_d_c = F.pad(dd_dx, (0, 0, 0, 1, 0, 0)) + F.pad(dd_dy, (0, 0, 0, 0, 0, 1))
+
+                # On the 128x128 canonical grid, step-edge suppression exp(-8 * |grad_c d|) is scale-invariant
+                interior_curv_c = curv_c * torch.exp(-grad_d_c * 8.0)
+                curv_smooth_c = F.avg_pool2d(
+                    interior_curv_c.permute(0, 3, 1, 2),
+                    kernel_size=5,
                     stride=1,
-                    padding=k_sz // 2,
+                    padding=2,
+                )
+                curv_full = F.interpolate(
+                    curv_smooth_c,
+                    size=(H, W),
+                    mode="bilinear",
+                    align_corners=False,
                 ).permute(0, 2, 3, 1)[0, y0:y1, x0:x1, 0]
-                score = curv_smooth * sub_fg.float()
+
+                score = curv_full * sub_fg.float()
                 fg_scores = score[sub_fg]
-                if fg_scores.numel() > 0 and float(fg_scores.max().item()) > 1e-4:
-                    q_cut = torch.quantile(fg_scores, 0.75)
-                    salient_mask = sub_fg & (score >= q_cut)
+                if fg_scores.numel() > 0:
+                    p90_score = float(torch.quantile(fg_scores, 0.90).item())
+                    p50_score = float(torch.quantile(fg_scores, 0.50).item())
+                    # Confidence Gate: requires genuine 3D surface curvature (human face or smooth 3D android head)
+                    if p90_score >= 0.015:
+                        if p90_score >= 1.25 * (p50_score + 1e-5):
+                            q_cut = torch.quantile(fg_scores, 0.75)
+                            salient_mask = sub_fg & (score >= q_cut)
+                        else:
+                            # Smooth 3D head/ellipsoid with uniform curvature across its crown
+                            dn_sub = dn[y0:y1, x0:x1]
+                            d_cut = torch.quantile(dn_sub[sub_fg], 0.40)
+                            q_cut = torch.quantile(fg_scores, 0.45)
+                            salient_mask = sub_fg & (score >= q_cut) & (dn_sub >= d_cut)
+                        if int(salient_mask.sum().item()) >= 4:
+                            pts = ps[y0:y1, x0:x1][salient_mask]
+                            return torch.median(pts, dim=0).values.view(1, 3)
+            elif not is_uniform_plane:
+                # Depth-only fallback when normals are unavailable: require localized depth protrusion
+                dn_sub = dn[y0:y1, x0:x1]
+                if float(dn_sub[sub_fg].max().item() - dn_sub.min().item()) >= 0.12:
+                    d_cut = torch.quantile(dn_sub[sub_fg], 0.60)
+                    salient_mask = sub_fg & (dn_sub >= d_cut)
                     if int(salient_mask.sum().item()) >= 4:
                         pts = ps[y0:y1, x0:x1][salient_mask]
                         return torch.median(pts, dim=0).values.view(1, 3)
-            if not is_uniform_plane:
-                pts = ps[y0:y1, x0:x1][sub_fg]
-                return torch.median(pts, dim=0).values.view(1, 3)
-        # Fallback to subject centroid if upper portrait zone is empty or scene is a uniform flat plane
+        # Confidence Fallback: if upper portrait zone is empty, flat, or low-confidence, use Subject Centroid
         res_c = _region_fg_median(0.10, 0.90, 0.15, 0.85)
         return res_c if res_c is not None else default_center
 
