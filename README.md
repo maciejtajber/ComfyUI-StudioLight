@@ -16,15 +16,16 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 <sub>
 <a href="#interactive-camera-space-lighting-in-action">DEMO</a> &nbsp;·&nbsp;
 <a href="#same-subject-same-prompt-different-light">SHOWCASE</a> &nbsp;·&nbsp;
+<a href="#the-problem-prompt-lottery-vs-spatial-control">THE PROBLEM</a> &nbsp;·&nbsp;
 <a href="#what-makes-studiolight-different">DIFFERENTIATION</a> &nbsp;·&nbsp;
-<a href="#installation">INSTALL</a> &nbsp;·&nbsp;
-<a href="#core-production-suite--node-schemas">NODE SCHEMAS</a> &nbsp;·&nbsp;
 <a href="#how-it-works">PIPELINE</a> &nbsp;·&nbsp;
 <a href="#from-camera-space-lighting-pass-to-final-flux-render">THE PROOF</a> &nbsp;·&nbsp;
 <a href="#3d-camera-space-shadow-raymarching">3D SHADOWS</a> &nbsp;·&nbsp;
 <a href="#optical-modifiers--sampled-area-emitters">AREA EMITTERS</a> &nbsp;·&nbsp;
-<a href="#known-limitations--engineering-scope">LIMITATIONS</a> &nbsp;·&nbsp;
-<a href="#master-workflows">WORKFLOWS</a>
+<a href="#core-production-suite--node-schemas">NODE SCHEMAS</a> &nbsp;·&nbsp;
+<a href="#installation">INSTALL</a> &nbsp;·&nbsp;
+<a href="#master-workflows">WORKFLOWS</a> &nbsp;·&nbsp;
+<a href="#known-limitations--engineering-scope">LIMITATIONS</a>
 </sub>
 
 </div>
@@ -89,6 +90,19 @@ Real-time Stand Distance ($r$), Azimuth ($\theta$), Elevation ($\phi$), and Kelv
 
 ---
 
+## The Problem: Prompt Lottery vs. Spatial Control
+
+Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic blue rim light on the left"` often triggers severe prompt bleed: facial features shift, clothing changes cut, and colors wash across the entire frame.
+
+| Prompt-Based Lighting (Text Only) | StudioLight Spatial Control (VFX Engine) |
+| :--- | :--- |
+| **Subject Mutation:** Prompting for light changes anatomy, styling, and background geometry. | **Geometry Guidance:** Primary scene anatomy, forms, and composition crystallize in Pass 1; Pass 2 applies illumination and textures over that structure. |
+| **Chromatic Bleed:** Color tokens tint skin, hair, and clothing indiscriminately. | **Directional Lobe Isolation in Plate:** Rim and key colors remain confined to illuminated surfaces ($N \cdot L > 0$) in the lighting plate, steering Pass 2 synthesis. |
+| **Uncalibrated Falloff:** Lights fail to observe inverse-square distance or scene depth. | **Geometric Inverse-Square Falloff:** Models $(r_{\text{ref}}/r)^2$ distance falloff, normalized to studio reference stand distance ($r_{\text{ref}}=1.8\text{m}$). |
+| **Pre-baked Specular Artifacts:** High-gloss words bake blown-out white patches into early draft latents. | **Albedo Decoupling:** Renders clean draft plates with reduced baked highlights; specular kicks align with fixture placement. |
+
+---
+
 ## What Makes StudioLight Different
 
 ComfyUI-StudioLight integrates image-derived camera-space geometry, screen-space shadow raymarching, and sampled photographic area emitters into a controllable lighting workflow for generative image synthesis.
@@ -114,69 +128,20 @@ StudioLight builds on established computer-graphics principles and exists alongs
 
 ---
 
-## Installation
-
-### 1. Manual Installation (Recommended)
-```bash
-cd ComfyUI/custom_nodes
-git clone https://github.com/maciejtajber/ComfyUI-StudioLight.git
-pip install -r ComfyUI-StudioLight/requirements.txt
-```
-*(ComfyUI Manager registry listing is currently pending submission).*
-
-### Hardware & VRAM Requirements
-* **GPU Memory:** Tested on 24 GB VRAM GPUs (NVIDIA RTX 3090 / A40). For FLUX.1 [dev] paired with full geometry preprocessors (DSINE + Depth Anything V2), 16–24 GB VRAM is recommended (or $\ge 12\text{ GB}$ with fp8 quantized weights). The StudioLight lighting shader itself is lightweight, allocating only $\sim 469\text{ MB}$ at $1024^2$ resolution.
-* **Recommended Starting Workflow:** Open [`workflows/StudioLight_MethodA_Calibrated.json`](workflows/StudioLight_MethodA_Calibrated.json) first for standard portrait studio relighting.
-
-### Dependencies & Models
-* **Preprocessors:** Install `comfyui_controlnet_aux` for `DSINE-NormalMapPreprocessor` and `DepthAnythingV2Preprocessor`.
-* **Models:** Standard `flux1-dev.safetensors` (or `flux1-krea-dev.safetensors`), CLIP text encoders, and VAE.
-* **Licensing Note:** FLUX.1 [dev] weights are released under Black Forest Labs' Non-Commercial License. Verify licensing terms for commercial deployments.
-
-### Automated Test Suite
-Verify math, photometric color spaces, and shader engines (runs standalone without ComfyUI):
-```bash
-python test_studiolight.py
-```
-
----
-
-## Core Production Suite & Node Schemas
-
-*Extracted directly from node classes (`nodes/*.py`):*
-
-| Node Name | Category | Inputs | Outputs | Core Purpose |
-| :--- | :--- | :--- | :--- | :--- |
-| **`StudioLightRig`** | `StudioLight/Rig` | **Required:** `preset`, `ambient_intensity`, `invert_normals_y`, Key light controls (`enabled`, `azimuth`, `elevation`, `distance`, `intensity`, `kelvin`, `modifier`), Fill controls, Rim controls, `normal_boost`, `ao_anchoring`<br>**Optional:** `scene_3d`, `normals_optional`, `depth_optional`, `invert_normals_x`, `target_engine`, `invert_depth` | `relighting_map` *(IMAGE)*<br>`probe_preview` *(IMAGE)*<br>`lighting_prompt` *(STRING)*<br>`specular_pass` *(IMAGE)* | Master 3-point photographic lighting console with 3D camera-space coordinates, physical modifier selection, Kelvin color temperature, and live dual-sphere VFX preview. |
-| **`StudioPhotometricComposite`** | `StudioLight/Photometric` | **Required:** `image` *(IMAGE)*, `lighting_map` *(IMAGE)*, `lighting_strength`, `ambient_floor`, `specular_kick`, `chroma_bleed`, `filmic_white_point`<br>**Optional:** `specular_map` *(IMAGE, from Rig specular_pass)* | `lit_image` *(IMAGE)* | Linear Rec.709 photometric shading engine with rational shoulder tonemapping, lobe-accurate specular integration, and chromatic midtone bleed. |
-| **`SIShadowHighlight`** | `StudioLight/Photometric` | **Required:** `image` *(IMAGE)*, `shadow_amount`, `highlight_amount`, `shadow_tonal_width`, `highlight_tonal_width`, `midtone_contrast` | `IMAGE` *(IMAGE)* | Latent preparation darkroom with bilateral Hermite tonal isolation (isolated shadows and highlights, zero midtone bleed) and bounded sigmoidal midtone contrast. |
-| **`StudioPromptSanitizer`** | `StudioLight/Utility` | **Required:** `master_prompt` *(STRING)*<br>**Optional:** `albedo_suffix` *(STRING)* | `pass1_albedo_prompt` *(STRING)*<br>`pass2_lit_prompt` *(STRING)* | Albedo decoupling utility that strips specular and lighting keywords from Pass 1 draft latents while passing the complete prompt to Pass 2. |
-
----
-
-## The Problem: Prompt Lottery vs. Spatial Control
-
-Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic blue rim light on the left"` often triggers severe prompt bleed: facial features shift, clothing changes cut, and colors wash across the entire frame.
-
-| Prompt-Based Lighting (Text Only) | StudioLight Spatial Control (VFX Engine) |
-| :--- | :--- |
-| **Subject Mutation:** Prompting for light changes anatomy, styling, and background geometry. | **Geometry Guidance:** Primary scene anatomy, forms, and composition crystallize in Pass 1; Pass 2 applies illumination and textures over that structure. |
-| **Chromatic Bleed:** Color tokens tint skin, hair, and clothing indiscriminately. | **Directional Lobe Isolation in Plate:** Rim and key colors remain confined to illuminated surfaces ($N \cdot L > 0$) in the lighting plate, steering Pass 2 synthesis. |
-| **Uncalibrated Falloff:** Lights fail to observe inverse-square distance or scene depth. | **Geometric Inverse-Square Falloff:** Models $(r_{\text{ref}}/r)^2$ distance falloff, normalized to studio reference stand distance ($r_{\text{ref}}=1.8\text{m}$). |
-| **Pre-baked Specular Artifacts:** High-gloss words bake blown-out white patches into early draft latents. | **Albedo Decoupling:** Renders clean draft plates with reduced baked highlights; specular kicks align with fixture placement. |
-
----
-
 ## How It Works
 
 StudioLight splits generation into a **two-stage geometry and relighting pipeline**:
 
-<img src="assets/studiolight_pipeline.png" alt="StudioLight pipeline: prompt, draft, geometry, light rig, composite, darkroom, refine" width="100%" />
+<br>
+<div align="center">
+  <img src="assets/02_studiolight_relighting_pipeline.svg" alt="StudioLight Relighting Pipeline" width="692" />
+</div>
+<br>
 
 1. **Geometry Crystallization (Steps 0–10):** Pass 1 generates an unlit albedo draft to define scene forms, anatomy, and clothing weave without baked directional shadows.
 2. **Camera-Space 3D Projection:** Extracts surface normals (DSINE) and estimated depth (Depth Anything V2), back-projecting the 2D draft into virtual camera-space ($40^\circ$ portrait FOV calibrated to studio scale).
 3. **Photometric Deferred Shading:** Computes diffuse irradiance, Blinn-Phong specular lobes, and 3D camera-space shadow raymarching from virtual C-stands.
-4. **Stochastic Polish (Pass 2):** Composites the lit plate in linear Rec.709 space, preps tones in the `SIShadowHighlight` darkroom, and feeds it to Pass 2 (denoise `0.50 – 0.65` in Method A two-stage img2img, or midstream trajectory continuation in Method B) to synthesize subsurface skin scattering and photorealistic catchlights.
+4. **Stochastic Polish (Pass 2):** Composites the lit plate in linear Rec.709 space, preps tones in the `SIShadowHighlight` darkroom, and feeds it to Pass 2 (denoise `0.25 – 0.85` in Method A two-stage img2img, or midstream trajectory continuation in Method B) to synthesize subsurface skin scattering and photorealistic catchlights.
 
 ---
 
@@ -264,19 +229,11 @@ P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspect
 
 StudioLight implements a **geometrically sampled studio area-emitter architecture**. Every studio modifier is modeled as a defined 3D virtual emitter with geometric dimensions ($W, H, R$), angular beam distributions, single-layer penumbra visibility, and an analytical aperture reflection in reflection space:
 
-```
-                                   EMITTER
-        [Geometry: Dimensions in meters (W, H, R), Position, Aim Direction]
-                                       │
-            ┌─────────────────────────┼─────────────────────────┐
-            ▼                         ▼                         ▼
-   1. DIFFUSE EMISSION       2. SHADOW / VISIBILITY     3. SPECULAR REFLECTION
-  Vectorized [S, H, W, 3]    Single-layer penumbra      Ray-plane intersection
-  • S=16 sample points       • Binary blocker test      • Emitter 2D coordinate
-  • Geometric 1 / r_k²         per sample point         • Continuous aperture
-  • cos θ_e × cos θ_p        • Average across S           profile & roughness
-  • Radiometric area norm      yields natural penumbra    • True fixture catchlights
-```
+<br>
+<div align="center">
+  <img src="assets/01_emitter_architecture.svg" alt="StudioLight Geometric Area Emitter Architecture" width="735" />
+</div>
+<br>
 
 | Modifier | Aperture Dimensions | Beam Angle ($\theta_{\text{beam}}$) | Optical Approximation | Catchlight Profile |
 | :--- | :---: | :---: | :--- | :--- |
@@ -289,6 +246,19 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
 
 > [!NOTE]
 > All studio modifiers represent photographic approximations and virtual emitter geometries calibrated for photographic lighting control, rather than full laboratory optical simulations.
+
+---
+
+## Core Production Suite & Node Schemas
+
+*Extracted directly from node classes (`nodes/*.py`):*
+
+| Node Name | Category | Inputs | Outputs | Core Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| **`StudioLightRig`** | `StudioLight/Rig` | **Required:** `preset`, `ambient_intensity`, `invert_normals_y`, Key light controls (`enabled`, `azimuth`, `elevation`, `distance`, `intensity`, `kelvin`, `modifier`), Fill controls, Rim controls, `normal_boost`, `ao_anchoring`<br>**Optional:** `scene_3d`, `normals_optional`, `depth_optional`, `invert_normals_x`, `target_engine`, `invert_depth` | `relighting_map` *(IMAGE)*<br>`probe_preview` *(IMAGE)*<br>`lighting_prompt` *(STRING)*<br>`specular_pass` *(IMAGE)* | Master 3-point photographic lighting console with 3D camera-space coordinates, physical modifier selection, Kelvin color temperature, and live dual-sphere VFX preview. |
+| **`StudioPhotometricComposite`** | `StudioLight/Photometric` | **Required:** `image` *(IMAGE)*, `lighting_map` *(IMAGE)*, `lighting_strength`, `ambient_floor`, `specular_kick`, `chroma_bleed`, `filmic_white_point`<br>**Optional:** `specular_map` *(IMAGE, from Rig specular_pass)* | `lit_image` *(IMAGE)* | Linear Rec.709 photometric shading engine with rational shoulder tonemapping, lobe-accurate specular integration, and chromatic midtone bleed. |
+| **`SIShadowHighlight`** | `StudioLight/Photometric` | **Required:** `image` *(IMAGE)*, `shadow_amount`, `highlight_amount`, `shadow_tonal_width`, `highlight_tonal_width`, `midtone_contrast` | `IMAGE` *(IMAGE)* | Latent preparation darkroom with bilateral Hermite tonal isolation (isolated shadows and highlights, zero midtone bleed) and bounded sigmoidal midtone contrast. |
+| **`StudioPromptSanitizer`** | `StudioLight/Utility` | **Required:** `master_prompt` *(STRING)*<br>**Optional:** `albedo_suffix` *(STRING)* | `pass1_albedo_prompt` *(STRING)*<br>`pass2_lit_prompt` *(STRING)* | Albedo decoupling utility that strips specular and lighting keywords from Pass 1 draft latents while passing the complete prompt to Pass 2. |
 
 ---
 
@@ -316,13 +286,30 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
 
 ---
 
-## Known Limitations & Engineering Scope
+## Installation
 
-* **Pre-Baked Specular Highlights on High-Gloss Objects:** When the Pass 1 prompt contains high-gloss tokens (e.g. patent leather, chrome, wet surfaces), diffusion models often bake white specular patches directly into the base albedo. While `StudioPromptSanitizer` mitigates this by replacing high-specular terms with neutral/matte descriptions in Pass 1, deeply baked albedo highlights cannot be completely removed by screen-space shading alone without dedicated inpainting.
-* **Relative Depth Scaling:** Operates on estimated monocular depth (Depth Anything V2), normalized and calibrated to a studio coordinate frame ($Z=-2.0\text{m}$). It does not represent physical millimeter-level LiDAR ground truth.
-* **Single-View Frustum Bounds:** Screen-space raymarching is constrained to surfaces visible in the 2.5D camera buffer; occluded geometries behind foreground objects cannot cast shadows.
-* **Pass 2 Latent Interpretation:** StudioLight produces deterministic photometric guidance plates; Pass 2 FLUX latent diffusion interprets these plates generatively. Higher denoise levels ($\ge 0.70$) give diffusion greater creative freedom to repaint albedo and atmosphere, whereas lower values ($0.35–0.55$) strictly anchor identity, fine details, and plate geometry.
-* **Model Weight Licensing:** FLUX.1 [dev] weights are provided under Black Forest Labs' Non-Commercial License. Verify licensing requirements for commercial deployments.
+### 1. Manual Installation (Recommended)
+```bash
+cd ComfyUI/custom_nodes
+git clone https://github.com/maciejtajber/ComfyUI-StudioLight.git
+pip install -r ComfyUI-StudioLight/requirements.txt
+```
+*(ComfyUI Manager registry listing is currently pending submission).*
+
+### Hardware & VRAM Requirements
+* **GPU Memory:** Tested on 24 GB VRAM GPUs (NVIDIA RTX 3090 / A40). For FLUX.1 [dev] paired with full geometry preprocessors (DSINE + Depth Anything V2), 16–24 GB VRAM is recommended (or $\ge 12\text{ GB}$ with fp8 quantized weights). The StudioLight lighting shader itself is lightweight, allocating only $\sim 469\text{ MB}$ at $1024^2$ resolution.
+* **Recommended Starting Workflow:** Open [`workflows/StudioLight_MethodA_Calibrated.json`](workflows/StudioLight_MethodA_Calibrated.json) first for standard portrait studio relighting.
+
+### Dependencies & Models
+* **Preprocessors:** Install `comfyui_controlnet_aux` for `DSINE-NormalMapPreprocessor` and `DepthAnythingV2Preprocessor`.
+* **Models:** Standard `flux1-dev.safetensors` (or `flux1-krea-dev.safetensors`), CLIP text encoders, and VAE.
+* **Licensing Note:** FLUX.1 [dev] weights are released under Black Forest Labs' Non-Commercial License. Verify licensing terms for commercial deployments.
+
+### Automated Test Suite
+Verify math, photometric color spaces, and shader engines (runs standalone without ComfyUI):
+```bash
+python test_studiolight.py
+```
 
 ---
 
@@ -331,6 +318,16 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
 * [`workflows/StudioLight_Master.json`](workflows/StudioLight_Master.json): Complete 2-Stage FLUX.1 Krea Dev production pipeline with prompt decoupling and shadow raymarching.
 * [`workflows/StudioLight_MethodA_Calibrated.json`](workflows/StudioLight_MethodA_Calibrated.json): Fast portrait studio relighting workflow with interactive console gizmo and live VFX sphere probes.
 * [`workflows/StudioLight_MethodB_Trajectory.json`](workflows/StudioLight_MethodB_Trajectory.json): `[Experimental - Video/Latent Trajectory]` Camera-space lighting trajectory for animated sequences (experimental exploration; validation ongoing).
+
+---
+
+## Known Limitations & Engineering Scope
+
+* **Pre-Baked Specular Highlights on High-Gloss Objects:** When the Pass 1 prompt contains high-gloss tokens (e.g. patent leather, chrome, wet surfaces), diffusion models often bake white specular patches directly into the base albedo. While `StudioPromptSanitizer` mitigates this by replacing high-specular terms with neutral/matte descriptions in Pass 1, deeply baked albedo highlights cannot be completely removed by screen-space shading alone without dedicated inpainting.
+* **Relative Depth Scaling:** Operates on estimated monocular depth (Depth Anything V2), normalized and calibrated to a studio coordinate frame ($Z=-2.0\text{m}$). It does not represent physical millimeter-level LiDAR ground truth.
+* **Single-View Frustum Bounds:** Screen-space raymarching is constrained to surfaces visible in the 2.5D camera buffer; occluded geometries behind foreground objects cannot cast shadows.
+* **Pass 2 Latent Interpretation:** StudioLight produces deterministic photometric guidance plates; Pass 2 FLUX latent diffusion interprets these plates generatively. Higher denoise levels ($\ge 0.70$) give diffusion greater creative freedom to repaint albedo and atmosphere, whereas lower values ($0.35–0.55$) strictly anchor identity, fine details, and plate geometry.
+* **Model Weight Licensing:** FLUX.1 [dev] weights are provided under Black Forest Labs' Non-Commercial License. Verify licensing requirements for commercial deployments.
 
 ---
 

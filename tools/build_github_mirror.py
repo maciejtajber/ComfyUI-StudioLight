@@ -18,7 +18,9 @@ with open(readme_path, "r", encoding="utf-8") as f:
 
 # Replace image paths with base64 data URIs
 def get_mime(path_str):
-    if path_str.endswith(".jpg") or path_str.endswith(".jpeg"):
+    if path_str.endswith(".svg"):
+        return "image/svg+xml"
+    elif path_str.endswith(".jpg") or path_str.endswith(".jpeg"):
         return "image/jpeg"
     elif path_str.endswith(".gif"):
         return "image/gif"
