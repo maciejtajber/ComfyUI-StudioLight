@@ -56,25 +56,18 @@ Real-time Stand Distance ($r$), Azimuth ($\theta$), Elevation ($\phi$), and Kelv
 <table>
   <thead>
     <tr>
-      <th width="25%" align="center">Direct Flash (90s Strobe)</th>
-      <th width="25%" align="center">Hard Key (Fresnel)</th>
-      <th width="25%" align="center">Sculpted (Beauty Dish)</th>
-      <th width="25%" align="center">Soft Wrap (Octabox)</th>
+      <th width="33.33%" align="center">Hard Key (Fresnel)</th>
+      <th width="33.33%" align="center">Sculpted (Beauty Dish)</th>
+      <th width="33.33%" align="center">Soft Wrap (Octabox)</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td align="center"><img src="assets/showcase_flash.png" width="100%" alt="Direct On-Camera Flash" /></td>
       <td align="center"><img src="assets/showcase_fresnel.png" width="100%" alt="Fresnel Spotlight" /></td>
       <td align="center"><img src="assets/showcase_beauty.png" width="100%" alt="Beauty Dish" /></td>
       <td align="center"><img src="assets/showcase_octabox.png" width="100%" alt="Diffused Octabox" /></td>
     </tr>
     <tr>
-      <td align="center">
-        <b>Direct On-Camera Flash</b><br>
-        Key: 0° Azimuth / +5° Elevation<br>
-        Hard drop shadow, raw patent spec
-      </td>
       <td align="center">
         <b>Fresnel Spotlight (Hard Key)</b><br>
         Key: +30° Azimuth / +25° Elevation<br>
