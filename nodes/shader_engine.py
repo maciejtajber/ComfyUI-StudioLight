@@ -73,14 +73,14 @@ def compute_cavity_ao_map(normals: torch.Tensor, strength: float = 1.5) -> torch
     kx = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=dtype, device=device).view(1, 1, 3, 3) / 8.0
     ky = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=dtype, device=device).view(1, 1, 3, 3) / 8.0
 
-    nx = normals[..., 0:1].permute(0, 3, 1, 2)
-    ny = normals[..., 1:2].permute(0, 3, 1, 2)
+    nx = normals[..., 0:1].permute(0, 3, 1, 2).contiguous()
+    ny = normals[..., 1:2].permute(0, 3, 1, 2).contiguous()
 
     dnx_dx = F.conv2d(nx, kx, padding=1)
     dny_dy = F.conv2d(ny, ky, padding=1)
 
     # Negative divergence indicates a concave valley / seam
-    curvature = (dnx_dx + dny_dy).permute(0, 2, 3, 1)
+    curvature = (dnx_dx + dny_dy).permute(0, 2, 3, 1).contiguous()
 
     # Crevices: curvature < 0 (normals point inward towards each other)
     cavity = torch.clamp(1.0 + curvature * float(strength), min=0.0, max=1.0)
@@ -134,7 +134,7 @@ def screen_space_directional_shadow(
     dy = (ly / norm_2d) * (max_dist / steps)
 
     d_in = depth if depth.shape[-1] == 1 else depth[..., 0:1]
-    d_perm = d_in.permute(0, 3, 1, 2)
+    d_perm = d_in.permute(0, 3, 1, 2).contiguous()
 
     y_coords, x_coords = torch.meshgrid(
         torch.linspace(-1, 1, H, device=device, dtype=dtype),
@@ -191,7 +191,7 @@ def screen_space_directional_shadow(
         )
 
         vogel_samples = get_vogel_disk_samples(8, device=device, dtype=dtype)
-        sh_perm = shadow.permute(0, 3, 1, 2)
+        sh_perm = shadow.permute(0, 3, 1, 2).contiguous()
         sh_accum = torch.zeros_like(shadow)
 
         for i in range(8):
@@ -446,8 +446,8 @@ def reconstruct_metric_surface(
 
     B = d.shape[0]
     if d.shape[1] != H or d.shape[2] != W:
-        d_perm = d.permute(0, 3, 1, 2)
-        d = F.interpolate(d_perm, size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
+        d_perm = d.permute(0, 3, 1, 2).contiguous()
+        d = F.interpolate(d_perm, size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1).contiguous()
 
     aspect = float(W) / float(H)
     tan_half_fov = math.tan(math.radians(float(vertical_fov_deg)) * 0.5)
@@ -583,18 +583,18 @@ def resolve_aim_target(
                 # Evaluate finite differences on a fixed canonical 128x128 grid for resolution invariance
                 c_res = 128
                 n_c = F.interpolate(
-                    normals[0:1].permute(0, 3, 1, 2),
+                    normals[0:1].permute(0, 3, 1, 2).contiguous(),
                     size=(c_res, c_res),
                     mode="bilinear",
                     align_corners=False,
-                ).permute(0, 2, 3, 1)
+                ).permute(0, 2, 3, 1).contiguous()
                 n_c = n_c / (torch.norm(n_c, dim=-1, keepdim=True) + 1e-7)
                 d_c = F.interpolate(
-                    d_norm[0:1].permute(0, 3, 1, 2),
+                    d_norm[0:1].permute(0, 3, 1, 2).contiguous(),
                     size=(c_res, c_res),
                     mode="bilinear",
                     align_corners=False,
-                ).permute(0, 2, 3, 1)
+                ).permute(0, 2, 3, 1).contiguous()
 
                 dn_dx = torch.norm(n_c[:, :, 1:, :] - n_c[:, :, :-1, :], dim=-1, keepdim=True)
                 dn_dy = torch.norm(n_c[:, 1:, :, :] - n_c[:, :-1, :, :], dim=-1, keepdim=True)
@@ -607,7 +607,7 @@ def resolve_aim_target(
                 # On the 128x128 canonical grid, step-edge suppression exp(-8 * |grad_c d|) is scale-invariant
                 interior_curv_c = curv_c * torch.exp(-grad_d_c * 8.0)
                 curv_smooth_c = F.avg_pool2d(
-                    interior_curv_c.permute(0, 3, 1, 2),
+                    interior_curv_c.permute(0, 3, 1, 2).contiguous(),
                     kernel_size=5,
                     stride=1,
                     padding=2,
@@ -617,7 +617,7 @@ def resolve_aim_target(
                     size=(H, W),
                     mode="bilinear",
                     align_corners=False,
-                ).permute(0, 2, 3, 1)[0, y0:y1, x0:x1, 0]
+                ).permute(0, 2, 3, 1).contiguous()[0, y0:y1, x0:x1, 0]
 
                 score = curv_full * sub_fg.float()
                 fg_scores = score[sub_fg]

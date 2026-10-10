@@ -100,12 +100,12 @@ def apply_soft_head_blur(
     kernel_h = gauss_1d.repeat(c, 1, 1, 1)
     kernel_v = gauss_1d.transpose(-1, -2).repeat(c, 1, 1, 1)
 
-    norm_perm = normals.permute(0, 3, 1, 2)
+    norm_perm = normals.permute(0, 3, 1, 2).contiguous()
     pad = kernel_size // 2
     # Horizontal pass then Vertical pass
     blurred_h = F.conv2d(norm_perm, kernel_h, padding=(0, pad), groups=c)
     blurred_v = F.conv2d(blurred_h, kernel_v, padding=(pad, 0), groups=c)
-    blurred_normals = blurred_v.permute(0, 2, 3, 1)
+    blurred_normals = blurred_v.permute(0, 2, 3, 1).contiguous()
 
     # Re-normalize blurred vector directions
     # Shift [0, 1] -> [-1, 1] -> normalize -> [0, 1]

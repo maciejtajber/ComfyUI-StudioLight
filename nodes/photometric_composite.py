@@ -138,13 +138,13 @@ class StudioPhotometricComposite:
 
         # 1. Match spatial dimensions if needed
         if img.shape[1:3] != light.shape[1:3]:
-            light_perm = light.permute(0, 3, 1, 2)
+            light_perm = light.permute(0, 3, 1, 2).contiguous()
             light_resized = F.interpolate(
                 light_perm,
                 size=(img.shape[1], img.shape[2]),
                 mode="bilinear",
                 align_corners=False
-            ).permute(0, 2, 3, 1)
+            ).permute(0, 2, 3, 1).contiguous()
         else:
             light_resized = light
 
@@ -176,8 +176,8 @@ class StudioPhotometricComposite:
                 # Lobe-accurate path: peak comes from the rig's isolated specular pass (Kelvin-tinted, per channel).
                 spec = specular_map.to(device=device, dtype=torch.float32)
                 if spec.shape[1:3] != img.shape[1:3]:
-                    spec = F.interpolate(spec.permute(0, 3, 1, 2), size=(img.shape[1], img.shape[2]),
-                                         mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
+                    spec = F.interpolate(spec.permute(0, 3, 1, 2).contiguous(), size=(img.shape[1], img.shape[2]),
+                                         mode="bilinear", align_corners=False).permute(0, 2, 3, 1).contiguous()
                 spec = torch.nan_to_num(spec, nan=0.0, posinf=0.0, neginf=0.0)
                 spec_peak = torch.clamp(spec * float(lighting_strength) / SPEC_PASS_REFERENCE, 0.0, 1.0)
             else:
