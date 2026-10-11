@@ -179,10 +179,10 @@ class StudioLightRig:
 
                 # --- 3D VOLUME & SHADOW SCULPTING (Intervention Engine) ---
                 "normal_boost": ("FLOAT", {
-                    "default": 2.50,
+                    "default": 1.35,
                     "min": 1.0,
                     "max": 4.0,
-                    "step": 0.1,
+                    "step": 0.05,
                 }),
                 "ao_anchoring": ("FLOAT", {
                     "default": 0.65,
@@ -211,7 +211,7 @@ class StudioLightRig:
                     "label_off": "Standard (near = white)",
                 }),
                 "aim_target": (AIM_TARGET_OPTIONS, {
-                    "default": "Auto (Face / Upper Focus)",
+                    "default": "Upper",
                 }),
                 "depth_relief_scale": ("FLOAT", {
                     "default": 0.30,
@@ -265,7 +265,7 @@ class StudioLightRig:
         rim_intensity: float = 1.1,
         rim_kelvin: int = 6500,
         rim_modifier: str = "Stripbox",
-        normal_boost: float = 2.50,
+        normal_boost: float = 1.35,
         ao_anchoring: float = 0.65,
         scene_3d: Optional[Dict[str, Any]] = None,
         normals_optional: Optional[torch.Tensor] = None,
@@ -273,7 +273,7 @@ class StudioLightRig:
         invert_normals_x: bool = True,
         target_engine: str = "Flux.1",
         invert_depth: bool = False,
-        aim_target: str = "Auto (Face / Upper Focus)",
+        aim_target: str = "Upper",
         depth_relief_scale: float = 0.30,
         prompt: Optional[Dict] = None,
         unique_id: Optional[str] = None,

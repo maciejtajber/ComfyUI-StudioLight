@@ -89,7 +89,7 @@ def get_all_presets_flattened() -> Dict[str, Dict[str, Any]]:
             "rim_intensity": r.get("intensity", 0.90),
             "rim_kelvin": r.get("kelvin", 6500),
             "rim_modifier": r.get("modifier", "Stripbox"),
-            "normal_boost": p.get("normal_boost", 2.50),
+            "normal_boost": p.get("normal_boost", 1.35),
             "ao_anchoring": p.get("ao_anchoring", 0.65),
         }
     return flattened

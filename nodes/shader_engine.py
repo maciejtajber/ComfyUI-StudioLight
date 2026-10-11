@@ -365,12 +365,9 @@ def evaluate_fixture_aperture_footprint(
 
 
 AIM_TARGET_OPTIONS = [
-    "Auto (Face / Upper Focus)",
-    "Center (Subject Centroid)",
-    "Upper Third",
+    "Upper",
     "Center",
-    "Lower Third",
-    "Legacy Center Target",
+    "Lower",
 ]
 
 
@@ -510,7 +507,7 @@ def resolve_aim_target(
     p_surf: Optional[torch.Tensor],
     d_norm: Optional[torch.Tensor],
     normals: Optional[torch.Tensor] = None,
-    aim_mode: str = "Auto (Face / Upper Focus)",
+    aim_mode: str = "Upper",
     d_split: float = 0.35,
     target_pos: Optional[torch.Tensor] = None,
     device: Optional[torch.device] = None,
@@ -572,7 +569,7 @@ def resolve_aim_target(
         pts = ps[y0:y1, x0:x1][sub_fg]
         return torch.median(pts, dim=0).values.view(1, 3)
 
-    if aim_mode == "Auto (Face / Upper Focus)":
+    if aim_mode in ("Upper", "Auto (Face / Upper Focus)"):
         y0, y1 = max(0, int(0.05 * H)), min(H, max(1, int(0.30 * H)))
         x0, x1 = max(0, int(0.22 * W)), min(W, max(1, int(0.78 * W)))
         sub_fg = fg_mask[y0:y1, x0:x1]
@@ -663,7 +660,7 @@ def resolve_aim_target(
         res_m = _region_fg_median(0.34, 0.66, 0.20, 0.80)
         return res_m if res_m is not None else default_center
 
-    if aim_mode == "Lower Third":
+    if aim_mode in ("Lower", "Lower Third"):
         res_l = _region_fg_median(0.64, 0.92, 0.20, 0.80)
         return res_l if res_l is not None else torch.tensor([[0.0, -0.42, -2.0]], device=device, dtype=dtype)
 
@@ -683,7 +680,7 @@ def compute_light_shading(
     shadow_steps: int = 16,
     target_pos: Optional[torch.Tensor] = None,
     vertical_fov_deg: float = 40.0,
-    aim_target: str = "Auto (Face / Upper Focus)",
+    aim_target: str = "Upper",
     depth_relief_scale: float = 0.30,
 ) -> torch.Tensor:
     """
@@ -834,7 +831,7 @@ def draw_studio_radar_diagram(
     width: int = 512,
     height: int = 256,
     aim_point: Optional[torch.Tensor] = None,
-    aim_target: str = "Auto (Face / Upper Focus)",
+    aim_target: str = "Upper",
 ) -> torch.Tensor:
     """
     Renders an informative 2D photographic studio radar compass showing Key, Fill,
@@ -886,7 +883,7 @@ def draw_studio_radar_diagram(
     draw.text((gauge_x - 24, g_top - 12), "AIM Y", fill=(150, 220, 175))
 
     # Top-left telemetry badge showing active aim mode & 3D coordinates
-    short_mode = aim_target.split(" (")[0] if aim_target else "Auto"
+    short_mode = aim_target.split(" (")[0] if aim_target else "Upper"
     draw.text((8, 6), f"AIM [{short_mode}]: ({ax_val:+.2f}, {ay_val:+.2f}, {az_val:.2f}m)", fill=(130, 235, 165))
 
     # Bottom Camera marker (0°)
@@ -931,7 +928,7 @@ def render_studio_lighting(
     rim_params: Dict[str, Any],
     ambient_intensity: float = 0.05,
     invert_normals_y: bool = False,
-    normal_boost: float = 2.0,
+    normal_boost: float = 1.35,
     ao_anchoring: float = 0.60,
     preview_resolution: int = 512,
     framing: str = "Portrait (Classical Bust)",
@@ -941,7 +938,7 @@ def render_studio_lighting(
     invert_depth: bool = False,
     target_pos: Optional[torch.Tensor] = None,
     vertical_fov_deg: float = 40.0,
-    aim_target: str = "Auto (Face / Upper Focus)",
+    aim_target: str = "Upper",
     depth_relief_scale: float = 0.30,
 ) -> Tuple[torch.Tensor, ...]:
     """

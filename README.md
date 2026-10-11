@@ -418,7 +418,7 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
   <tbody>
     <tr>
       <td align="left"><b><code>StudioLightRig</code></b><br><sub>3-Point Lighting Console</sub></td>
-      <td align="left">Master photographic lighting console with 3D camera-space C-stand coordinates (azimuth, elevation, distance in meters), physical modifier apertures (Octabox, Stripbox, Beauty Dish, Fresnel, Snoot, Flash), blackbody Kelvin temperature (2000K–10000K), and 3D shadow raymarching. Outputs the diffuse relighting map, isolated specular pass, dual-sphere VFX probe preview, and synchronized lighting prompt.</td>
+      <td align="left">Master photographic lighting console with 3D camera-space C-stand coordinates (azimuth, elevation, distance in meters), <b>3-Zone 3D Light Pointer (<code>Upper</code> / <code>Center</code> / <code>Lower</code>)</b> with curvature-guided face auto-aim, depth relief compression (<code>depth_relief_scale</code>), physical modifier apertures (Octabox, Stripbox, Beauty Dish, Fresnel, Snoot, Flash), blackbody Kelvin temperature (2000K–10000K), and 3D shadow raymarching. Outputs the diffuse relighting map, isolated specular pass, dual-sphere VFX probe + live Aim Target Radar HUD, and synchronized lighting prompt.</td>
     </tr>
     <tr></tr>
     <tr>
@@ -445,7 +445,8 @@ StudioLight implements a **geometrically sampled studio area-emitter architectur
 * **Rule 1: Pass 1 Functions Best as a Flat Albedo Carrier:** Prompting Pass 1 with directional sun bakes hard contours into base geometry. Use an albedo carrier suffix in Pass 1 (`", flat diffuse ambient lighting, shadowless, albedo"`) to give StudioLight clean geometric control.
 * **Rule 2: Matte Fabrics Require Dedicated Specular Isolation:** Dark wool has albedo near 0.02. High specular kicks cause grazing Fresnel spikes, turning black wool into metallic foil. Wire `specular_pass` directly into `StudioPhotometricComposite`, keep `specular_kick` at `0.30–0.50`, and set `chroma_bleed = 0.00` on dark garments.
 * **Rule 3: Radiometric Distance Falloff Replaces Artificial Depth Tapers:** Legacy screen-space shaders often clamp distant geometry (`d_norm < 0.20`) to suppress noise, which accidentally destroys shadows on distant walls. StudioLight evaluates unconstrained physical $(r_{\text{ref}}/r)^2$ radiometric falloff and directional beam profiles ($\cos\theta > 0$), allowing foreground subjects to naturally cast geometric shadows across architectural depth gaps.
-* **Rule 4: Pass 2 Denoise Governs Illumination Integration & Creative Freedom:**
+* **Rule 4: Calibrated Normal Boost (`normal_boost = 1.35`) Prevents Grazing-Angle Terminator Seams:** Under steep grazing key lights (e.g. $75^\circ$ elevation Fresnel/Snoot), over-amplifying DSINE normal maps (`normal_boost >= 2.5`) sharpens the $\mathbf{N}\cdot\mathbf{L}=0$ terminator and cavity AO gradient faster than Pass 2 diffusion (`denoise = 0.48`) can blend, creating hard forehead seams or dark eye-socket dots. Keeping `normal_boost` at the calibrated **`1.35`** default preserves 3D facial sculpting while eliminating grazing-angle terminator artifacts.
+* **Rule 5: Pass 2 Denoise Governs Illumination Integration & Creative Freedom:**
   * `0.35 – 0.45` (Feature Lock & Subtle Fill): Preserves exact identity, original micro-textures, and fine facial features with a gentle lighting wash.
   * `0.50 – 0.65` (Balanced Relighting): Default zone for studio lighting integration—synthesizes skin subsurface scattering, specular eye catchlights, and realistic fabric wraps while anchoring geometry.
   * `0.70 – 0.85+` (Dramatic Transformation & Deep Re-Shading): Allows diffusion full creative freedom to completely re-illuminate complex scenes, repaint albedo, and create intense chiaroscuro contrast. Adjust according to creative intent.
@@ -526,6 +527,28 @@ python test_studiolight.py
     </tr>
   </tbody>
 </table>
+
+---
+
+## Roadmap
+
+### Upcoming Milestones 🎯
+* [ ] **Custom 3D Aim Pointer (`X, Y, Z`):** Interactive 3D target locator (`Custom` mode alongside `Upper`, `Center`, `Lower`) allowing manual placement of the camera-space aim point in meters (`target_pos` is already supported in the underlying `shader_engine.py` raymarcher).
+* [ ] **Independent Per-Lamp Aim Pointer (`Key`, `Fill`, `Rim`):** Decoupled aim targets for each individual C-stand so `Key`, `Fill`, and `Rim` can independently target different subject zones (e.g., `Key` aimed at `Upper` face while `Rim` or `Fill` targets `Center` torso or custom coordinates).
+* [ ] **Temporal & Video Diffusion Integration:** Model-agnostic integration piping 32-bit linear photometric relighting plates into video diffusion attention streams and spatio-temporal latents (Wan 2.1, LTX-Video, Hunyuan).
+* [ ] **Temporal Light Vector Keyframing:** Continuous interpolation of light coordinates, intensity, and Kelvin temperatures across video frame sequences for smooth cinematic sweeps.
+* [ ] **Expanded Model Architectures (Krea 2 & Beyond):** Conditioning adapters and native CFG response dynamics for newly released foundation models.
+* [ ] **Universal 2D Image Relighting (Img2Img):** Standalone relighting pipeline accepting existing 2D photographs or renders via intrinsic albedo estimation and depth/normal extraction.
+* [ ] **`StudioModifierTuner` Companion Node:** Dedicated utility node enabling continuous slider control over physical aperture diameter (0.01m – 3.00m), asymmetric modifier aspect ratios (stripbox width vs. length), and internal baffle diffusion softness.
+* [ ] **Native 3D Stage & Asset Ingestion:** Integrated lightweight Three.js/WebGL canvas supporting `.glb` / `.obj` positioning, camera alignment, and interactive light gizmos inside ComfyUI.
+* [ ] **Live Interactive Radar Overhaul:** Enhanced top-down radar console with multi-light distance ring manipulation and interactive beam-cone angles.
+* [ ] **Material-Aware Specular Routing:** Automatic dielectric vs. metallic reflectance handling to prevent edge solarization across high-contrast fabric combinations.
+* [ ] **Reference Pose-to-Lighting Matching:** Extract incident light directions from reference studio photographs and auto-populate the 3-point console coordinates.
+
+---
+
+### Active Research & Exploration (R&D) 🔬
+* **Continuous Latent Trajectory Injection (Method B):** Non-destructive Euler ODE delta injection ($\Delta x = (x_0' - x_0) \cdot \text{strength}$) at flow step $\sigma_{10} = 0.863338$, exploring adaptive noise scaling to achieve material re-synthesis without stochastic restarts.
 
 ---
 

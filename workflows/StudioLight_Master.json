@@ -854,12 +854,12 @@
         2.2,
         6500,
         "Stripbox",
-        1.8,
+        1.35,
         0.65,
         true,
         "Flux.1",
         false,
-        "Auto (Face / Upper Focus)",
+        "Upper",
         0.3
       ],
       "widgets_values_named": {
@@ -887,7 +887,7 @@
         "rim_intensity": 2.2,
         "rim_kelvin": 6500,
         "rim_modifier": "Stripbox",
-        "normal_boost": 1.8,
+        "normal_boost": 1.35,
         "ao_anchoring": 0.65,
         "invert_normals_x": true,
         "target_engine": "Flux.1",
