@@ -8,7 +8,7 @@
       "id": 31,
       "type": "PreviewImage",
       "pos": [
-        -640,
+        -760,
         -90
       ],
       "size": [
@@ -34,16 +34,16 @@
       ],
       "title": "Preview: DSINE 3D Normals",
       "properties": {
-        "Node name for S&R": "PreviewImage",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "PreviewImage"
       }
     },
     {
       "id": 8,
       "type": "StringConcatenate",
       "pos": [
-        -1680,
+        -1700,
         350
       ],
       "size": [
@@ -85,9 +85,9 @@
       ],
       "title": "Concat Pass 1 (Subject + Shadowless)",
       "properties": {
-        "Node name for S&R": "StringConcatenate",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "StringConcatenate"
       },
       "widgets_values": [
         "",
@@ -104,7 +104,7 @@
       "id": 9,
       "type": "CLIPTextEncode",
       "pos": [
-        -1680,
+        -1700,
         390
       ],
       "size": [
@@ -141,9 +141,9 @@
       ],
       "title": "CLIP Text Encode (Pass 1 Albedo)",
       "properties": {
-        "Node name for S&R": "CLIPTextEncode",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
         ""
@@ -156,7 +156,7 @@
       "id": 7,
       "type": "PrimitiveStringMultiline",
       "pos": [
-        -2100,
+        -2120,
         360
       ],
       "size": [
@@ -179,9 +179,9 @@
       ],
       "title": "Pass 1 Albedo Lighting Suffix (Shadowless)",
       "properties": {
-        "Node name for S&R": "PrimitiveStringMultiline",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "PrimitiveStringMultiline"
       },
       "widgets_values": [
         ", flat diffuse high-key ambient lighting, shadowless, Vogue cover style"
@@ -194,7 +194,7 @@
       "id": 29,
       "type": "DepthAnythingV2Preprocessor",
       "pos": [
-        -640,
+        -760,
         290
       ],
       "size": [
@@ -202,7 +202,7 @@
         110
       ],
       "flags": {},
-      "order": 19,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
@@ -229,13 +229,17 @@
       "widgets_values": [
         "depth_anything_v2_vitl.pth",
         1024
-      ]
+      ],
+      "widgets_values_named": {
+        "ckpt_name": "depth_anything_v2_vitl.pth",
+        "resolution": 1024
+      }
     },
     {
       "id": 30,
       "type": "PreviewImage",
       "pos": [
-        -640,
+        -760,
         440
       ],
       "size": [
@@ -261,16 +265,16 @@
       ],
       "title": "Preview: Depth Map",
       "properties": {
-        "Node name for S&R": "PreviewImage",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "PreviewImage"
       }
     },
     {
       "id": 32,
       "type": "PreviewImage",
       "pos": [
-        200,
+        80,
         100
       ],
       "size": [
@@ -296,16 +300,16 @@
       ],
       "title": "Preview: Pure Relighting Field (VFX Isolation)",
       "properties": {
-        "Node name for S&R": "PreviewImage",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "PreviewImage"
       }
     },
     {
       "id": 19,
       "type": "PreviewImage",
       "pos": [
-        200,
+        80,
         430
       ],
       "size": [
@@ -331,16 +335,16 @@
       ],
       "title": "Preview: 3D Lit Proxy Plate (Prior to FLUX)",
       "properties": {
-        "Node name for S&R": "PreviewImage",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "PreviewImage"
       }
     },
     {
       "id": 20,
       "type": "VAEEncode",
       "pos": [
-        -640,
+        -760,
         820
       ],
       "size": [
@@ -374,73 +378,16 @@
       ],
       "title": "VAE Encode Lit Plate",
       "properties": {
-        "Node name for S&R": "VAEEncode",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "VAEEncode"
       }
-    },
-    {
-      "id": 36,
-      "type": "MarkdownNote",
-      "pos": [
-        220,
-        1020
-      ],
-      "size": [
-        380,
-        170
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "SIShadowHighlight -\nThis is your digital darkroom curve.\n\nhighlight_amount (Default 0.3):\n\nPush to 0.6 \u2013 0.8: Tests if FLUX highlights blow out or remain rich and textured.\n\nshadow_amount (Default 0.0):\n\nTry -0.25: Deepens the blacks (crushed luxury editorial look).\n\nTry +0.30: Shadow recovery / lifts dark wool coats so texture doesn't get lost in shadow."
-      ],
-      "widgets_values_named": {
-        "text": "SIShadowHighlight -\nThis is your digital darkroom curve.\n\nhighlight_amount (Default 0.3):\n\nPush to 0.6 \u2013 0.8: Tests if FLUX highlights blow out or remain rich and textured.\n\nshadow_amount (Default 0.0):\n\nTry -0.25: Deepens the blacks (crushed luxury editorial look).\n\nTry +0.30: Shadow recovery / lifts dark wool coats so texture doesn't get lost in shadow."
-      },
-      "color": "#2d3732",
-      "bgcolor": "#19231e"
-    },
-    {
-      "id": 35,
-      "type": "MarkdownNote",
-      "pos": [
-        -210,
-        1020
-      ],
-      "size": [
-        380,
-        220
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "Studio Photometric Composite",
-      "properties": {},
-      "widgets_values": [
-        "StudioPhotometricComposite -\nThese controls shape the input plate before FLUX ever touches it.\n\nlighting_strength (Default 1.0): \n\nTry 1.5 \u2013 2.2: Force extreme directional contrast and deep carving shadows.\nTry 0.6 \u2013 0.8: Gentle beauty studio wash.\n\nspecular_kick (Default 1.5):\n\nTry 2.5 \u2013 3.0: Makes wet skin, metallic chains, and patent leather explode with crisp catchlights.\n\nfilmic_white_point (Default 3.5):\n\nTry 1.8 \u2013 2.2: Soft vintage film roll-off (highlights compress early, no blown-out whites).\nTry 6.0 \u2013 8.0: Punchy, crisp digital look with high dynamic range ceiling."
-      ],
-      "widgets_values_named": {
-        "text": "StudioPhotometricComposite -\nThese controls shape the input plate before FLUX ever touches it.\n\nlighting_strength (Default 1.0): \n\nTry 1.5 \u2013 2.2: Force extreme directional contrast and deep carving shadows.\nTry 0.6 \u2013 0.8: Gentle beauty studio wash.\n\nspecular_kick (Default 1.5):\n\nTry 2.5 \u2013 3.0: Makes wet skin, metallic chains, and patent leather explode with crisp catchlights.\n\nfilmic_white_point (Default 3.5):\n\nTry 1.8 \u2013 2.2: Soft vintage film roll-off (highlights compress early, no blown-out whites).\nTry 6.0 \u2013 8.0: Punchy, crisp digital look with high dynamic range ceiling."
-      },
-      "color": "#2d3732",
-      "bgcolor": "#19231e"
     },
     {
       "id": 21,
       "type": "StringConcatenate",
       "pos": [
-        730,
+        550,
         -230
       ],
       "size": [
@@ -483,9 +430,9 @@
       ],
       "title": "Concat Pass 2 (Subject + Dynamic Lighting)",
       "properties": {
-        "Node name for S&R": "StringConcatenate",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "StringConcatenate"
       },
       "widgets_values": [
         "",
@@ -502,7 +449,7 @@
       "id": 22,
       "type": "PreviewAny",
       "pos": [
-        730,
+        550,
         -190
       ],
       "size": [
@@ -529,9 +476,9 @@
       ],
       "title": "Preview Pass 2 Synchronized Prompt",
       "properties": {
-        "Node name for S&R": "PreviewAny",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "PreviewAny"
       },
       "widgets_values": [],
       "widgets_values_named": {},
@@ -542,7 +489,7 @@
       "id": 1,
       "type": "UNETLoader",
       "pos": [
-        -2100,
+        -2120,
         -220
       ],
       "size": [
@@ -550,7 +497,7 @@
         90
       ],
       "flags": {},
-      "order": 3,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -566,9 +513,9 @@
       ],
       "title": "Flux Krea Dev (Base UNET)",
       "properties": {
-        "Node name for S&R": "UNETLoader",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "UNETLoader"
       },
       "widgets_values": [
         "flux1-krea-dev.safetensors",
@@ -585,7 +532,7 @@
       "id": 2,
       "type": "DualCLIPLoader",
       "pos": [
-        -2100,
+        -2120,
         -80
       ],
       "size": [
@@ -593,7 +540,7 @@
         130
       ],
       "flags": {},
-      "order": 4,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -610,9 +557,9 @@
       ],
       "title": "Dual CLIP Loader (T5xxl + CLIP-L)",
       "properties": {
-        "Node name for S&R": "DualCLIPLoader",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "DualCLIPLoader"
       },
       "widgets_values": [
         "clip_l.safetensors",
@@ -633,7 +580,7 @@
       "id": 3,
       "type": "VAELoader",
       "pos": [
-        -2100,
+        -2120,
         100
       ],
       "size": [
@@ -641,7 +588,7 @@
         60
       ],
       "flags": {},
-      "order": 5,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -658,9 +605,9 @@
       ],
       "title": "Flux VAE",
       "properties": {
-        "Node name for S&R": "VAELoader",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "VAELoader"
       },
       "widgets_values": [
         "ae.safetensors"
@@ -675,7 +622,7 @@
       "id": 4,
       "type": "EmptyLatentImage",
       "pos": [
-        -2100,
+        -2120,
         210
       ],
       "size": [
@@ -683,7 +630,7 @@
         110
       ],
       "flags": {},
-      "order": 6,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -698,9 +645,9 @@
       ],
       "title": "Empty Latent (1024x1024)",
       "properties": {
-        "Node name for S&R": "EmptyLatentImage",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "EmptyLatentImage"
       },
       "widgets_values": [
         1024,
@@ -716,10 +663,500 @@
       "bgcolor": "#653"
     },
     {
+      "id": 18,
+      "type": "SIShadowHighlight",
+      "pos": [
+        80,
+        770
+      ],
+      "size": [
+        380,
+        160
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            26,
+            27
+          ]
+        }
+      ],
+      "title": "SI Shadow & Highlight Sculptor",
+      "properties": {
+        "Node name for S&R": "SIShadowHighlight"
+      },
+      "widgets_values": [
+        0,
+        0.15,
+        0.5,
+        0.5,
+        1
+      ],
+      "widgets_values_named": {
+        "shadow_amount": 0,
+        "highlight_amount": 0.15,
+        "shadow_tonal_width": 0.5,
+        "highlight_tonal_width": 0.5,
+        "midtone_contrast": 1
+      },
+      "color": "#244131",
+      "bgcolor": "#102d1d"
+    },
+    {
+      "id": 5,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -1700,
+        90
+      ],
+      "size": [
+        380,
+        120
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            10,
+            36
+          ]
+        }
+      ],
+      "title": "Negative Conditioning (Empty)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "text": ""
+      },
+      "color": "#743d3d",
+      "bgcolor": "#602929"
+    },
+    {
+      "id": 12,
+      "type": "VAEDecode",
+      "pos": [
+        -1230,
+        150
+      ],
+      "size": [
+        380,
+        60
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 12
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            14,
+            15,
+            18,
+            24
+          ]
+        }
+      ],
+      "title": "Decode Pass 1 Draft",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "VAEDecode"
+      }
+    },
+    {
+      "id": 25,
+      "type": "KSampler",
+      "pos": [
+        1020,
+        -230
+      ],
+      "size": [
+        380,
+        700
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 34
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 35
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 36
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 37
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            38
+          ]
+        }
+      ],
+      "title": "Pass 2 KSampler (CALIBRATION CONTROL LEVER)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        424242,
+        "fixed",
+        30,
+        1,
+        "euler",
+        "simple",
+        0.55
+      ],
+      "widgets_values_named": {
+        "seed": 424242,
+        "control_after_generate": "fixed",
+        "steps": 30,
+        "cfg": 1,
+        "sampler_name": "euler",
+        "scheduler": "simple",
+        "denoise": 0.55
+      },
+      "color": "#1b3447",
+      "bgcolor": "#10202c"
+    },
+    {
+      "id": 26,
+      "type": "VAEDecode",
+      "pos": [
+        1440,
+        -230
+      ],
+      "size": [
+        200,
+        50
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 38
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            40
+          ]
+        }
+      ],
+      "title": "Decode Final Master",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "VAEDecode"
+      }
+    },
+    {
+      "id": 10,
+      "type": "FluxGuidance",
+      "pos": [
+        -1700,
+        250
+      ],
+      "size": [
+        380,
+        60
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            9
+          ]
+        }
+      ],
+      "title": "Flux Guidance Pass 1 (3.5)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "widgets_values_named": {
+        "guidance": 3.5
+      }
+    },
+    {
+      "id": 14,
+      "type": "DSINE-NormalMapPreprocessor",
+      "pos": [
+        -760,
+        -230
+      ],
+      "size": [
+        380,
+        110
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            16,
+            17
+          ]
+        }
+      ],
+      "title": "Extract 3D Normals (DSINE)",
+      "properties": {
+        "Node name for S&R": "DSINE-NormalMapPreprocessor"
+      },
+      "widgets_values": [
+        60,
+        5,
+        1024
+      ],
+      "widgets_values_named": {
+        "fov": 60,
+        "iterations": 5,
+        "resolution": 1024
+      },
+      "color": "#4a3818",
+      "bgcolor": "#2a1f0c"
+    },
+    {
+      "id": 16,
+      "type": "PreviewImage",
+      "pos": [
+        80,
+        -230
+      ],
+      "size": [
+        380,
+        300
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "VFX Probes & Studio Radar",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 23,
+      "type": "CLIPTextEncode",
+      "pos": [
+        550,
+        190
+      ],
+      "size": [
+        380,
+        90
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": 32
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            33
+          ]
+        }
+      ],
+      "title": "CLIP Text Encode (Pass 2 Lit Prompt)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "text": ""
+      }
+    },
+    {
+      "id": 24,
+      "type": "FluxGuidance",
+      "pos": [
+        550,
+        330
+      ],
+      "size": [
+        380,
+        60
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            35
+          ]
+        }
+      ],
+      "title": "Flux Guidance Pass 2 (3.5)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "widgets_values_named": {
+        "guidance": 3.5
+      },
+      "color": "#3b2454",
+      "bgcolor": "#221430"
+    },
+    {
       "id": 6,
       "type": "PrimitiveStringMultiline",
       "pos": [
-        -1680,
+        -1700,
         -230
       ],
       "size": [
@@ -727,7 +1164,7 @@
         280
       ],
       "flags": {},
-      "order": 7,
+      "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -743,29 +1180,143 @@
       ],
       "title": "Base Subject Prompt (Clean Content)",
       "properties": {
-        "Node name for S&R": "PrimitiveStringMultiline",
         "cnr_id": "comfy-core",
-        "ver": "0.30.0"
+        "ver": "0.30.0",
+        "Node name for S&R": "PrimitiveStringMultiline"
       },
       "widgets_values": [
-        "High fashion editorial portrait of a young elegant woman holding a glossy black patent leather handbag, wearing a sharp tailored wool coat, architectural background, sharp focus, 8k, raw photographic textures"
+        "High fashion editorial of a young elegant woman holding a glossy black patent leather handbag, wearing a structured Savile Row black wool coat, sleek swept-back dark hair, neoclassical Parisian stone architecture background, shot on 35mm medium format, 50mm portrait lens, detailed fabric weave, authentic editorial campaign. "
       ],
       "widgets_values_named": {
-        "value": "High fashion editorial portrait of a young elegant woman holding a glossy black patent leather handbag, wearing a sharp tailored wool coat, architectural background, sharp focus, 8k, raw photographic textures"
+        "value": "High fashion editorial of a young elegant woman holding a glossy black patent leather handbag, wearing a structured Savile Row black wool coat, sleek swept-back dark hair, neoclassical Parisian stone architecture background, shot on 35mm medium format, 50mm portrait lens, detailed fabric weave, authentic editorial campaign. "
       },
       "color": "#244131",
       "bgcolor": "#102d1d"
     },
     {
+      "id": 11,
+      "type": "KSamplerAdvanced",
+      "pos": [
+        -1230,
+        -230
+      ],
+      "size": [
+        390,
+        560
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 8
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 9
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 10
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            12
+          ]
+        }
+      ],
+      "title": "Pass 1 Draft Sampler (Steps 0 -> 10)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "KSamplerAdvanced"
+      },
+      "widgets_values": [
+        "enable",
+        777777,
+        "fixed",
+        30,
+        1,
+        "euler",
+        "simple",
+        0,
+        10,
+        "disable"
+      ],
+      "widgets_values_named": {
+        "add_noise": "enable",
+        "noise_seed": 777777,
+        "control_after_generate": "fixed",
+        "steps": 30,
+        "cfg": 1,
+        "sampler_name": "euler",
+        "scheduler": "simple",
+        "start_at_step": 0,
+        "end_at_step": 10,
+        "return_with_leftover_noise": "disable"
+      },
+      "color": "#1b3447",
+      "bgcolor": "#10202c"
+    },
+    {
+      "id": 13,
+      "type": "PreviewImage",
+      "pos": [
+        -1230,
+        370
+      ],
+      "size": [
+        380,
+        380
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "Preview: Pass 1 Neutral Draft (Step 10)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
       "id": 15,
       "type": "StudioLightRig",
       "pos": [
-        -220,
+        -340,
         -230
       ],
       "size": [
         380,
-        870
+        900
       ],
       "flags": {},
       "order": 23,
@@ -830,28 +1381,28 @@
         "Node name for S&R": "StudioLightRig"
       },
       "widgets_values": [
-        "Custom",
-        0.05,
+        "Cinematic Film Noir",
+        0.01,
         false,
         true,
-        35,
-        14.7005615234375,
+        75,
+        20,
         1.8,
-        1.4,
+        1.5,
         3200,
-        "Beauty Dish (Silver)",
-        true,
-        -40,
-        15,
-        2.5,
-        0.3,
-        6500,
-        "Octabox (Soft)",
+        "Fresnel Spotlight",
         false,
-        155,
-        30,
+        -45,
+        0,
+        2.5,
+        0.05,
+        3200,
+        "Octabox (Soft)",
+        true,
+        -150,
+        35,
+        1.5,
         1.4,
-        2.2,
         6500,
         "Stripbox",
         1.35,
@@ -863,45 +1414,264 @@
         0.3
       ],
       "widgets_values_named": {
-        "preset": "Custom",
-        "ambient_intensity": 0.05,
+        "preset": "Cinematic Film Noir",
+        "ambient_intensity": 0.01,
         "invert_normals_y": false,
         "key_enabled": true,
-        "key_azimuth": 35,
-        "key_elevation": 14.7005615234375,
+        "key_azimuth": 75,
+        "key_elevation": 20,
         "key_distance": 1.8,
-        "key_intensity": 1.4,
+        "key_intensity": 1.5,
         "key_kelvin": 3200,
-        "key_modifier": "Beauty Dish (Silver)",
-        "fill_enabled": true,
-        "fill_azimuth": -40,
-        "fill_elevation": 15,
+        "key_modifier": "Fresnel Spotlight",
+        "fill_enabled": false,
+        "fill_azimuth": -45,
+        "fill_elevation": 0,
         "fill_distance": 2.5,
-        "fill_intensity": 0.3,
-        "fill_kelvin": 6500,
+        "fill_intensity": 0.05,
+        "fill_kelvin": 3200,
         "fill_modifier": "Octabox (Soft)",
-        "rim_enabled": false,
-        "rim_azimuth": 155,
-        "rim_elevation": 30,
-        "rim_distance": 1.4,
-        "rim_intensity": 2.2,
+        "rim_enabled": true,
+        "rim_azimuth": -150,
+        "rim_elevation": 35,
+        "rim_distance": 1.5,
+        "rim_intensity": 1.4,
         "rim_kelvin": 6500,
         "rim_modifier": "Stripbox",
         "normal_boost": 1.35,
         "ao_anchoring": 0.65,
         "invert_normals_x": true,
         "target_engine": "Flux.1",
-        "invert_depth": false
+        "invert_depth": false,
+        "aim_target": "Upper",
+        "depth_relief_scale": 0.3
       },
       "color": "#244131",
       "bgcolor": "#102d1d"
     },
     {
+      "id": 38,
+      "type": "MarkdownNote",
+      "pos": [
+        -1240,
+        840
+      ],
+      "size": [
+        410,
+        110
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Pass 1  KSampler",
+      "properties": {},
+      "widgets_values": [
+        "Pass 1 split_step \n\nStep 8 / 30: Geometry is still fluid; lighting creates massive volumetric shifts.\n\nStep 10 / 30 (Calibrated Default): Shape locked, surface shading 100% receptive.\n\nStep 15 / 30: Geometry locked tight; lighting acts purely on micro-surfaces."
+      ],
+      "widgets_values_named": {
+        "text": "Pass 1 split_step \n\nStep 8 / 30: Geometry is still fluid; lighting creates massive volumetric shifts.\n\nStep 10 / 30 (Calibrated Default): Shape locked, surface shading 100% receptive.\n\nStep 15 / 30: Geometry locked tight; lighting acts purely on micro-surfaces."
+      },
+      "color": "#243440",
+      "bgcolor": "#10202c"
+    },
+    {
+      "id": 27,
+      "type": "SaveImage",
+      "pos": [
+        1440,
+        -130
+      ],
+      "size": [
+        600,
+        600
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 40
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "💎 FINAL LIT RENDER",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "MethodA_Calibrated_Final"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "MethodA_Calibrated_Final"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 34,
+      "type": "MarkdownNote",
+      "pos": [
+        1040,
+        560
+      ],
+      "size": [
+        380,
+        210
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Pass 2 KSampler",
+      "properties": {},
+      "widgets_values": [
+        "The #1 King Lever: Pass 2 KSampler denoise (Default 0.55)\n\nDetermines how much FLUX redraws the image to adopt the new 3D lighting versus locking the Pass 1 geometry.\n\n0.35 – 0.45 (Surgical Polish & Identity Lock):\nResult: Strictly preserves original face, pores, and fabric details while adding directional light wrap.\n\n0.50 – 0.60 (The Golden Sweet Spot — Default 0.55):\nResult: FLUX generatively synthesizes realistic subsurface scattering on skin, new catchlights in the eyes, and glossy highlights on leather without losing identity.\n\n0.65 – 0.85+ (High Chiaroscuro / Dramatic):\nResult: Extreme light transformation (e.g. converting flat draft into moody Film Noir), giving diffusion full creative freedom."
+      ],
+      "widgets_values_named": {
+        "text": "The #1 King Lever: Pass 2 KSampler denoise (Default 0.55)\n\nDetermines how much FLUX redraws the image to adopt the new 3D lighting versus locking the Pass 1 geometry.\n\n0.35 – 0.45 (Surgical Polish & Identity Lock):\nResult: Strictly preserves original face, pores, and fabric details while adding directional light wrap.\n\n0.50 – 0.60 (The Golden Sweet Spot — Default 0.55):\nResult: FLUX generatively synthesizes realistic subsurface scattering on skin, new catchlights in the eyes, and glossy highlights on leather without losing identity.\n\n0.65 – 0.85+ (High Chiaroscuro / Dramatic):\nResult: Extreme light transformation (e.g. converting flat draft into moody Film Noir), giving diffusion full creative freedom."
+      },
+      "color": "#243440",
+      "bgcolor": "#10202c"
+    },
+    {
+      "id": 37,
+      "type": "MarkdownNote",
+      "pos": [
+        540,
+        490
+      ],
+      "size": [
+        380,
+        110
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "FLUX guidance",
+      "properties": {},
+      "widgets_values": [
+        "FLUX guidance (Default 3.5)\n\n2.0 – 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 – 4.5: High prompt adherence; enhances crisp edges, but pushing above 4.0 can introduce digital sharpness."
+      ],
+      "widgets_values_named": {
+        "text": "FLUX guidance (Default 3.5)\n\n2.0 – 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 – 4.5: High prompt adherence; enhances crisp edges, but pushing above 4.0 can introduce digital sharpness."
+      },
+      "color": "#362844",
+      "bgcolor": "#221430"
+    },
+    {
+      "id": 35,
+      "type": "MarkdownNote",
+      "pos": [
+        -331.5041174316407,
+        1020.5776745605468
+      ],
+      "size": [
+        380,
+        230
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Studio Photometric Composite",
+      "properties": {},
+      "widgets_values": [
+        "StudioPhotometricComposite -\nThese controls shape the Linear Rec.709 lit plate before FLUX Pass 2 touches it.\n\nlighting_strength (Default 1.2):\nTry 1.5 – 2.2: Force extreme directional contrast and deep carving shadows.\nTry 0.6 – 0.8: Gentle beauty studio wash.\n\nspecular_kick (Default 0.45):\n0.40 – 0.50: Universal standard for mixed materials (skin + wool coat + leather).\n0.00: Pure matte black wool (prevents grazing-angle edge solarization).\n0.80 – 1.20: Makes wet skin, chrome, and patent leather pop with crisp catchlights.\n\nchroma_bleed (Default 0.45):\nControls warm/cool Kelvin color saturation in midtone transitions (set 0.00 on black wool).\n\nfilmic_white_point (Default 3.5):\nTry 1.8 – 2.2: Soft vintage film roll-off (highlights compress early, no blown-out whites).\nTry 6.0 – 8.0: Punchy, crisp digital look with high dynamic range ceiling."
+      ],
+      "widgets_values_named": {
+        "text": "StudioPhotometricComposite -\nThese controls shape the Linear Rec.709 lit plate before FLUX Pass 2 touches it.\n\nlighting_strength (Default 1.2):\nTry 1.5 – 2.2: Force extreme directional contrast and deep carving shadows.\nTry 0.6 – 0.8: Gentle beauty studio wash.\n\nspecular_kick (Default 0.45):\n0.40 – 0.50: Universal standard for mixed materials (skin + wool coat + leather).\n0.00: Pure matte black wool (prevents grazing-angle edge solarization).\n0.80 – 1.20: Makes wet skin, chrome, and patent leather pop with crisp catchlights.\n\nchroma_bleed (Default 0.45):\nControls warm/cool Kelvin color saturation in midtone transitions (set 0.00 on black wool).\n\nfilmic_white_point (Default 3.5):\nTry 1.8 – 2.2: Soft vintage film roll-off (highlights compress early, no blown-out whites).\nTry 6.0 – 8.0: Punchy, crisp digital look with high dynamic range ceiling."
+      },
+      "color": "#2d3732",
+      "bgcolor": "#19231e"
+    },
+    {
+      "id": 36,
+      "type": "MarkdownNote",
+      "pos": [
+        100,
+        1020
+      ],
+      "size": [
+        380,
+        170
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "SI Shadow Highlight",
+      "properties": {},
+      "widgets_values": [
+        "SIShadowHighlight -\nDigital darkroom with zero-bleed Hermite cubic tonal isolation (L=0.50 midtones stay 100% locked).\n\nhighlight_amount (Default 0.15):\nTry -0.15 to -0.35: Compresses hot highlights so bright skin never blows out.\nTry +0.15 to +0.40: Boosts crisp specular catchlights before FLUX Pass 2.\n\nshadow_amount (Default 0.0):\nTry -0.25: Deepens the blacks (crushed luxury editorial / Film Noir look).\nTry +0.30: Shadow recovery — lifts dark wool coats so fabric weave stays visible in shadow.\n\nmidtone_contrast (Default 1.0):\nBounded sigmoidal S-curve (try 1.15 – 1.25 for extra editorial punch without clipping)."
+      ],
+      "widgets_values_named": {
+        "text": "SIShadowHighlight -\nDigital darkroom with zero-bleed Hermite cubic tonal isolation (L=0.50 midtones stay 100% locked).\n\nhighlight_amount (Default 0.15):\nTry -0.15 to -0.35: Compresses hot highlights so bright skin never blows out.\nTry +0.15 to +0.40: Boosts crisp specular catchlights before FLUX Pass 2.\n\nshadow_amount (Default 0.0):\nTry -0.25: Deepens the blacks (crushed luxury editorial / Film Noir look).\nTry +0.30: Shadow recovery — lifts dark wool coats so fabric weave stays visible in shadow.\n\nmidtone_contrast (Default 1.0):\nBounded sigmoidal S-curve (try 1.15 – 1.25 for extra editorial punch without clipping)."
+      },
+      "color": "#2d3732",
+      "bgcolor": "#19231e"
+    },
+    {
+      "id": 41,
+      "type": "MarkdownNote",
+      "pos": [
+        -2610,
+        -270
+      ],
+      "size": [
+        430,
+        760
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "INFO",
+      "properties": {},
+      "widgets_values": [
+        "# 💡 StudioLight: v1.0.0 Calibrated\n### Professional 3-Point Photometric Lighting Console\n\n---\n\n### 📦 Required Models & Storage Paths\n\n* **Diffusion Model (UNET):**\n  `flux1-krea-dev.safetensors` *(or standard `flux1-dev.safetensors`)*\n  📁 `ComfyUI/models/unet/` or `diffusion_models/`\n\n* **Text Encoders (CLIP):**\n  `clip_l.safetensors` + `t5xxl_fp16.safetensors` *(or fp8)*\n  📁 `ComfyUI/models/clip/`\n\n* **VAE:**\n  `ae.safetensors`\n  📁 `ComfyUI/models/vae/`\n\n* **Preprocessors (Auto-downloaded by ControlNet-Aux):**\n  `dsine.pt` + `depth_anything_v2_vitl.pth`\n\n---\n\n### ⚡ 3-Step Quick Start\n\n1. **Prompt (Zone 1):** Enter subject description in `Base Subject Prompt`. `StudioPromptSanitizer` automatically strips specular/directional tokens for Pass 1 and appends the flat albedo suffix.\n2. **Light & Aim (Zone 3):** Select a preset on `StudioLightRig` *(e.g. Rembrandt Classic)*, choose `aim_target` (`Upper` / `Center` / `Lower`), or adjust light coordinates. Check the green **AIM crosshair** on the live 2D Studio Radar.\n3. **Queue:** Pass 1 crystallizes 3D geometry at Step 10; Pass 2 synthesizes photorealistic lighting at Step 30.\n\n---\n\n### 🎛️ Production Calibration Rules\n\n* **Aim Target (`aim_target` on Rig):**\n  * `Upper` *(Default)*: Curvature-guided 3D face/head locator (auto-falls back to subject centroid if upper frame is empty).\n  * `Center` / `Lower`: Aims all 3 fixtures at mid-torso/product (`Center`) or lower third (`Lower`).\n\n* **Normal Boost (`normal_boost` on Rig):**\n  * `1.35` *(Calibrated Default)*: Clean 3D facial sculpting with zero grazing-angle forehead seams or eye-socket dot artifacts.\n  * `1.80 – 2.50`: High micro-surface relief (use for stone, armor, or close-up product textures).\n\n* **Pass 2 Denoise (Zone 5):**\n  * `0.45 – 0.50`: Strict facial identity lock (catalog beauty).\n  * `0.55 – 0.60`: **Calibrated Sweet Spot** (subsurface scattering, leather reflections, skin wrap).\n  * `0.65+`: Extreme Chiaroscuro / Film Noir.\n\n* **Specular Kick (Zone 3 - Composite):**\n  * `0.40 – 0.50`: Universal standard for mixed materials (skin + wool coat + leather bag).\n  * `0.00`: Pure matte black wool (prevents edge solarization).\n\n* **Stand Distance (Zone 3 - Rig):**\n  * `0.8m – 1.5m`: Close, dramatic falloff; background architecture drops into darkness.\n  * `2.5m – 4.0m`: Soft, broad ambient coverage.\n\n---\n*Created by METAMATERIAL // github.com/maciejtajber/ComfyUI-StudioLight*"
+      ],
+      "widgets_values_named": {
+        "text": "# 💡 StudioLight: v1.0.0 Calibrated\n### Professional 3-Point Photometric Lighting Console\n\n---\n\n### 📦 Required Models & Storage Paths\n\n* **Diffusion Model (UNET):**\n  `flux1-krea-dev.safetensors` *(or standard `flux1-dev.safetensors`)*\n  📁 `ComfyUI/models/unet/` or `diffusion_models/`\n\n* **Text Encoders (CLIP):**\n  `clip_l.safetensors` + `t5xxl_fp16.safetensors` *(or fp8)*\n  📁 `ComfyUI/models/clip/`\n\n* **VAE:**\n  `ae.safetensors`\n  📁 `ComfyUI/models/vae/`\n\n* **Preprocessors (Auto-downloaded by ControlNet-Aux):**\n  `dsine.pt` + `depth_anything_v2_vitl.pth`\n\n---\n\n### ⚡ 3-Step Quick Start\n\n1. **Prompt (Zone 1):** Enter subject description in `Base Subject Prompt`. `StudioPromptSanitizer` automatically strips specular/directional tokens for Pass 1 and appends the flat albedo suffix.\n2. **Light & Aim (Zone 3):** Select a preset on `StudioLightRig` *(e.g. Rembrandt Classic)*, choose `aim_target` (`Upper` / `Center` / `Lower`), or adjust light coordinates. Check the green **AIM crosshair** on the live 2D Studio Radar.\n3. **Queue:** Pass 1 crystallizes 3D geometry at Step 10; Pass 2 synthesizes photorealistic lighting at Step 30.\n\n---\n\n### 🎛️ Production Calibration Rules\n\n* **Aim Target (`aim_target` on Rig):**\n  * `Upper` *(Default)*: Curvature-guided 3D face/head locator (auto-falls back to subject centroid if upper frame is empty).\n  * `Center` / `Lower`: Aims all 3 fixtures at mid-torso/product (`Center`) or lower third (`Lower`).\n\n* **Normal Boost (`normal_boost` on Rig):**\n  * `1.35` *(Calibrated Default)*: Clean 3D facial sculpting with zero grazing-angle forehead seams or eye-socket dot artifacts.\n  * `1.80 – 2.50`: High micro-surface relief (use for stone, armor, or close-up product textures).\n\n* **Pass 2 Denoise (Zone 5):**\n  * `0.45 – 0.50`: Strict facial identity lock (catalog beauty).\n  * `0.55 – 0.60`: **Calibrated Sweet Spot** (subsurface scattering, leather reflections, skin wrap).\n  * `0.65+`: Extreme Chiaroscuro / Film Noir.\n\n* **Specular Kick (Zone 3 - Composite):**\n  * `0.40 – 0.50`: Universal standard for mixed materials (skin + wool coat + leather bag).\n  * `0.00`: Pure matte black wool (prevents edge solarization).\n\n* **Stand Distance (Zone 3 - Rig):**\n  * `0.8m – 1.5m`: Close, dramatic falloff; background architecture drops into darkness.\n  * `2.5m – 4.0m`: Soft, broad ambient coverage.\n\n---\n*Created by METAMATERIAL // github.com/maciejtajber/ComfyUI-StudioLight*"
+      },
+      "color": "#df691a",
+      "bgcolor": "#cb5506"
+    },
+    {
       "id": 17,
       "type": "StudioPhotometricComposite",
       "pos": [
-        -220,
-        680
+        -340,
+        710
       ],
       "size": [
         380,
@@ -944,778 +1714,20 @@
       },
       "widgets_values": [
         1.2,
-        0.0,
+        0,
         0.45,
         0.45,
         3.5
       ],
       "widgets_values_named": {
         "lighting_strength": 1.2,
-        "ambient_floor": 0.08,
+        "ambient_floor": 0,
         "specular_kick": 0.45,
         "chroma_bleed": 0.45,
         "filmic_white_point": 3.5
       },
       "color": "#244131",
       "bgcolor": "#102d1d"
-    },
-    {
-      "id": 18,
-      "type": "SIShadowHighlight",
-      "pos": [
-        200,
-        770
-      ],
-      "size": [
-        380,
-        160
-      ],
-      "flags": {},
-      "order": 30,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 25
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "slot_index": 0,
-          "links": [
-            26,
-            27
-          ]
-        }
-      ],
-      "title": "SI Shadow & Highlight Sculptor",
-      "properties": {
-        "Node name for S&R": "SIShadowHighlight"
-      },
-      "widgets_values": [
-        0,
-        0.15,
-        0.5,
-        0.5,
-        1
-      ],
-      "widgets_values_named": {
-        "shadow_amount": 0,
-        "highlight_amount": 0.15,
-        "shadow_tonal_width": 0.5,
-        "highlight_tonal_width": 0.5,
-        "midtone_contrast": 1
-      },
-      "color": "#244131",
-      "bgcolor": "#102d1d"
-    },
-    {
-      "id": 5,
-      "type": "CLIPTextEncode",
-      "pos": [
-        -1680,
-        90
-      ],
-      "size": [
-        380,
-        120
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 1
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "slot_index": 0,
-          "links": [
-            10,
-            36
-          ]
-        }
-      ],
-      "title": "Negative Conditioning (Empty)",
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode",
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0"
-      },
-      "widgets_values": [
-        ""
-      ],
-      "widgets_values_named": {
-        "text": ""
-      },
-      "color": "#743d3d",
-      "bgcolor": "#602929"
-    },
-    {
-      "id": 12,
-      "type": "VAEDecode",
-      "pos": [
-        -1160,
-        150
-      ],
-      "size": [
-        380,
-        60
-      ],
-      "flags": {},
-      "order": 17,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "samples",
-          "type": "LATENT",
-          "link": 12
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 13
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "slot_index": 0,
-          "links": [
-            14,
-            15,
-            18,
-            24
-          ]
-        }
-      ],
-      "title": "Decode Pass 1 Draft",
-      "properties": {
-        "Node name for S&R": "VAEDecode",
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0"
-      }
-    },
-    {
-      "id": 13,
-      "type": "PreviewImage",
-      "pos": [
-        -1160,
-        250
-      ],
-      "size": [
-        380,
-        380
-      ],
-      "flags": {},
-      "order": 18,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 14
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": null
-        }
-      ],
-      "title": "Preview: Pass 1 Neutral Draft (Step 10)",
-      "properties": {
-        "Node name for S&R": "PreviewImage",
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0"
-      }
-    },
-    {
-      "id": 11,
-      "type": "KSamplerAdvanced",
-      "pos": [
-        -1160,
-        -230
-      ],
-      "size": [
-        380,
-        340
-      ],
-      "flags": {},
-      "order": 16,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 8
-        },
-        {
-          "name": "positive",
-          "type": "CONDITIONING",
-          "link": 9
-        },
-        {
-          "name": "negative",
-          "type": "CONDITIONING",
-          "link": 10
-        },
-        {
-          "name": "latent_image",
-          "type": "LATENT",
-          "link": 11
-        }
-      ],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "slot_index": 0,
-          "links": [
-            12
-          ]
-        }
-      ],
-      "title": "Pass 1 Draft Sampler (Steps 0 -> 10)",
-      "properties": {
-        "Node name for S&R": "KSamplerAdvanced",
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0"
-      },
-      "widgets_values": [
-        "enable",
-        424242,
-        "fixed",
-        30,
-        1,
-        "euler",
-        "simple",
-        0,
-        10,
-        "disable"
-      ],
-      "widgets_values_named": {
-        "add_noise": "enable",
-        "noise_seed": 424242,
-        "control_after_generate": "fixed",
-        "steps": 30,
-        "cfg": 1,
-        "sampler_name": "euler",
-        "scheduler": "simple",
-        "start_at_step": 0,
-        "end_at_step": 10,
-        "return_with_leftover_noise": "disable"
-      },
-      "color": "#1b3447",
-      "bgcolor": "#10202c"
-    },
-    {
-      "id": 27,
-      "type": "SaveImage",
-      "pos": [
-        1680,
-        -130
-      ],
-      "size": [
-        600,
-        600
-      ],
-      "flags": {},
-      "order": 36,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 40
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": null
-        }
-      ],
-      "title": "\ud83d\udc8e FINAL LIT RENDER",
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0",
-        "Node name for S&R": "SaveImage"
-      },
-      "widgets_values": [
-        "MethodA_Calibrated_Final"
-      ],
-      "widgets_values_named": {
-        "filename_prefix": "MethodA_Calibrated_Final"
-      },
-      "color": "#244131",
-      "bgcolor": "#102d1d"
-    },
-    {
-      "id": 25,
-      "type": "KSampler",
-      "pos": [
-        1260,
-        -230
-      ],
-      "size": [
-        380,
-        700
-      ],
-      "flags": {},
-      "order": 34,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 34
-        },
-        {
-          "name": "positive",
-          "type": "CONDITIONING",
-          "link": 35
-        },
-        {
-          "name": "negative",
-          "type": "CONDITIONING",
-          "link": 36
-        },
-        {
-          "name": "latent_image",
-          "type": "LATENT",
-          "link": 37
-        }
-      ],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "slot_index": 0,
-          "links": [
-            38
-          ]
-        }
-      ],
-      "title": "Pass 2 KSampler (CALIBRATION CONTROL LEVER)",
-      "properties": {
-        "Node name for S&R": "KSampler",
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0"
-      },
-      "widgets_values": [
-        424242,
-        "fixed",
-        30,
-        1,
-        "euler",
-        "simple",
-        0.55
-      ],
-      "widgets_values_named": {
-        "seed": 424242,
-        "control_after_generate": "fixed",
-        "steps": 30,
-        "cfg": 1,
-        "sampler_name": "euler",
-        "scheduler": "simple",
-        "denoise": 0.55
-      },
-      "color": "#1b3447",
-      "bgcolor": "#10202c"
-    },
-    {
-      "id": 37,
-      "type": "MarkdownNote",
-      "pos": [
-        750,
-        480
-      ],
-      "size": [
-        380,
-        130
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 8,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "FLUX guidance",
-      "properties": {},
-      "widgets_values": [
-        "FLUX guidance (in Conditioning / Clip Text)\n\n2.0 \u2013 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 \u2013 4.5: High prompt adherence; enhances hard edges, but can introduce digital sharpness."
-      ],
-      "widgets_values_named": {
-        "text": "FLUX guidance (in Conditioning / Clip Text)\n\n2.0 \u2013 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 \u2013 4.5: High prompt adherence; enhances hard edges, but can introduce digital sharpness."
-      },
-      "color": "#362844",
-      "bgcolor": "#221430"
-    },
-    {
-      "id": 34,
-      "type": "MarkdownNote",
-      "pos": [
-        1260,
-        560
-      ],
-      "size": [
-        380,
-        220
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 9,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "Pass 2 KSampler",
-      "properties": {},
-      "widgets_values": [
-        "The #1 King Lever: Pass 2 KSampler denoise\n\nThis determines how much FLUX redraws the image to adopt the new 3D lighting versus keeping the original geometry.\n\n0.30 \u2013 0.40 (Surgical Polish):\nResult: 100% preserves original face, wrinkles, and fabric details. Only adds subtle specular sheen and surface tints.\n\n0.50 \u2013 0.60 (The Golden Sweet Spot):\nResult: FLUX generatively re-synthesizes realistic subsurface scattering on skin, new bounce light in the eyes, and glossy highlights on leather without losing the person's identity.\n\n0.70 \u2013 0.80 (High Chiaroscuro / Dramatic):\nResult: Extreme light transformation (e.g. converting daylight to moody night film noir), but fine facial features or jewelry details may slightly drift."
-      ],
-      "widgets_values_named": {
-        "text": "The #1 King Lever: Pass 2 KSampler denoise\n\nThis determines how much FLUX redraws the image to adopt the new 3D lighting versus keeping the original geometry.\n\n0.30 \u2013 0.40 (Surgical Polish):\nResult: 100% preserves original face, wrinkles, and fabric details. Only adds subtle specular sheen and surface tints.\n\n0.50 \u2013 0.60 (The Golden Sweet Spot):\nResult: FLUX generatively re-synthesizes realistic subsurface scattering on skin, new bounce light in the eyes, and glossy highlights on leather without losing the person's identity.\n\n0.70 \u2013 0.80 (High Chiaroscuro / Dramatic):\nResult: Extreme light transformation (e.g. converting daylight to moody night film noir), but fine facial features or jewelry details may slightly drift."
-      },
-      "color": "#243440",
-      "bgcolor": "#10202c"
-    },
-    {
-      "id": 26,
-      "type": "VAEDecode",
-      "pos": [
-        1680,
-        -230
-      ],
-      "size": [
-        200,
-        50
-      ],
-      "flags": {},
-      "order": 35,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "samples",
-          "type": "LATENT",
-          "link": 38
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 39
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "slot_index": 0,
-          "links": [
-            40
-          ]
-        }
-      ],
-      "title": "Decode Final Master",
-      "properties": {
-        "Node name for S&R": "VAEDecode",
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0"
-      }
-    },
-    {
-      "id": 10,
-      "type": "FluxGuidance",
-      "pos": [
-        -1680,
-        250
-      ],
-      "size": [
-        380,
-        60
-      ],
-      "flags": {},
-      "order": 15,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "conditioning",
-          "type": "CONDITIONING",
-          "link": 7
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "slot_index": 0,
-          "links": [
-            9
-          ]
-        }
-      ],
-      "title": "Flux Guidance Pass 1 (3.5)",
-      "properties": {
-        "Node name for S&R": "FluxGuidance",
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0"
-      },
-      "widgets_values": [
-        3.5
-      ],
-      "widgets_values_named": {
-        "guidance": 3.5
-      }
-    },
-    {
-      "id": 14,
-      "type": "DSINE-NormalMapPreprocessor",
-      "pos": [
-        -640,
-        -230
-      ],
-      "size": [
-        380,
-        110
-      ],
-      "flags": {},
-      "order": 18,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 15
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "slot_index": 0,
-          "links": [
-            16,
-            17
-          ]
-        }
-      ],
-      "title": "Extract 3D Normals (DSINE)",
-      "properties": {
-        "Node name for S&R": "DSINE-NormalMapPreprocessor"
-      },
-      "widgets_values": [
-        60,
-        5,
-        1024
-      ],
-      "color": "#4a3818",
-      "bgcolor": "#2a1f0c"
-    },
-    {
-      "id": 38,
-      "type": "MarkdownNote",
-      "pos": [
-        -1170.179887251421,
-        730.3117231889205
-      ],
-      "size": [
-        410,
-        110
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 10,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "Pass 1  KSampler",
-      "properties": {},
-      "widgets_values": [
-        "Pass 1 split_step \n\nStep 8 / 30: Geometry is still fluid; lighting creates massive volumetric shifts.\n\nStep 10 / 30 (Calibrated Default): Shape locked, surface shading 100% receptive.\n\nStep 15 / 30: Geometry locked tight; lighting acts purely on micro-surfaces."
-      ],
-      "widgets_values_named": {
-        "text": "Pass 1 split_step \n\nStep 8 / 30: Geometry is still fluid; lighting creates massive volumetric shifts.\n\nStep 10 / 30 (Calibrated Default): Shape locked, surface shading 100% receptive.\n\nStep 15 / 30: Geometry locked tight; lighting acts purely on micro-surfaces."
-      },
-      "color": "#243440",
-      "bgcolor": "#10202c"
-    },
-    {
-      "id": 16,
-      "type": "PreviewImage",
-      "pos": [
-        200,
-        -230
-      ],
-      "size": [
-        380,
-        300
-      ],
-      "flags": {},
-      "order": 25,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 22
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": null
-        }
-      ],
-      "title": "VFX Probes & Studio Radar",
-      "properties": {
-        "Node name for S&R": "PreviewImage",
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0"
-      },
-      "color": "#222",
-      "bgcolor": "#000"
-    },
-    {
-      "id": 23,
-      "type": "CLIPTextEncode",
-      "pos": [
-        730,
-        190
-      ],
-      "size": [
-        380,
-        90
-      ],
-      "flags": {},
-      "order": 29,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 3
-        },
-        {
-          "name": "text",
-          "type": "STRING",
-          "widget": {
-            "name": "text"
-          },
-          "link": 32
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "slot_index": 0,
-          "links": [
-            33
-          ]
-        }
-      ],
-      "title": "CLIP Text Encode (Pass 2 Lit Prompt)",
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode",
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0"
-      },
-      "widgets_values": [
-        ""
-      ],
-      "widgets_values_named": {
-        "text": ""
-      }
-    },
-    {
-      "id": 24,
-      "type": "FluxGuidance",
-      "pos": [
-        730,
-        324.2259976891258
-      ],
-      "size": [
-        380,
-        60
-      ],
-      "flags": {},
-      "order": 31,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "conditioning",
-          "type": "CONDITIONING",
-          "link": 33
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "slot_index": 0,
-          "links": [
-            35
-          ]
-        }
-      ],
-      "title": "Flux Guidance Pass 2 (3.5)",
-      "properties": {
-        "Node name for S&R": "FluxGuidance",
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0"
-      },
-      "widgets_values": [
-        3.5
-      ],
-      "widgets_values_named": {
-        "guidance": 3.5
-      },
-      "color": "#3b2454",
-      "bgcolor": "#221430"
-    },
-    {
-      "id": 41,
-      "type": "MarkdownNote",
-      "pos": [
-        -2620,
-        -260
-      ],
-      "size": [
-        430,
-        620
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 11,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "INFO",
-      "properties": {},
-      "widgets_values": [
-        "# \ud83d\udca1 StudioLight: Method A Calibrated\n### Professional 3-Point Photometric Lighting Console\n\n---\n\n### \ud83d\udce6 Required Models & Storage Paths\n\n* **Diffusion Model (UNET):**\n  `flux1-krea-dev.safetensors` *(or standard `flux1-dev.safetensors`)*\n  \ud83d\udcc1 `ComfyUI/models/unet/` or `diffusion_models/`\n\n* **Text Encoders (CLIP):**\n  `clip_l.safetensors` + `t5xxl_fp16.safetensors` *(or fp8)*\n  \ud83d\udcc1 `ComfyUI/models/clip/`\n\n* **VAE:**\n  `ae.safetensors`\n  \ud83d\udcc1 `ComfyUI/models/vae/`\n\n* **Preprocessors (Auto-downloaded by ControlNet-Aux):**\n  `dsine.pt` + `depth_anything_v2_vitl.pth`\n\n---\n\n### \u26a1 3-Step Quick Start\n\n1. **Prompt (Zone 1):** Enter subject description in `Base Subject Prompt`. Leave `Albedo Lighting Suffix` attached to prevent pre-baked shadow seams.\n2. **Light (Zone 3):** Select a preset on `StudioLightRig` *(e.g. Rembrandt Classic)* or drag light heads on the live 2D Studio Radar.\n3. **Queue:** Pass 1 extracts 3D geometry at Step 10; Pass 2 synthesizes photorealistic lighting at Step 30.\n\n---\n\n### \ud83c\udf9b\ufe0f Production Calibration Rules\n\n* **Pass 2 Denoise (Zone 5):**\n  * `0.45 \u2013 0.50`: Strict facial identity lock (catalog beauty).\n  * `0.55 \u2013 0.60`: **Calibrated Sweet Spot** (subsurface scattering, leather reflections, skin wrap).\n  * `0.65+`: Extreme Chiaroscuro / Film Noir.\n\n* **Specular Kick (Zone 3 - Composite):**\n  * `0.40 \u2013 0.50`: Universal standard for mixed materials (skin + wool coat + leather bag).\n  * `0.00`: Pure matte black wool (prevents edge solarization).\n\n* **Stand Distance (Zone 3 - Rig):**\n  * `0.8m \u2013 1.5m`: Close, dramatic falloff; background architecture drops into darkness.\n  * `2.5m \u2013 4.0m`: Soft, broad ambient coverage.\n\n---\n*Created by METAMATERIAL // github.com/maciejtajber/ComfyUI-StudioLight*\n"
-      ],
-      "widgets_values_named": {
-        "text": "# \ud83d\udca1 StudioLight: Method A Calibrated\n### Professional 3-Point Photometric Lighting Console\n\n---\n\n### \ud83d\udce6 Required Models & Storage Paths\n\n* **Diffusion Model (UNET):**\n  `flux1-krea-dev.safetensors` *(or standard `flux1-dev.safetensors`)*\n  \ud83d\udcc1 `ComfyUI/models/unet/` or `diffusion_models/`\n\n* **Text Encoders (CLIP):**\n  `clip_l.safetensors` + `t5xxl_fp16.safetensors` *(or fp8)*\n  \ud83d\udcc1 `ComfyUI/models/clip/`\n\n* **VAE:**\n  `ae.safetensors`\n  \ud83d\udcc1 `ComfyUI/models/vae/`\n\n* **Preprocessors (Auto-downloaded by ControlNet-Aux):**\n  `dsine.pt` + `depth_anything_v2_vitl.pth`\n\n---\n\n### \u26a1 3-Step Quick Start\n\n1. **Prompt (Zone 1):** Enter subject description in `Base Subject Prompt`. Leave `Albedo Lighting Suffix` attached to prevent pre-baked shadow seams.\n2. **Light (Zone 3):** Select a preset on `StudioLightRig` *(e.g. Rembrandt Classic)* or drag light heads on the live 2D Studio Radar.\n3. **Queue:** Pass 1 extracts 3D geometry at Step 10; Pass 2 synthesizes photorealistic lighting at Step 30.\n\n---\n\n### \ud83c\udf9b\ufe0f Production Calibration Rules\n\n* **Pass 2 Denoise (Zone 5):**\n  * `0.45 \u2013 0.50`: Strict facial identity lock (catalog beauty).\n  * `0.55 \u2013 0.60`: **Calibrated Sweet Spot** (subsurface scattering, leather reflections, skin wrap).\n  * `0.65+`: Extreme Chiaroscuro / Film Noir.\n\n* **Specular Kick (Zone 3 - Composite):**\n  * `0.40 \u2013 0.50`: Universal standard for mixed materials (skin + wool coat + leather bag).\n  * `0.00`: Pure matte black wool (prevents edge solarization).\n\n* **Stand Distance (Zone 3 - Rig):**\n  * `0.8m \u2013 1.5m`: Close, dramatic falloff; background architecture drops into darkness.\n  * `2.5m \u2013 4.0m`: Soft, broad ambient coverage.\n\n---\n*Created by METAMATERIAL // github.com/maciejtajber/ComfyUI-StudioLight*\n"
-      },
-      "color": "#df691a",
-      "bgcolor": "#cb5506"
     }
   ],
   "links": [
@@ -2053,7 +2065,7 @@
       "id": 1,
       "title": "INPUTS",
       "bounding": [
-        -2130,
+        -2150,
         -300,
         860,
         810
@@ -2065,10 +2077,10 @@
       "id": 2,
       "title": "DRAFT PASS",
       "bounding": [
-        -1190,
+        -1260,
         -300,
         440,
-        960
+        1070
       ],
       "color": "#182836",
       "flags": {}
@@ -2077,7 +2089,7 @@
       "id": 3,
       "title": "STUDIO LIGHT RIG",
       "bounding": [
-        -670,
+        -790,
         -300,
         1280,
         1260
@@ -2089,7 +2101,7 @@
       "id": 4,
       "title": "PROMPT SYNC",
       "bounding": [
-        700,
+        520,
         -300,
         440,
         720
@@ -2101,7 +2113,7 @@
       "id": 5,
       "title": "FINAL RENDER",
       "bounding": [
-        1230,
+        990,
         -300,
         1080,
         800
@@ -2113,10 +2125,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.4477000000000021,
+      "scale": 0.47640756753934277,
       "offset": [
-        1792.7111899499685,
-        1033.898315735233
+        1709.1643728323952,
+        700.4055690061494
       ]
     },
     "frontendVersion": "1.52.7"
