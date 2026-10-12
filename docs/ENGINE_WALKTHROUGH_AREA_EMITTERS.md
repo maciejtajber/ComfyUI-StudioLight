@@ -62,7 +62,7 @@ The complete unit test suite and benchmark in [`test_studiolight.py`](../test_st
 | **Stripbox Catchlight Reflection** | Anisotropic vertical elongation on mirror sphere | **PASS** (Aspect = 1.82 on curved sphere) |
 | **Beauty Dish Parabolic Profile** | Continuous center attenuation with bright outer ring | **PASS** (Center = 0.00, Peak = 0.97) |
 | **Fixture Scale Hierarchy** | Octabox area coverage $\gg$ Hard Snoot pin-spot | **PASS** (Octabox: 398 px vs Snoot: 3 px) |
-| **Legacy Node Schema** | 27 required widgets + 2 optional preserved | **PASS** (Zero schema regressions) |
+| **Legacy Node Schema** | 26 required widgets + 5 optional (31 total) preserved | **PASS** (Zero schema regressions) |
 | **End-to-End Suite Pipeline** | Stage 1 $\to$ Stage 2 $\to$ Bridge $\to$ Composite | **PASS** (Full execution verified) |
 
-All 17 test modules passed cleanly!
+All 22 test modules passed cleanly!

@@ -3,7 +3,7 @@
 **Module:** `nodes/metric_shadow.py` · `nodes/shader_engine.py`  
 **Author:** Maciej Tajber (https://github.com/maciejtajber) // METAMATERIAL  
 **License:** MIT  
-**Status:** Validated, Hardened & Deployed (Commit `bd7cd98`, 18/18 Tests Passed)
+**Status:** Validated, Hardened & Deployed (v1.0.0, 22/22 Tests Passed)
 
 ---
 

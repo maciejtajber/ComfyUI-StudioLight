@@ -1,8 +1,8 @@
 # Architectural Discovery: 2D Screen-Space Shadows vs. True 3D Metric Raymarching
 
 **Date:** October 8, 2026  
-**Module:** `nodes/shader_engine.py` (`screen_space_directional_shadow`)  
-**Status:** Validated & Scheduled for 3D Camera-Space Raymarching Upgrade
+**Module:** `nodes/metric_shadow.py` (`screen_space_directional_shadow_metric`) · `nodes/shader_engine.py`  
+**Status:** Resolved & Deployed in v1.0.0 (`nodes/metric_shadow.py` replaces the legacy 2D screen-space stepper)
 
 ---
 
