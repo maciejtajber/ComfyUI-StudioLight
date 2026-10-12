@@ -64,18 +64,6 @@ https://github.com/user-attachments/assets/f82d96d9-08ac-4dfb-8f1a-a65432f33a32
       <td align="center"><img src="assets/MethodA_Calibrated_Final_00030_.png" width="100%" alt="Direct On-Camera Flash" /></td>
       <td align="center"><img src="assets/MethodA_Calibrated_Final_00027_.png" width="100%" alt="Golden Hour Window" /></td>
     </tr>
-    <tr></tr>
-    <tr>
-      <td align="center">
-        <!-- Caption 1 -->
-      </td>
-      <td align="center">
-        <!-- Caption 2 -->
-      </td>
-      <td align="center">
-        <!-- Caption 3 -->
-      </td>
-    </tr>
   </tbody>
 </table>
 
