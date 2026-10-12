@@ -181,17 +181,72 @@ def test_studio_light_node():
     assert float((rel_rembrandt - rel_flash).abs().max().item()) > 0.05, "Server-side preset failed: Rembrandt == Direct Flash"
     assert prompt_rembrandt != prompt_noir and prompt_rembrandt != prompt_flash, "Server-side preset failed to update lighting_prompt"
 
-    # Test 3: Multi-item batch (B=2) execution with depth_optional connected
-    batch_normals = mock_normals.expand(2, -1, -1, -1).contiguous()
-    batch_depth = mock_depth.expand(2, -1, -1, -1).contiguous()
-    rel_b2, _, _, spec_b2 = node.execute_rig(
-        preset="Rembrandt Classic",
-        normals_optional=batch_normals,
-        depth_optional=batch_depth,
+    # Test 3: Heterogeneous multi-item batch (B=2 and B=16) per-item independence & permutation equivalence
+    torch.manual_seed(42)
+    H_b, W_b = 48, 48
+    n_a = torch.nn.functional.normalize(torch.randn(1, H_b, W_b, 3), dim=-1)
+    n_a[..., 2] = n_a[..., 2].abs()
+    n_a = (n_a + 1.0) * 0.5
+    n_b = torch.nn.functional.normalize(torch.randn(1, H_b, W_b, 3), dim=-1)
+    n_b[..., 2] = n_b[..., 2].abs()
+    n_b = (n_b + 1.0) * 0.5
+    # Distinct depth distributions: A in [0.2, 0.8], B in [0.0, 1.0]
+    d_a = 0.2 + 0.6 * torch.rand(1, H_b, W_b, 1)
+    d_b = torch.rand(1, H_b, W_b, 1)
+
+    rel_solo_a, _, _, spec_solo_a = node.execute_rig(
+        preset="Rembrandt Classic", normals_optional=n_a, depth_optional=d_a
     )
-    assert rel_b2.shape == (2, 128, 128, 3) and spec_b2.shape == (2, 128, 128, 3)
-    assert torch.allclose(rel_b2[0:1], rel_rembrandt, atol=1e-5), "B=2 batch output must match B=1 render"
-    print("✓ StudioLightRig node execution, server-side presets & B=2 batching passed perfectly!")
+    rel_solo_b, _, _, spec_solo_b = node.execute_rig(
+        preset="Rembrandt Classic", normals_optional=n_b, depth_optional=d_b
+    )
+    rel_ab, _, _, spec_ab = node.execute_rig(
+        preset="Rembrandt Classic",
+        normals_optional=torch.cat([n_a, n_b], dim=0),
+        depth_optional=torch.cat([d_a, d_b], dim=0),
+    )
+    rel_ba, _, _, spec_ba = node.execute_rig(
+        preset="Rembrandt Classic",
+        normals_optional=torch.cat([n_b, n_a], dim=0),
+        depth_optional=torch.cat([d_b, d_a], dim=0),
+    )
+    assert rel_ab.shape == (2, H_b, W_b, 3) and spec_ab.shape == (2, H_b, W_b, 3)
+    assert torch.allclose(rel_ab[0:1], rel_solo_a, atol=1e-6), f"B=2 [A,B][0] relight != solo(A): {(rel_ab[0:1] - rel_solo_a).abs().max()}"
+    assert torch.allclose(rel_ab[1:2], rel_solo_b, atol=1e-6), f"B=2 [A,B][1] relight != solo(B): {(rel_ab[1:2] - rel_solo_b).abs().max()}"
+    assert torch.allclose(rel_ab[0:1], rel_ba[1:2], atol=1e-6), f"B=2 [A,B][0] != [B,A][1]: {(rel_ab[0:1] - rel_ba[1:2]).abs().max()}"
+    assert torch.allclose(spec_ab[0:1], spec_solo_a, atol=1e-6) and torch.allclose(spec_ab[0:1], spec_ba[1:2], atol=1e-6)
+    if rel_ab.device.type == "cpu":
+        assert float((rel_ab[0:1] - rel_solo_a).abs().max().item()) == 0.0
+        assert float((rel_ab[0:1] - rel_ba[1:2]).abs().max().item()) == 0.0
+        assert float((spec_ab[0:1] - spec_solo_a).abs().max().item()) == 0.0
+
+    # B=16 heterogeneous permutation equivalence across relighting_map and specular_pass
+    H_16, W_16 = 32, 32
+    n_16_list, d_16_list = [], []
+    for i in range(16):
+        ni = torch.nn.functional.normalize(torch.randn(1, H_16, W_16, 3), dim=-1)
+        ni[..., 2] = ni[..., 2].abs()
+        n_16_list.append((ni + 1.0) * 0.5)
+        lo = 0.05 * (i % 5)
+        span = 0.35 + 0.10 * (i % 6)
+        d_16_list.append(lo + span * torch.rand(1, H_16, W_16, 1))
+    n_16 = torch.cat(n_16_list, dim=0)
+    d_16 = torch.cat(d_16_list, dim=0)
+    perm = torch.tensor([15, 3, 11, 0, 7, 14, 2, 9, 5, 12, 1, 8, 4, 13, 6, 10], dtype=torch.long)
+
+    rel_16, _, _, spec_16 = node.execute_rig(
+        preset="Rembrandt Classic", normals_optional=n_16, depth_optional=d_16
+    )
+    rel_16_p, _, _, spec_16_p = node.execute_rig(
+        preset="Rembrandt Classic", normals_optional=n_16[perm], depth_optional=d_16[perm]
+    )
+    assert rel_16.shape == (16, H_16, W_16, 3) and spec_16.shape == (16, H_16, W_16, 3)
+    assert torch.allclose(rel_16[perm], rel_16_p, atol=1e-6), f"B=16 permutation mismatch: {(rel_16[perm] - rel_16_p).abs().max()}"
+    assert torch.allclose(spec_16[perm], spec_16_p, atol=1e-6), f"B=16 spec permutation mismatch: {(spec_16[perm] - spec_16_p).abs().max()}"
+    if rel_16.device.type == "cpu":
+        assert float((rel_16[perm] - rel_16_p).abs().max().item()) == 0.0
+        assert float((spec_16[perm] - spec_16_p).abs().max().item()) == 0.0
+    print("✓ StudioLightRig node execution, server-side presets & B=2/B=16 heterogeneous batching passed perfectly!")
 
 
 def test_end_to_end_workflow_and_product_behavior():
@@ -676,14 +731,46 @@ def test_prompt_sanitizer():
     # Pass 2 checks
     assert p2 == test_prompt, "Pass 2 must preserve 100% of user prompt verbatim"
 
-    print("  ✓ Decoupling verified: Pass 1 albedo prompt sanitizes directional & high-specular terms; Pass 2 retains original prompt.")
+    # F1 Regression Gate: Subject nouns preceded by color/lighting adjectives must never be swallowed
+    p1_dress, _ = sanitizer.sanitize("portrait of a woman wearing a blue dress in sunlight")
+    assert "blue dress" in p1_dress.lower(), f"'blue dress' swallowed by sanitizer: {p1_dress}"
+    assert "sunlight" not in p1_dress.lower(), f"'in sunlight' leaked into Pass 1: {p1_dress}"
+
+    p1_amber, _ = sanitizer.sanitize("blonde hair and amber jewelry in sunlight")
+    assert "amber jewelry" in p1_amber.lower(), f"'amber jewelry' swallowed by sanitizer: {p1_amber}"
+    assert "sunlight" not in p1_amber.lower(), f"'in sunlight' leaked into Pass 1: {p1_amber}"
+
+    p1_glow, _ = sanitizer.sanitize("warm glow, blue eyes, amber jewelry")
+    for preserved in ["warm glow", "blue eyes", "amber jewelry"]:
+        assert preserved in p1_glow.lower(), f"Non-lighting phrase '{preserved}' modified: {p1_glow}"
+
+    p1_dir, _ = sanitizer.sanitize("dramatic blue rim light from the left, hard sunlight")
+    assert "rim light" not in p1_dir.lower() and "sunlight" not in p1_dir.lower(), f"Directional tokens leaked: {p1_dir}"
+
+    p1_bare, p2_bare = sanitizer.sanitize("editorial portrait, key light, side light, spotlight, kicker light")
+    for bare_tok in ["key light", "side light", "spotlight", "kicker light"]:
+        assert bare_tok not in p1_bare.lower(), f"Bare fixture token '{bare_tok}' leaked into Pass 1: {p1_bare}"
+        assert bare_tok in p2_bare.lower(), f"Bare fixture token '{bare_tok}' missing from Pass 2: {p2_bare}"
+
+    print("  ✓ Decoupling & F1 non-lighting preservation verified ('blue dress', 'amber jewelry', 'warm glow' preserved).")
     print("✓ StudioPromptSanitizer passed!")
 
 
 def test_optical_penumbra_shadows():
     print("Testing optical penumbra, modifier emitter SSOT, and >16M quantile safety...")
-    from nodes.shader_engine import _safe_quantile, reconstruct_metric_surface
-    from nodes.metric_shadow import MODIFIER_EMITTERS, screen_space_directional_shadow_metric
+    from nodes.shader_engine import (
+        _safe_quantile,
+        azimuth_elevation_to_vector,
+        generate_emitter_samples_2d,
+        generate_emitter_tangent_frame,
+        reconstruct_metric_surface,
+    )
+    from nodes.metric_shadow import (
+        MODIFIER_EMITTERS,
+        build_emitter_tangent_frame,
+        generate_emitter_samples_3d,
+        screen_space_directional_shadow_metric,
+    )
     from nodes.color_utils import MODIFIER_PRESETS
 
     # 1. Verify Single Source of Truth between MODIFIER_PRESETS and MODIFIER_EMITTERS
@@ -698,6 +785,29 @@ def test_optical_penumbra_shadows():
             assert abs(em.radius_m - spec["radius_m"]) < 1e-6
             expected_r_in = float(spec["radius_m"]) * float(spec.get("deflector_ratio", 0.0))
             assert abs(em.inner_radius_m - expected_r_in) < 1e-6, f"{mod_name} inner_radius_m mismatch"
+
+    # 1b. F3 Regression Gate: Stripbox principal-axis alignment across full elevation sweep (including 75, 85, 90 deg)
+    strip_preset = MODIFIER_PRESETS["Stripbox"]
+    strip_emitter = MODIFIER_EMITTERS["Stripbox"]
+    aim_pt = torch.tensor([[0.0, 0.0, -2.0]], dtype=torch.float32)
+    for elev_deg in [-30.0, 0.0, 35.0, 60.0, 70.0, 75.0, 80.0, 85.0, 89.0, 90.0]:
+        l_dir = azimuth_elevation_to_vector(0.0, elev_deg).float()
+        l_pos = aim_pt + 1.8 * l_dir.view(1, 3)
+        u_t, v_t, w_a = generate_emitter_tangent_frame(l_dir)
+        r_ref, u_ref, f_ref = build_emitter_tangent_frame(aim_pt - l_pos)
+        assert torch.allclose(u_t, r_ref.squeeze(0), atol=1e-6)
+        assert torch.allclose(v_t, u_ref.squeeze(0), atol=1e-6)
+        assert torch.allclose(w_a, f_ref.squeeze(0), atol=1e-6)
+
+        uv_2d = generate_emitter_samples_2d(strip_preset, num_samples=64)
+        pts_se = uv_2d[:, 0:1] * u_t.unsqueeze(0) + uv_2d[:, 1:2] * v_t.unsqueeze(0)
+        pts_ms, _ = generate_emitter_samples_3d(l_pos, aim_pt, strip_emitter, num_samples=64)
+        pts_ms = pts_ms[0] - l_pos
+
+        _, _, vh_se = torch.linalg.svd(pts_se - pts_se.mean(0, keepdim=True), full_matrices=False)
+        _, _, vh_ms = torch.linalg.svd(pts_ms - pts_ms.mean(0, keepdim=True), full_matrices=False)
+        cos_theta = float(torch.abs(torch.dot(vh_se[0], vh_ms[0])).item())
+        assert cos_theta > 0.999, f"Stripbox axis divergence at elev={elev_deg} deg: |cos theta|={cos_theta:.6f}"
 
     # 2. Verify >16M element quantile safety (4K/8K tensor protection)
     large_tensor = torch.linspace(0.0, 1.0, 20_000_000, dtype=torch.float32)
@@ -726,7 +836,7 @@ def test_optical_penumbra_shadows():
     penumbra_octa = int(((sh_octa > 0.05) & (sh_octa < 0.95)).sum().item())
     assert penumbra_octa > penumbra_snoot, f"Octabox penumbra ({penumbra_octa}) must exceed Hard Snoot ({penumbra_snoot})"
 
-    print("  ✓ Modifier emitter SSOT, 20M-element _safe_quantile, and 3D area penumbra verified.")
+    print("  ✓ Modifier emitter SSOT, Stripbox 90-deg elevation sweep, 20M-element _safe_quantile, and 3D area penumbra verified.")
     print("✓ Optical penumbra soft shadows passed!")
 
 

@@ -429,7 +429,7 @@ StudioLight implements a **physically motivated, geometrically sampled area-emit
   <tbody>
     <tr>
       <td align="left"><b><code>StudioLightRig</code></b><br><sub>3-Point Lighting Console</sub></td>
-      <td align="left">Master photographic lighting console with 3D camera-space C-stand coordinates (azimuth, elevation, distance in meters), <b>3-Zone 3D Light Pointer (<code>Upper</code> / <code>Center</code> / <code>Lower</code>)</b> with curvature-guided face auto-aim, depth relief compression (<code>depth_relief_scale</code>), physical modifier apertures (Octabox, Stripbox, Beauty Dish, Fresnel, Snoot, Flash), blackbody Kelvin temperature (2000K–10000K), and 3D shadow raymarching. Outputs the diffuse relighting map, isolated specular pass, dual-sphere VFX probe + live Aim Target Radar HUD, and synchronized lighting prompt (renders an internal <code>1024×1024</code> 3D calibration ellipsoid at <code>Z = −2.0m</code> when <code>normals_optional</code> is unconnected).</td>
+      <td align="left">Master photographic lighting console with 3D camera-space C-stand coordinates (azimuth, elevation, distance in meters), <b>3-Zone 3D Light Pointer (<code>Upper</code> / <code>Center</code> / <code>Lower</code>)</b> with curvature-guided face auto-aim, depth relief compression (<code>depth_relief_scale</code>), physical modifier apertures (Octabox, Stripbox, Beauty Dish, Fresnel, Snoot, Flash), blackbody Kelvin temperature (2000K–10000K), and 3D shadow raymarching. Outputs the diffuse relighting map, isolated specular pass, dual-sphere VFX probe + live Aim Target Radar HUD, and synchronized lighting prompt (renders an internal <code>1024×1024</code> 3D calibration ellipsoid at <code>Z = −2.0m</code> when <code>normals_optional</code> is unconnected). Multi-image batches (<code>B &gt; 1</code>) normalize depth quantiles and resolve 3D auto-aim <b>independently per batch item</b> (matching solo rendering within numerical tolerance on the same device/dtype and bounding transient shader allocations to one item at a time).</td>
     </tr>
     <tr></tr>
     <tr>
@@ -444,7 +444,7 @@ StudioLight implements a **physically motivated, geometrically sampled area-emit
     <tr></tr>
     <tr>
       <td align="left"><b><code>StudioPromptSanitizer</code></b><br><sub>Pass 1 Albedo Decoupler</sub></td>
-      <td align="left">Prompt-splitting utility that automatically strips directional lighting, rim-light, and high-gloss specular tokens from the Pass 1 draft prompt (appending a flat shadowless albedo carrier suffix) while routing the full unedited master prompt to Pass 2.</td>
+      <td align="left">Prompt-splitting utility that strips explicit directional lighting and studio fixture phrases (<code>rim light</code>, <code>backlight</code>, <code>sunlight</code>, <code>key light</code>, <code>side light</code>, <code>spotlight</code>, <code>kicker light</code>, <code>hair light</code>, <code>chiaroscuro</code>, <code>rembrandt lighting</code>, <code>split lighting</code>, <code>volumetric rays</code>, and lighting-adjective + <code>lighting</code>/<code>shadows</code> clauses) alongside high-gloss specular tokens from the Pass 1 draft prompt while preserving non-lighting subject descriptions (e.g. <code>blue dress</code>, <code>amber jewelry</code>, <code>warm glow</code>) and routing the full unedited master prompt to Pass 2.</td>
     </tr>
   </tbody>
 </table>

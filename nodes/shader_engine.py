@@ -20,6 +20,7 @@ from .metric_shadow import (
     _hammersley_2d,
     _regular_polygon_vertices,
     _sample_polygon_uniform,
+    build_emitter_tangent_frame,
     screen_space_directional_shadow_metric,
 )
 
@@ -136,23 +137,9 @@ def generate_emitter_tangent_frame(light_dir: torch.Tensor) -> Tuple[torch.Tenso
     w_aim: Points forward from fixture face towards subject (-light_dir).
     u_tangent: Horizontal tangent (fixture right).
     v_tangent: Vertical tangent (fixture up).
+    Delegates to the canonical shared helper build_emitter_tangent_frame(-light_dir).
     """
-    device = light_dir.device
-    dtype = light_dir.dtype
-
-    l_unit = light_dir / (torch.norm(light_dir) + 1e-7)
-    w_aim = -l_unit
-
-    up = torch.tensor([0.0, 1.0, 0.0], device=device, dtype=dtype)
-    if torch.abs(torch.dot(w_aim, up)) > 0.92:
-        up = torch.tensor([1.0, 0.0, 0.0], device=device, dtype=dtype)
-
-    u_tangent = torch.linalg.cross(w_aim, up)
-    u_tangent = u_tangent / (torch.norm(u_tangent) + 1e-7)
-    v_tangent = torch.linalg.cross(w_aim, u_tangent)
-    v_tangent = v_tangent / (torch.norm(v_tangent) + 1e-7)
-
-    return u_tangent, v_tangent, w_aim
+    return build_emitter_tangent_frame(-light_dir)
 
 
 def generate_emitter_samples_2d(preset: Dict[str, Any], num_samples: int = 16) -> torch.Tensor:
@@ -349,6 +336,21 @@ def reconstruct_metric_surface(
     if d.shape[1] != H or d.shape[2] != W:
         d_perm = d.permute(0, 3, 1, 2).contiguous()
         d = F.interpolate(d_perm, size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1).contiguous()
+
+    if B > 1:
+        p_list, dn_list, split_list = [], [], []
+        for b_idx in range(B):
+            p_b, dn_b, sp_b = reconstruct_metric_surface(
+                d[b_idx : b_idx + 1],
+                H=H,
+                W=W,
+                vertical_fov_deg=vertical_fov_deg,
+                depth_relief_scale=depth_relief_scale,
+            )
+            p_list.append(p_b)
+            dn_list.append(dn_b)
+            split_list.append(sp_b)
+        return torch.cat(p_list, dim=0), torch.cat(dn_list, dim=0), split_list[0]
 
     aspect = float(W) / float(H)
     tan_half_fov = math.tan(math.radians(float(vertical_fov_deg)) * 0.5)
@@ -606,6 +608,43 @@ def compute_light_shading(
     refl_rays = 2.0 * n_dot_v * normals - v_vec
     refl_rays = refl_rays / (torch.norm(refl_rays, dim=-1, keepdim=True) + 1e-7)
 
+    if depth is not None and normals.shape[0] > 1:
+        B_multi = normals.shape[0]
+        diff_list, spec_list, sum_list = [], [], []
+        for b_idx in range(B_multi):
+            n_b = normals[b_idx : b_idx + 1]
+            d_b = depth[b_idx : b_idx + 1] if depth.shape[0] == B_multi else depth
+            t_b = (
+                target_pos[b_idx : b_idx + 1]
+                if (target_pos is not None and target_pos.ndim >= 2 and target_pos.shape[0] == B_multi)
+                else target_pos
+            )
+            res_b = compute_light_shading(
+                n_b,
+                light_vec,
+                light_color,
+                intensity,
+                modifier_name,
+                d_b,
+                distance=distance,
+                return_separate=return_separate,
+                shadow_samples=shadow_samples,
+                shadow_steps=shadow_steps,
+                target_pos=t_b,
+                vertical_fov_deg=vertical_fov_deg,
+                aim_target=aim_target,
+                depth_relief_scale=depth_relief_scale,
+                precomputed_surface=None,
+            )
+            if return_separate:
+                diff_list.append(res_b[0])
+                spec_list.append(res_b[1])
+            else:
+                sum_list.append(res_b)
+        if return_separate:
+            return (torch.cat(diff_list, dim=0), torch.cat(spec_list, dim=0))
+        return torch.cat(sum_list, dim=0)
+
     if depth is not None:
         B, H, W, _ = normals.shape
         aspect = float(W) / float(H)
@@ -841,13 +880,68 @@ def render_studio_lighting(
     vertical_fov_deg: float = 40.0,
     aim_target: str = "Upper",
     depth_relief_scale: float = 0.30,
+    _render_probe: bool = True,
 ) -> Tuple[torch.Tensor, ...]:
     """
     Renders the complete 3-point photographic studio lighting pass and dual-probe preview.
+    Multi-image batches (B > 1) are normalized and auto-aimed independently per batch item.
     Returns:
       relighting_map: [B, H, W, 3] in range [0, 1]
       probe_preview:  [1, H, W, 3] in range [0, 1] (Grey ball + Chrome ball + 2D Radar)
     """
+    b_norm = normals.shape[0] if normals is not None else 1
+    b_depth = depth.shape[0] if depth is not None else 1
+    B_batch = max(b_norm, b_depth)
+    if B_batch > 1:
+        relight_list, diff_list, spec_list = [], [], []
+        probe_first = None
+        for b_idx in range(B_batch):
+            n_slice = (
+                normals[b_idx : b_idx + 1]
+                if (normals is not None and normals.shape[0] == B_batch)
+                else normals
+            )
+            d_slice = (
+                depth[b_idx : b_idx + 1]
+                if (depth is not None and depth.shape[0] == B_batch)
+                else depth
+            )
+            t_slice = (
+                target_pos[b_idx : b_idx + 1]
+                if (target_pos is not None and target_pos.ndim >= 2 and target_pos.shape[0] == B_batch)
+                else target_pos
+            )
+            res_b = render_studio_lighting(
+                normals=n_slice,
+                depth=d_slice,
+                key_params=key_params,
+                fill_params=fill_params,
+                rim_params=rim_params,
+                ambient_intensity=ambient_intensity,
+                invert_normals_y=invert_normals_y,
+                normal_boost=normal_boost,
+                ao_anchoring=ao_anchoring,
+                preview_resolution=preview_resolution,
+                return_passes=return_passes,
+                invert_normals_x=invert_normals_x,
+                invert_depth=invert_depth,
+                target_pos=t_slice,
+                vertical_fov_deg=vertical_fov_deg,
+                aim_target=aim_target,
+                depth_relief_scale=depth_relief_scale,
+                _render_probe=(b_idx == 0 and _render_probe),
+            )
+            relight_list.append(res_b[0])
+            if probe_first is None:
+                probe_first = res_b[1]
+            if return_passes:
+                diff_list.append(res_b[2])
+                spec_list.append(res_b[3])
+        relight_cat = torch.cat(relight_list, dim=0)
+        if return_passes:
+            return relight_cat, probe_first, torch.cat(diff_list, dim=0), torch.cat(spec_list, dim=0)
+        return relight_cat, probe_first
+
     device = get_preferred_device() if normals is None else normals.device
 
     # Depth polarity: the shader assumes larger value = NEARER to camera (Depth Anything / ZoeDepth-style
@@ -983,6 +1077,14 @@ def render_studio_lighting(
     bg_backdrop = torch.full_like(total_shading, max(float(ambient_intensity), 0.03))
     relighting_map = (total_shading + float(ambient_intensity)) * subject_mask + bg_backdrop * (1.0 - subject_mask)
     relighting_map = torch.clamp(relighting_map, 0.0, 1.0)
+
+    if not _render_probe:
+        probe_preview = torch.empty((1, 1, 1, 3), dtype=torch.float32)
+        if return_passes:
+            diff_out = (total_diffuse * subject_mask).cpu() if total_diffuse is not None else relighting_map.cpu()
+            spec_out = (total_specular * subject_mask).cpu() if total_specular is not None else torch.zeros_like(relighting_map).cpu()
+            return relighting_map.cpu(), probe_preview, diff_out, spec_out
+        return relighting_map.cpu(), probe_preview
 
     # 2. Dual-Sphere Probe Preview Generation (Top: Balls, Bottom: Radar)
     probe_res = preview_resolution

@@ -209,6 +209,29 @@ def _sample_polygon_uniform(points01: torch.Tensor, vertices: torch.Tensor) -> t
     return root_u[:, None] * ((1.0 - local_v)[:, None] * a + local_v[:, None] * b)
 
 
+def build_emitter_tangent_frame(
+    forward: torch.Tensor,
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Constructs a canonical orthonormal coordinate frame (right, up, forward) for an area emitter
+    whose emission axis points along `forward` (from light fixture towards aim target).
+    Supports both 1D `[3]` and batched `[..., 3]` tensors.
+
+    Uses `world_up = [0, 1, 0]` with a pole fallback to `alternate_up = [0, 0, 1]` when
+    `|dot(forward, world_up)| > 0.98` (elevation > ~78.5 deg, including 90 deg overhead).
+    """
+    f_norm = F.normalize(forward, dim=-1, eps=_EPS)
+    world_up = torch.zeros_like(f_norm)
+    world_up[..., 1] = 1.0
+    alternate_up = torch.zeros_like(f_norm)
+    alternate_up[..., 2] = 1.0
+    use_alt = torch.abs((f_norm * world_up).sum(dim=-1, keepdim=True)) > 0.98
+    up_ref = torch.where(use_alt, alternate_up, world_up)
+    right = F.normalize(torch.cross(f_norm, up_ref, dim=-1), dim=-1, eps=_EPS)
+    up = F.normalize(torch.cross(right, f_norm, dim=-1), dim=-1, eps=_EPS)
+    return right, up, f_norm
+
+
 def generate_emitter_samples_3d(
     light_pos: torch.Tensor,
     light_aim: torch.Tensor,
@@ -240,18 +263,8 @@ def generate_emitter_samples_3d(
     device, dtype = light_pos.device, light_pos.dtype
     samples01 = _hammersley_2d(num_samples, device, dtype)
 
-    # Forward aim axis
-    forward = F.normalize(light_aim - light_pos, dim=-1, eps=_EPS)
-
-    # Stable orthonormal tangent frame
-    world_up = torch.zeros_like(forward)
-    world_up[..., 1] = 1.0
-    alternate_up = torch.zeros_like(forward)
-    alternate_up[..., 2] = 1.0
-    use_alt = torch.abs((forward * world_up).sum(-1, keepdim=True)) > 0.98
-    up_ref = torch.where(use_alt, alternate_up, world_up)
-    right = F.normalize(torch.cross(forward, up_ref, dim=-1), dim=-1, eps=_EPS)
-    up = F.normalize(torch.cross(right, forward, dim=-1), dim=-1, eps=_EPS)
+    # Shared canonical orthonormal tangent frame
+    right, up, forward = build_emitter_tangent_frame(light_aim - light_pos)
 
     if emitter.shape == "rectangle":
         local_x = (samples01[:, 0] - 0.5) * emitter.width_m

@@ -36,10 +36,28 @@ class StudioPromptSanitizer:
         cleaned = re.sub(r'\b(ultra[- ]?glossy|high[- ]?gloss|glossy|patent|lacquered)\s+leather\b', 'smooth leather', cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r'\b(liquid\s+chrome|chrome)\b', 'matte brushed metal', cleaned, flags=re.IGNORECASE)
 
-        # 2. Strip directional / rim-light / sunlight / chiaroscuro phrases & clauses
+        # 2. Strip directional / rim-light / sunlight / studio-fixture phrases & clauses
+        # Note: No arbitrary \w+ wildcards are permitted between adjectives and lighting nouns so
+        # adjacent subject phrases (e.g. "blue dress", "amber jewelry", "warm glow") are never swallowed.
+        light_adj = r'(?:dramatic|harsh|hard|direct|strong|intense|warm|cool|blue|cyan|amber|golden|neon|cinematic|soft|subtle|bright|deep|cast|directional)'
+        light_noun_all = (
+            r'(?:rim[- ]?light(?:ing)?|back[- ]?light(?:ing)?|back[- ]?lit|sunlight|'
+            r'key[- ]?light(?:ing)?|side[- ]?light(?:ing)?|spot[- ]?light(?:ing)?|'
+            r'hair[- ]?light(?:ing)?|kicker(?:\s+light)?|lighting|shadows)'
+        )
+        light_noun_bare = (
+            r'(?:rim[- ]?light(?:ing)?|back[- ]?light(?:ing)?|back[- ]?lit|sunlight|'
+            r'key[- ]?light(?:ing)?|side[- ]?light(?:ing)?|spot[- ]?light(?:ing)?|'
+            r'hair[- ]?light(?:ing)?|kicker\s+light|'
+            r'chiaroscuro(?:\s+lighting|\s+shadows)?|rembrandt\s+lighting|'
+            r'split\s+lighting|volumetric\s+(?:god\s+)?rays)'
+        )
+        dir_tail = r'(?:\s+from\s+(?:the\s+)?(?:left|right|behind|above|below|side|rear|front))?'
+        lead_prep = r'(?:\b(?:in|under|with|lit\s+by)\s+(?:the\s+)?)?'
+
         directional_patterns = [
-            r'\b(?:dramatic|harsh|hard|direct|strong|intense|warm|cool|blue|cyan|amber|golden|neon|cinematic|soft|subtle)\s+(?:(?:\w+\s+){0,2})?(?:rim[- ]?light(?:ing)?|back[- ]?light(?:ing)?|sunlight|key[- ]?light|side[- ]?light|spot[- ]?light|hair[- ]?light|kicker(?:\s+light)?|shadows)\b(?:\s+from\s+(?:the\s+)?(?:left|right|behind|above|below|side|rear|front))?',
-            r'\b(?:rim[- ]?light(?:ing)?|back[- ]?light(?:ing)?|back[- ]?lit|hard\s+sunlight|direct\s+sunlight|sunlight|chiaroscuro(?:\s+lighting|\s+shadows)?|rembrandt\s+lighting|split\s+lighting|harsh\s+shadows|dramatic\s+lighting|dramatic\s+shadows|volumetric\s+(?:god\s+)?rays)\b(?:\s+from\s+(?:the\s+)?(?:left|right|behind|above|below|side|rear|front))?',
+            rf'{lead_prep}\b(?:{light_adj}\s+){{1,3}}{light_noun_all}\b{dir_tail}',
+            rf'{lead_prep}\b{light_noun_bare}\b{dir_tail}',
         ]
         for pat in directional_patterns:
             cleaned = re.sub(pat, '', cleaned, flags=re.IGNORECASE)
