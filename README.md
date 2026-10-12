@@ -44,42 +44,36 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 
 ## Same Subject. Same Prompt. Different Light.
 
-> **Locked Seed:** `424242` | *Identical Base Prompt, Geometry, and Seed across FLUX.1 Krea Dev*
-
 https://github.com/user-attachments/assets/f82d96d9-08ac-4dfb-8f1a-a65432f33a32
 
 <br>
 
+> **Identical Base Prompt and locked Seed: `777777`** | *FLUX.1 Krea Dev*
+
 <table>
   <thead>
     <tr>
-      <th width="33.33%" align="center">Hard Key (Fresnel)</th>
-      <th width="33.33%" align="center">Sculpted (Beauty Dish)</th>
-      <th width="33.33%" align="center">Soft Wrap (Octabox)</th>
+      <th width="33.33%" align="center">High-Fashion Beauty</th>
+      <th width="33.33%" align="center">Direct On-Camera Flash</th>
+      <th width="33.33%" align="center">Golden Hour Window</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td align="center"><img src="assets/showcase_fresnel.png" width="100%" alt="Fresnel Spotlight" /></td>
-      <td align="center"><img src="assets/showcase_beauty.png" width="100%" alt="Beauty Dish" /></td>
-      <td align="center"><img src="assets/showcase_octabox.png" width="100%" alt="Diffused Octabox" /></td>
+      <td align="center"><img src="assets/MethodA_Calibrated_Final_00028_.png" width="100%" alt="High-Fashion Beauty" /></td>
+      <td align="center"><img src="assets/MethodA_Calibrated_Final_00030_.png" width="100%" alt="Direct On-Camera Flash" /></td>
+      <td align="center"><img src="assets/MethodA_Calibrated_Final_00027_.png" width="100%" alt="Golden Hour Window" /></td>
     </tr>
     <tr></tr>
     <tr>
       <td align="center">
-        <b>Fresnel Spotlight (Hard Key)</b><br>
-        Key: +30° Azimuth / +25° Elevation<br>
-        Crisp penumbra, sharp dielectric glints
+        <!-- Caption 1 -->
       </td>
       <td align="center">
-        <b>Beauty Dish (Silver 55cm)</b><br>
-        Key: +30° Azimuth / +25° Elevation<br>
-        Carved cheekbones, crisp catchlights
+        <!-- Caption 2 -->
       </td>
       <td align="center">
-        <b>Diffused Octabox (140cm)</b><br>
-        Key: +30° Azimuth / +25° Elevation<br>
-        Soft continuous penumbra, coat wrap
+        <!-- Caption 3 -->
       </td>
     </tr>
   </tbody>
