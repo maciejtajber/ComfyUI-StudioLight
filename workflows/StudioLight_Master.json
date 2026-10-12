@@ -1507,10 +1507,10 @@
         "Node name for S&R": "SaveImage"
       },
       "widgets_values": [
-        "MethodA_Calibrated_Final"
+        "StudioLight_Final"
       ],
       "widgets_values_named": {
-        "filename_prefix": "MethodA_Calibrated_Final"
+        "filename_prefix": "StudioLight_Final"
       },
       "color": "#222",
       "bgcolor": "#000"

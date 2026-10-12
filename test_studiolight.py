@@ -67,7 +67,7 @@ def test_presets():
     # Verify JS fallback PRESET_MAP in web/studio_light_presets.js is in sync with presets/*.json
     with open(os.path.join(BASE_DIR, "web", "studio_light_presets.js"), "r", encoding="utf-8") as js_f:
         js_src = js_f.read()
-    assert "scene_3d" not in js_src and "SCENE_3D" not in js_src, "web/studio_light_presets.js still references scene_3d!"
+    assert "node.addInput" not in js_src, "web/studio_light_presets.js must not inject legacy input sockets!"
     for p_name, p_dict in flattened.items():
         assert f'"{p_name}"' in js_src, f"Preset '{p_name}' missing from web/studio_light_presets.js"
         for field in ("key_azimuth", "key_elevation", "key_kelvin", "key_modifier", "fill_kelvin", "rim_kelvin"):
