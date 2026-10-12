@@ -127,6 +127,16 @@ ComfyUI-StudioLight integrates image-derived camera-space geometry, screen-space
 * **Integrated Photometric Lighting:** Combines directional diffuse shading, Blinn-Phong specular microfacets, distance-dependent $(r_{\text{ref}}/r)^2$ falloff, and shadow visibility within a unified PyTorch pipeline.
 * **Diffusion-Integrated Results:** Uses the computed lighting plate as explicit physical guidance for Pass 2 FLUX.1 Krea Dev latent synthesis, marrying spatial lighting control with generative material synthesis.
 
+<br>
+
+<div align="center">
+  <img src="assets/studiolight_probe_and_render.webp" alt="StudioLight VFX Probes & Studio Radar vs Final Render" width="100%" />
+  <br>
+  <sub><b>Interactive Physical Lighting Rig:</b> Real-time 3D VFX spheres (18% Grey + Chrome) & studio radar directly driving FLUX.1 Krea Dev generative lighting across 6 distinct setups.</sub>
+</div>
+
+<br>
+
 > [!NOTE]
 > **Scope & Engineering Limits:** StudioLight performs screen-space raymarching over an estimated single-view geometry field (Depth Anything V2 + DSINE calibrated to studio scale). Pretrained monocular depth models estimate relative depth, which StudioLight anchors to virtual camera space (defaulting the subject plane to $Z = -2.0\text{m}$). It is designed for fast, controllable image relighting—not unrestricted path tracing over a complete multi-view 3D scene.
 
@@ -179,6 +189,16 @@ StudioLight splits generation into a **two-stage geometry and relighting pipelin
 2. **Camera-Space 3D Projection:** Extracts surface normals (DSINE) and estimated depth (Depth Anything V2), back-projecting the 2D draft into virtual camera-space ($40^\circ$ portrait FOV calibrated to studio scale).
 3. **Photometric Deferred Shading:** Computes diffuse irradiance, Blinn-Phong specular lobes, and 3D camera-space shadow raymarching from virtual C-stands.
 4. **Stochastic Polish (Pass 2):** Composites the lit plate in linear Rec.709 space, preps tones in the `SIShadowHighlight` darkroom, and feeds it to Pass 2 (`denoise 0.25 – 0.85+`) to synthesize subsurface skin scattering and photorealistic catchlights.
+
+<br>
+
+<div align="center">
+  <img src="assets/studiolight_pipeline_dissection_grid.png" alt="StudioLight 6-Stage Pipeline Dissection" width="100%" />
+  <br>
+  <sub><b>Six-Stage Technical Pipeline Dissection (Seed 777777):</b> Row 1: Pass 1 Neutral Draft ➔ Depth Map ➔ DSINE Normals. Row 2: Pure Relighting Field ➔ Lit Proxy Plate ➔ Final FLUX Synthesis.</sub>
+</div>
+
+<br>
 
 ---
 
