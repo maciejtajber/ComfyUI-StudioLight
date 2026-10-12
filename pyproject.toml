@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "comfyui-studiolight"
 description = "Three-point studio lighting rig with depth-based camera-space shadow raymarching, sampled area emitters, and Kelvin control for FLUX in ComfyUI."

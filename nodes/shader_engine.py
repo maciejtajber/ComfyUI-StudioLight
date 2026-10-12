@@ -13,10 +13,24 @@ import math
 import torch
 import torch.nn.functional as F
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from typing import Dict, Any, Optional, Tuple
 from .color_utils import kelvin_to_rgb, MODIFIER_PRESETS
 from .metric_shadow import screen_space_directional_shadow_metric
+
+
+def _safe_quantile(t: torch.Tensor, q: float, max_samples: int = 524288) -> torch.Tensor:
+    """
+    Computes tensor quantile safely across arbitrary resolutions (including 4K/8K batches).
+    PyTorch's torch.quantile raises a RuntimeError above 2^24 (~16.7M) elements; deterministic
+    strided subsampling above max_samples prevents OOM/limit crashes while preserving accuracy.
+    """
+    flat = t.reshape(-1)
+    n = flat.numel()
+    if n > max_samples:
+        step = max(1, n // max_samples)
+        flat = flat[::step]
+    return torch.quantile(flat, q)
 
 
 def get_preferred_device() -> torch.device:
@@ -85,126 +99,6 @@ def compute_cavity_ao_map(normals: torch.Tensor, strength: float = 1.5) -> torch
     # Crevices: curvature < 0 (normals point inward towards each other)
     cavity = torch.clamp(1.0 + curvature * float(strength), min=0.0, max=1.0)
     return cavity
-
-
-def get_vogel_disk_samples(
-    num_samples: int = 8,
-    device: Optional[torch.device] = None,
-    dtype: torch.dtype = torch.float32,
-) -> torch.Tensor:
-    """Computes deterministic 2D Vogel disk sample offsets for area-light filtering."""
-    if device is None:
-        device = torch.device("cpu")
-    golden_angle = 2.39996323  # radians
-    indices = torch.arange(num_samples, device=device, dtype=dtype)
-    r = torch.sqrt((indices + 0.5) / float(num_samples))
-    theta = indices * golden_angle
-    offsets = torch.stack([r * torch.cos(theta), r * torch.sin(theta)], dim=-1)
-    return offsets  # [num_samples, 2]
-
-
-def screen_space_directional_shadow(
-    depth: torch.Tensor,
-    light_vec: torch.Tensor,
-    steps: int = 16,
-    max_dist: float = 0.08,
-    aperture_size: float = 0.0,
-    dist_to_light: Optional[torch.Tensor] = None,
-    soft_shadows: bool = True,
-) -> torch.Tensor:
-    """
-    Calculates directional cast shadow from screen-space depth raymarching.
-    Features Screen-Space Percentage-Closer Soft Shadows (PCSS) with Vogel disk sampling:
-      - Sharp contact shadows near occluders (gap ~ 0)
-      - Soft diffused penumbra on distant background surfaces (gap > 0) scaled by modifier aperture size
-    depth: [B, H, W, 1]
-    light_vec: [3]
-    """
-    B, H, W = depth.shape[0], depth.shape[1], depth.shape[2]
-    device = depth.device
-    dtype = depth.dtype
-
-    lx = float(light_vec[0].item() if isinstance(light_vec, torch.Tensor) else light_vec[0])
-    ly = -float(light_vec[1].item() if isinstance(light_vec, torch.Tensor) else light_vec[1])
-    norm_2d = (lx**2 + ly**2)**0.5
-    if norm_2d < 1e-4:
-        return torch.ones_like(depth[..., :1])
-
-    dx = (lx / norm_2d) * (max_dist / steps)
-    dy = (ly / norm_2d) * (max_dist / steps)
-
-    d_in = depth if depth.shape[-1] == 1 else depth[..., 0:1]
-    d_perm = d_in.permute(0, 3, 1, 2).contiguous()
-
-    y_coords, x_coords = torch.meshgrid(
-        torch.linspace(-1, 1, H, device=device, dtype=dtype),
-        torch.linspace(-1, 1, W, device=device, dtype=dtype),
-        indexing="ij"
-    )
-    base_grid = torch.stack([x_coords, y_coords], dim=-1).unsqueeze(0).expand(B, -1, -1, -1)
-
-    shadow = torch.ones_like(d_in)
-    blocker_gap = torch.zeros_like(d_in)
-    bias = 0.005
-
-    for s in range(1, steps + 1):
-        offset_x = dx * s * 2.0
-        offset_y = dy * s * 2.0
-
-        sample_grid = base_grid.clone()
-        sample_grid[..., 0] += offset_x
-        sample_grid[..., 1] += offset_y
-
-        sampled_d = F.grid_sample(d_perm, sample_grid, mode="bilinear", padding_mode="border", align_corners=True).permute(0, 2, 3, 1)
-
-        depth_diff = sampled_d - d_in
-        is_closer = depth_diff > bias
-        weight = 1.0 - (s / (steps + 1))
-        occlusion = torch.clamp((depth_diff - bias) * 15.0, 0.0, 1.0) * is_closer.float() * weight
-        shadow = shadow - occlusion * 0.25
-
-        # Accumulate blocker distance gap (receiver depth - blocker depth) for penumbra estimation
-        blocker_gap = torch.maximum(blocker_gap, torch.clamp(depth_diff, min=0.0) * is_closer.float())
-
-    # Attenuate screen shadow when light is grazing or behind the plane (lz <= 0)
-    lz_val = float(light_vec[2].item() if isinstance(light_vec, torch.Tensor) else light_vec[2])
-    front_factor = max(0.0, min(1.0, lz_val))
-    shadow = 1.0 - (1.0 - shadow) * front_factor
-    shadow = torch.clamp(shadow, 0.0, 1.0)
-
-    # Percentage-Closer Soft Shadows (PCSS) via Vogel Disk Sampling
-    # Contact shadows remain razor-sharp; distant cast shadows diffuse according to aperture size
-    if soft_shadows and float(aperture_size) > 0.05:
-        # Calculate light stand distance factor
-        if dist_to_light is not None:
-            l_dist = torch.clamp(dist_to_light, min=0.5, max=10.0)
-        else:
-            l_dist = 1.8
-
-        # Penumbra radius in normalized screen coordinates:
-        # penumbra = aperture * (receiver_depth - blocker_depth) / distance
-        # Clamped to maximum 0.040 (~40 pixels in standard resolution) to prevent washed-out blur
-        penumbra_radius = torch.clamp(
-            (float(aperture_size) * blocker_gap / l_dist) * 0.12,
-            min=0.0,
-            max=0.040,
-        )
-
-        vogel_samples = get_vogel_disk_samples(8, device=device, dtype=dtype)
-        sh_perm = shadow.permute(0, 3, 1, 2).contiguous()
-        sh_accum = torch.zeros_like(shadow)
-
-        for i in range(8):
-            vx, vy = vogel_samples[i, 0], vogel_samples[i, 1]
-            tap_grid = base_grid.clone()
-            tap_grid[..., 0] += vx * penumbra_radius[..., 0]
-            tap_grid[..., 1] += vy * penumbra_radius[..., 0]
-            sampled_sh = F.grid_sample(sh_perm, tap_grid, mode="bilinear", padding_mode="border", align_corners=True).permute(0, 2, 3, 1)
-            sh_accum = sh_accum + sampled_sh
-
-        shadow = sh_accum / 8.0
-
-    return torch.clamp(shadow, 0.0, 1.0)
 
 
 def render_sphere_normals(resolution: int = 256, device: Optional[torch.device] = None) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -458,8 +352,8 @@ def reconstruct_metric_surface(
 
     d_flat = d.reshape(-1)
     if d_flat.numel() > 1000:
-        d_min = torch.quantile(d_flat, 0.01)
-        d_max = torch.quantile(d_flat, 0.99)
+        d_min = _safe_quantile(d_flat, 0.01)
+        d_max = _safe_quantile(d_flat, 0.99)
     else:
         d_min = torch.min(d)
         d_max = torch.max(d)
@@ -476,7 +370,7 @@ def reconstruct_metric_surface(
         central = d_norm[:, cy0:cy1, cx0:cx1, 0].reshape(-1)
         valid_c = central[central > 0.05]
         if valid_c.numel() > 16:
-            d_split_val = float(torch.clamp(torch.quantile(valid_c, 0.20), 0.18, 0.50))
+            d_split_val = float(torch.clamp(_safe_quantile(valid_c, 0.20), 0.18, 0.50))
             fg_vals = valid_c[valid_c >= d_split_val]
             d_subj_val = float(torch.median(fg_vals)) if fg_vals.numel() > 0 else 0.65
         else:
@@ -560,8 +454,8 @@ def resolve_aim_target(
             return None
         dn_sub = dn[y0:y1, x0:x1]
         fg_d = dn_sub[sub_fg]
-        q90 = float(torch.quantile(fg_d, 0.90).item())
-        q20 = float(torch.quantile(fg_d, 0.20).item())
+        q90 = float(_safe_quantile(fg_d, 0.90).item())
+        q20 = float(_safe_quantile(fg_d, 0.20).item())
         if q90 - q20 > 0.15:
             closer_mask = sub_fg & (dn_sub >= 0.5 * (q90 + q20))
             if int(closer_mask.sum().item()) >= 4:
@@ -619,18 +513,18 @@ def resolve_aim_target(
                 score = curv_full * sub_fg.float()
                 fg_scores = score[sub_fg]
                 if fg_scores.numel() > 0:
-                    p90_score = float(torch.quantile(fg_scores, 0.90).item())
-                    p50_score = float(torch.quantile(fg_scores, 0.50).item())
+                    p90_score = float(_safe_quantile(fg_scores, 0.90).item())
+                    p50_score = float(_safe_quantile(fg_scores, 0.50).item())
                     # Confidence Gate: requires genuine 3D surface curvature (human face or smooth 3D android head)
                     if p90_score >= 0.015:
                         if p90_score >= 1.25 * (p50_score + 1e-5):
-                            q_cut = torch.quantile(fg_scores, 0.75)
+                            q_cut = _safe_quantile(fg_scores, 0.75)
                             salient_mask = sub_fg & (score >= q_cut)
                         else:
                             # Smooth 3D head/ellipsoid with uniform curvature across its crown
                             dn_sub = dn[y0:y1, x0:x1]
-                            d_cut = torch.quantile(dn_sub[sub_fg], 0.40)
-                            q_cut = torch.quantile(fg_scores, 0.45)
+                            d_cut = _safe_quantile(dn_sub[sub_fg], 0.40)
+                            q_cut = _safe_quantile(fg_scores, 0.45)
                             salient_mask = sub_fg & (score >= q_cut) & (dn_sub >= d_cut)
                         if int(salient_mask.sum().item()) >= 4:
                             pts = ps[y0:y1, x0:x1][salient_mask]
@@ -639,7 +533,7 @@ def resolve_aim_target(
                 # Depth-only fallback when normals are unavailable: require localized depth protrusion
                 dn_sub = dn[y0:y1, x0:x1]
                 if float(dn_sub[sub_fg].max().item() - dn_sub.min().item()) >= 0.12:
-                    d_cut = torch.quantile(dn_sub[sub_fg], 0.60)
+                    d_cut = _safe_quantile(dn_sub[sub_fg], 0.60)
                     salient_mask = sub_fg & (dn_sub >= d_cut)
                     if int(salient_mask.sum().item()) >= 4:
                         pts = ps[y0:y1, x0:x1][salient_mask]
@@ -930,8 +824,6 @@ def render_studio_lighting(
     normal_boost: float = 1.35,
     ao_anchoring: float = 0.60,
     preview_resolution: int = 512,
-    framing: str = "Studio Portrait",
-    detected_prompt: str = "",
     return_passes: bool = False,
     invert_normals_x: bool = True,
     invert_depth: bool = False,

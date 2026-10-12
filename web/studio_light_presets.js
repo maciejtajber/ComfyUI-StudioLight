@@ -219,7 +219,8 @@ function decorateLightHeader(node, widgetName, badgeTitle, badgeColor, bgColor, 
 function cleanObsoleteSlots(node) {
     if (!node) return;
 
-    const VALID_INPUTS = new Set(["normals_optional", "depth_optional"]);
+    const widgetNames = (node.widgets || []).map((w) => w.name);
+    const VALID_INPUTS = new Set(["normals_optional", "depth_optional", ...widgetNames]);
     const VALID_OUTPUTS = new Set(["relighting_map", "probe_preview", "lighting_prompt", "specular_pass"]);
     const OBSOLETE_WIDGETS = new Set(["start_step", "end_step", "conditioning_strength", "weight_type"]);
 

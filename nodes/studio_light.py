@@ -207,11 +207,6 @@ class StudioLightRig:
                     "step": 0.05,
                 }),
             },
-            "hidden": {
-                "prompt": "PROMPT",
-                "unique_id": "UNIQUE_ID",
-                "extra_pnginfo": "EXTRA_PNGINFO",
-            },
         }
 
     RETURN_TYPES = ("IMAGE", "IMAGE", "STRING", "IMAGE")
@@ -261,9 +256,6 @@ class StudioLightRig:
         invert_depth: bool = False,
         aim_target: str = "Upper",
         depth_relief_scale: float = 0.30,
-        prompt: Optional[Dict] = None,
-        unique_id: Optional[str] = None,
-        extra_pnginfo: Optional[Dict] = None,
         **kwargs,
     ):
         # 1. Server-side preset resolution (ensures API, headless, and Python invocations honor `preset`)

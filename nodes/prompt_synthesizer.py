@@ -8,7 +8,6 @@ optimized for Flux.1 and SDXL attention without prompt pollution.
 """
 
 from typing import Dict, Any, Optional, Tuple, List
-import torch
 from .color_utils import kelvin_to_mood, MODIFIER_PRESETS
 
 

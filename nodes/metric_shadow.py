@@ -43,6 +43,8 @@ from typing import Dict, Literal, Optional, Tuple
 import torch
 import torch.nn.functional as F
 
+from .color_utils import MODIFIER_PRESETS
+
 _EPS = 1e-6
 
 
@@ -72,15 +74,27 @@ class EmitterSpec:
     one_sided: bool = True
 
 
-MODIFIER_EMITTERS: Dict[str, EmitterSpec] = {
-    "Octabox (Soft)": EmitterSpec("octagon", width_m=1.40, height_m=1.40),
-    "Stripbox": EmitterSpec("rectangle", width_m=0.30, height_m=1.20),
-    "Beauty Dish (Silver)": EmitterSpec("circle", radius_m=0.275),
-    "Fresnel Spotlight": EmitterSpec("circle", radius_m=0.15),
-    "Hard Snoot": EmitterSpec("circle", radius_m=0.05),
-    "Direct On-Camera Flash": EmitterSpec("rectangle", width_m=0.08, height_m=0.05),
-    "Direct Flash": EmitterSpec("rectangle", width_m=0.08, height_m=0.05),
-}
+def _build_modifier_emitters() -> Dict[str, EmitterSpec]:
+    """Derives metric 3D emitter specifications directly from MODIFIER_PRESETS (Single Source of Truth)."""
+    emitters: Dict[str, EmitterSpec] = {}
+    for name, spec in MODIFIER_PRESETS.items():
+        geom = spec.get("geometry", "circle")
+        if geom == "octagon":
+            d = 2.0 * float(spec["radius_m"])
+            emitters[name] = EmitterSpec("octagon", width_m=d, height_m=d, radius_m=float(spec["radius_m"]))
+        elif geom == "rectangle":
+            emitters[name] = EmitterSpec(
+                "rectangle",
+                width_m=float(spec["width_m"]),
+                height_m=float(spec["height_m"]),
+            )
+        else:
+            emitters[name] = EmitterSpec("circle", radius_m=float(spec["radius_m"]))
+    emitters["Direct Flash"] = emitters["Direct On-Camera Flash"]
+    return emitters
+
+
+MODIFIER_EMITTERS: Dict[str, EmitterSpec] = _build_modifier_emitters()
 
 
 def _ensure_bhw(x: torch.Tensor, name: str) -> torch.Tensor:

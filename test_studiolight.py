@@ -621,7 +621,7 @@ def test_specular_pass_wiring():
     print("Testing specular_pass -> composite wiring...")
     from nodes.photometric_composite import StudioPhotometricComposite
     rig, comp = StudioLightRig(), StudioPhotometricComposite()
-    out = rig.execute_rig(preset="Custom", framing="Portrait (Classical Bust)", key_modifier="Beauty Dish (Silver)", key_intensity=1.5)
+    out = rig.execute_rig(preset="Custom", key_modifier="Beauty Dish (Silver)", key_intensity=1.5)
     assert len(out) == 4 and len(StudioLightRig.RETURN_TYPES) == 4 and StudioLightRig.RETURN_NAMES[3] == "specular_pass"
     light, spec = out[0], out[3]
     assert spec.shape == light.shape and 0.0 <= float(spec.min()) and float(spec.max()) <= 1.0 and float(spec.max()) > 0.05
@@ -664,48 +664,50 @@ def test_prompt_sanitizer():
 
 
 def test_optical_penumbra_shadows():
-    print("Testing optical penumbra and area soft shadows...")
-    from nodes.shader_engine import screen_space_directional_shadow
+    print("Testing optical penumbra, modifier emitter SSOT, and >16M quantile safety...")
+    from nodes.shader_engine import _safe_quantile, reconstruct_metric_surface
+    from nodes.metric_shadow import MODIFIER_EMITTERS, screen_space_directional_shadow_metric
     from nodes.color_utils import MODIFIER_PRESETS
 
-    # Synthetic scene: 128x128 depth buffer with a foreground pillar at d=0.8 (closer)
-    # casting shadow onto a background wall at d=0.2 (further)
+    # 1. Verify Single Source of Truth between MODIFIER_PRESETS and MODIFIER_EMITTERS
+    for mod_name, spec in MODIFIER_PRESETS.items():
+        assert mod_name in MODIFIER_EMITTERS, f"Missing {mod_name} in MODIFIER_EMITTERS"
+        em = MODIFIER_EMITTERS[mod_name]
+        if spec["geometry"] == "octagon":
+            assert abs(em.width_m - 2.0 * spec["radius_m"]) < 1e-6
+        elif spec["geometry"] == "rectangle":
+            assert abs(em.width_m - spec["width_m"]) < 1e-6 and abs(em.height_m - spec["height_m"]) < 1e-6
+        else:
+            assert abs(em.radius_m - spec["radius_m"]) < 1e-6
+
+    # 2. Verify >16M element quantile safety (4K/8K tensor protection)
+    large_tensor = torch.linspace(0.0, 1.0, 20_000_000, dtype=torch.float32)
+    q99 = float(_safe_quantile(large_tensor, 0.99).item())
+    assert 0.985 <= q99 <= 0.995, f"_safe_quantile failed on 20M element tensor: {q99}"
+
+    # 3. Synthetic 3D scene: foreground pillar at d=0.80 casting shadow onto background wall at d=0.20
     depth = torch.full((1, 128, 128, 1), 0.2, dtype=torch.float32)
-    # Pillar in the center (x: 40..60, y: 30..90)
     depth[:, 30:90, 40:60, :] = 0.80
+    p_surf, _, _ = reconstruct_metric_surface(depth, H=128, W=128, vertical_fov_deg=40.0)
+    d_scene = -p_surf[..., 2:3]
+    l_pos = torch.tensor([[-1.2, 0.0, -0.8]], dtype=torch.float32)
+    l_aim = torch.tensor([[0.0, 0.0, -2.0]], dtype=torch.float32)
 
-    # Key light pointing from left (lx > 0, cast shadow to right)
-    light_vec = torch.tensor([1.0, 0.0, 0.8], dtype=torch.float32)
-
-    # 1. Hard Snoot (aperture 0.10m)
-    snoot_aperture = MODIFIER_PRESETS["Hard Snoot"]["aperture_size"]
-    sh_snoot = screen_space_directional_shadow(
-        depth, light_vec, aperture_size=snoot_aperture, soft_shadows=True
+    sh_snoot = screen_space_directional_shadow_metric(
+        p_surf, d_scene, l_pos, l_aim, modifier="Hard Snoot", num_emitter_samples=8, ray_steps=16, dither=False
+    )
+    sh_octa = screen_space_directional_shadow_metric(
+        p_surf, d_scene, l_pos, l_aim, modifier="Octabox (Soft)", num_emitter_samples=8, ray_steps=16, dither=False
     )
 
-    # 2. Octabox (aperture 1.40m)
-    octa_aperture = MODIFIER_PRESETS["Octabox (Soft)"]["aperture_size"]
-    sh_octa = screen_space_directional_shadow(
-        depth, light_vec, aperture_size=octa_aperture, soft_shadows=True
-    )
-
-    # In the shadow penumbra zone (x: 34..40),
-    # Octabox should produce a smoother, softer penumbra transition than Hard Snoot
-    snoot_penumbra_edge = sh_snoot[:, 50, 34:40, 0]
-    octa_penumbra_edge = sh_octa[:, 50, 34:40, 0]
-
-    # Verify both produce valid shadow values [0, 1]
     assert torch.all(sh_snoot >= 0.0) and torch.all(sh_snoot <= 1.0)
     assert torch.all(sh_octa >= 0.0) and torch.all(sh_octa <= 1.0)
+    # Octabox creates a wider partial-visibility penumbra region than Hard Snoot
+    penumbra_snoot = int(((sh_snoot > 0.05) & (sh_snoot < 0.95)).sum().item())
+    penumbra_octa = int(((sh_octa > 0.05) & (sh_octa < 0.95)).sum().item())
+    assert penumbra_octa > penumbra_snoot, f"Octabox penumbra ({penumbra_octa}) must exceed Hard Snoot ({penumbra_snoot})"
 
-    # In the penumbra transition region near the edge (x=39), Octabox has softened the edge
-    assert octa_penumbra_edge[:, 5] > snoot_penumbra_edge[:, 5], "Octabox should diffuse/lift edge shadow"
-
-    # Verify shadow core is present in both
-    assert torch.min(sh_snoot) < 0.10
-    assert torch.min(sh_octa) < 0.15
-
-    print("  ✓ PCSS Vogel disk soft shadow verified: Octabox casts diffused penumbra; Hard Snoot preserves crisp edge.")
+    print("  ✓ Modifier emitter SSOT, 20M-element _safe_quantile, and 3D area penumbra verified.")
     print("✓ Optical penumbra soft shadows passed!")
 
 
@@ -1006,7 +1008,6 @@ def test_metric_3d_camera_space_shadow():
         depth_optional=dummy_depth,
         target_pos=torch.tensor([0.2, -0.1, -2.5]),
         vertical_fov_deg=35.0,
-        framing="Portrait (Classical Bust)",
     )
     assert relit.shape == (1, 64, 64, 3)
     relit_alt, _, _, _ = rig.execute_rig(
@@ -1015,7 +1016,6 @@ def test_metric_3d_camera_space_shadow():
         depth_optional=dummy_depth,
         target_pos=torch.tensor([1.5, 1.0, -3.0]),
         vertical_fov_deg=60.0,
-        framing="Portrait (Classical Bust)",
     )
     assert float(torch.abs(relit - relit_alt).sum()) > 10.0, "Changing target_pos and vertical_fov_deg had no photometric impact!"
     print("  ✓ Full Rig parameterization & metadata propagation verified end-to-end (photometric diff > 0).")
