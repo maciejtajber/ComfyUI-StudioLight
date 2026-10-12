@@ -1,22 +1,29 @@
-from .studio_light import NODE_CLASS_MAPPINGS as SL_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS as SL_DISPLAY
-from .studio_3d_stage import NODE_CLASS_MAPPINGS as STAGE_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS as STAGE_DISPLAY
-from .si_shadow_highlight import NODE_CLASS_MAPPINGS as SH_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS as SH_DISPLAY
-from .photometric_composite import NODE_CLASS_MAPPINGS as PC_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS as PC_DISPLAY
+import importlib
+import logging
 
-try:
-    from .prompt_sanitizer import NODE_CLASS_MAPPINGS as PS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS as PS_DISPLAY
-except (ImportError, ModuleNotFoundError):
-    PS_MAPPINGS = {}
-    PS_DISPLAY = {}
+logger = logging.getLogger("ComfyUI-StudioLight")
 
-try:
-    from .trajectory_nodes import NODE_CLASS_MAPPINGS as TJ_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS as TJ_DISPLAY
-except (ImportError, ModuleNotFoundError):
-    TJ_MAPPINGS = {}
-    TJ_DISPLAY = {}
+NODE_CLASS_MAPPINGS = {}
+NODE_DISPLAY_NAME_MAPPINGS = {}
 
-NODE_CLASS_MAPPINGS = {**STAGE_MAPPINGS, **SL_MAPPINGS, **SH_MAPPINGS, **PC_MAPPINGS, **PS_MAPPINGS, **TJ_MAPPINGS}
-NODE_DISPLAY_NAME_MAPPINGS = {**STAGE_DISPLAY, **SL_DISPLAY, **SH_DISPLAY, **PC_DISPLAY, **PS_DISPLAY, **TJ_DISPLAY}
+_MODULES = (
+    ".studio_light",
+    ".si_shadow_highlight",
+    ".photometric_composite",
+    ".prompt_sanitizer",
+)
+
+for _mod_name in _MODULES:
+    try:
+        _mod = importlib.import_module(_mod_name, package=__name__)
+        NODE_CLASS_MAPPINGS.update(getattr(_mod, "NODE_CLASS_MAPPINGS", {}))
+        NODE_DISPLAY_NAME_MAPPINGS.update(getattr(_mod, "NODE_DISPLAY_NAME_MAPPINGS", {}))
+    except Exception as _exc:
+        logger.warning(
+            "[ComfyUI-StudioLight] Skipping module '%s' due to import error: %s",
+            _mod_name,
+            _exc,
+        )
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
 

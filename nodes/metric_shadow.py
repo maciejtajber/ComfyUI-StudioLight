@@ -177,7 +177,11 @@ def _regular_polygon_vertices(n: int, radius_x: float, radius_y: float, device, 
 
 
 def _sample_polygon_uniform(points01: torch.Tensor, vertices: torch.Tensor) -> torch.Tensor:
-    """Uniform samples from a convex polygon by area-weighted fan triangles."""
+    """Uniform samples from a regular/affine-regular polygon by equal-area fan triangles from the origin.
+
+    Uses Turk (1990) uniform triangle parameterization for each fan triangle (0, a_i, b_i):
+        p = sqrt(u_local) * ((1 - v) * a_i + v * b_i)
+    """
     n_tri = vertices.shape[0]
     tri_idx = torch.clamp((points01[:, 0] * n_tri).long(), max=n_tri - 1)
     local_u = points01[:, 0] * n_tri - tri_idx.to(points01.dtype)
@@ -185,9 +189,7 @@ def _sample_polygon_uniform(points01: torch.Tensor, vertices: torch.Tensor) -> t
     a = vertices[tri_idx]
     b = vertices[(tri_idx + 1) % n_tri]
     root_u = torch.sqrt(torch.clamp(local_u, min=0.0, max=1.0))
-    return (1.0 - root_u)[:, None] * a + root_u[:, None] * (
-        (1.0 - local_v)[:, None] * b
-    )
+    return root_u[:, None] * ((1.0 - local_v)[:, None] * a + local_v[:, None] * b)
 
 
 def generate_emitter_samples_3d(

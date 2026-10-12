@@ -107,26 +107,28 @@ Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic
 
 ## What Makes StudioLight Different
 
-ComfyUI-StudioLight integrates image-derived camera-space geometry, screen-space shadow raymarching, and sampled photographic area emitters into a controllable lighting workflow for generative image synthesis.
+ComfyUI-StudioLight is a **physically motivated, depth-reconstructed camera-space relighting engine** that integrates single-view geometry estimation, projected shadow raymarching, and sampled photographic area emitters into a controllable two-stage workflow for generative image synthesis.
 
 ### Defining Capabilities:
-* **Depth-Based Camera-Space Shadowing:** Reconstructs camera-space surface positions from image-derived depth and configured studio scale ($40^\circ$ FOV), evaluating visibility along projected 3D light rays rather than flat screen-space offsets.
-* **Geometric Area-Emitter Sampling:** Models photographic studio modifier apertures (Octabox 1.4m, Stripbox 0.3×1.2m, Beauty Dish 55cm) through Quasi-Monte Carlo Hammersley sampling. Contact-hardening penumbras emerge naturally from sample integration without an artificial PCSS blur pass.
+* **Depth-Reconstructed Camera-Space Shadowing:** Reconstructs camera-space surface positions from image-derived monocular depth and configured studio scale ($40^\circ$ FOV), evaluating visibility along projected 3D light rays rather than flat 2D screen-space offsets.
+* **Geometric Area-Emitter Sampling:** Models photographic studio modifier apertures (Octabox 1.4m, Stripbox 0.3×1.2m, Beauty Dish 55cm) through uniform Quasi-Monte Carlo Hammersley sampling. Contact-hardening penumbras emerge from multi-sample aperture integration without an artificial PCSS post-blur pass.
 * **Integrated Photometric Lighting:** Combines directional diffuse shading, Blinn-Phong specular microfacets, distance-dependent $(r_{\text{ref}}/r)^2$ falloff, and shadow visibility within a unified PyTorch pipeline.
-* **Diffusion-Integrated Results:** Uses the computed lighting plate as explicit physical guidance for Pass 2 FLUX.1 Krea Dev latent synthesis, marrying spatial lighting control with generative material synthesis.
+* **Two-Stage Diffusion Integration:** Uses the computed lighting plate as explicit spatial guidance for Pass 2 FLUX.1 Krea Dev latent synthesis, separating lighting placement from generative material synthesis.
 
 <br>
 
 <div align="center">
   <img src="assets/studiolight_probe_and_render.webp" alt="StudioLight VFX Probes & Studio Radar vs Final Render" width="100%" />
   <br>
-  <sub><b>Interactive Physical Lighting Rig:</b> Real-time 3D VFX spheres (18% Grey + Chrome) & studio radar directly driving FLUX.1 Krea Dev generative lighting across 6 distinct setups.</sub>
+  <sub><b>Interactive Camera-Space Lighting Rig:</b> Real-time 3D VFX spheres (18% Grey + Chrome) &amp; studio radar driving FLUX.1 Krea Dev generative relighting across 6 distinct setups.</sub>
 </div>
 
 <br>
 
 > [!NOTE]
-> **Scope & Engineering Limits:** StudioLight performs screen-space raymarching over an estimated single-view geometry field (Depth Anything V2 + DSINE calibrated to studio scale). Pretrained monocular depth models estimate relative depth, which StudioLight anchors to virtual camera space (defaulting the subject plane to $Z = -2.0\text{m}$). It is designed for fast, controllable image relighting—not unrestricted path tracing over a complete multi-view 3D scene.
+> **Scope, Renderer Fidelity & Diffusion Transfer Fidelity:**
+> * **Renderer Fidelity (Deterministic Guidance Pass):** StudioLight performs screen-space raymarching over an estimated single-view 2.5D geometry field (`Depth Anything V2` + `DSINE` anchored to virtual camera space at $Z = -2.0\text{m}$). While fixture coordinates, area-emitter sampling (Turk 1990 uniform fan triangles), and projected depth occlusion are evaluated deterministically in camera space, single-view depth cannot reconstruct occluded back-faces, thin sub-pixel strands, or transparent volumes like a multi-view path tracer.
+> * **Diffusion Transfer Fidelity (Generative Interpretation):** The shader's relit composite serves as a spatial and tonal guidance plate for Pass 2 FLUX synthesis. How strictly the final render follows the lighting plate versus reinterpreting materials depends on Pass 2 denoise (`0.35 – 0.85+`) and prompt conditioning.
 
 ### Context & Adjacent Prior Art
 
@@ -210,13 +212,13 @@ StudioLight splits generation into a **two-stage geometry and relighting pipelin
     <tr></tr>
     <tr>
       <td align="left">
-        <b>Deterministic Physical Lighting Guidance:</b><br>
-        • Canonical 3D camera-space raymarching through estimated depth field<br>
-        • Optical contact-hardening under knuckles and coat collar<br>
-        • Diverging physical penumbra cast across 2m background chasm
+        <b>Deterministic Camera-Space Lighting Guidance:</b><br>
+        • Projected 3D camera-space raymarching through estimated depth field<br>
+        • Contact-hardening penumbra under knuckles and coat collar<br>
+        • Diverging sampled penumbra cast across 2m background depth gap
       </td>
       <td align="left">
-        <b>Generative Material Synthesis:</b><br>
+        <b>Generative Material Synthesis (Pass 2):</b><br>
         • High-contrast dielectric specular catchlights on patent leather<br>
         • Preserves dark black wool texture without crushed blacks or self-shadow acne<br>
         • Fluted neoclassical stone grain and ambient occlusion interpretation
@@ -229,15 +231,15 @@ StudioLight splits generation into a **two-stage geometry and relighting pipelin
 
 ## 3D Camera-Space Shadow Raymarching
 
-StudioLight replaces flat screen-space offsets with **canonical 3D camera-space raymarching through reconstructed depth fields**:
+StudioLight replaces flat 2D screen-space offsets with **projected 3D camera-space raymarching through reconstructed depth fields**:
 
 ```
 P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspective Projection ──► Bilinear Depth Lookup ──► P0 Occlusion Gate
 ```
 
-* **P0 Front-of-Ray Occlusion Gate ($D_{\text{scene}} \le D_{\text{ray}} - \epsilon$):** Evaluates depth strictly in front of the ray sample, suppressing false shadows and receiver self-shadow acne on curved faces in automated tests while handling camera-side key lights and rear rim kickers symmetrically.
+* **P0 Front-of-Ray Occlusion Gate ($D_{\text{scene}} \le D_{\text{ray}} - \epsilon$):** Evaluates depth strictly in front of the ray sample, suppressing false behind-ray occlusions and receiver self-shadow acne on curved faces in calibrated geometry while handling camera-side key lights and rear rim kickers symmetrically.
 * **Long-Distance Depth Projection:** Evaluated across expanding depth gaps (tested up to $24\text{m}$ in calibrated test geometry) without artificial screen-space search clamping, allowing foreground subjects to cast shadows onto distant architectural backgrounds.
-* **Single-Layer Physical Penumbra:** Soft shadows emerge naturally from multi-sample Quasi-Monte Carlo integration across the physical aperture face (Octabox 1.40m, Stripbox 0.30×1.20m, Beauty Dish 55cm) with **Interleaved Gradient Noise (IGN)** sub-step dither to smooth discrete step transitions—zero artificial PCSS post-blur required.
+* **Sampled Area-Emitter Penumbra:** Soft shadows emerge from multi-sample Quasi-Monte Carlo integration across the virtual aperture face (Octabox 1.40m, Stripbox 0.30×1.20m, Beauty Dish 55cm) with **Interleaved Gradient Noise (IGN)** sub-step dither to smooth discrete step transitions—without an artificial PCSS post-blur pass.
 
 <div align="center">
 <img src="assets/stress_02_slit_banding_vs_dither.png" width="95%" alt="3D Camera-Space Shadow Raymarching: Banding vs IGN Dither" />
@@ -554,7 +556,8 @@ python test_studiolight.py
 
 ## Roadmap
 
-### Upcoming Milestones 🎯
+### Upcoming Milestones (v2.0) 🎯
+* [ ] **Native 3D Stage & Asset Ingestion (v2.0):** Integrated Three.js/WebGL viewport supporting `.glb` / `.obj` subject staging, camera alignment, and real-time 3D normal/depth pass rendering directly inside ComfyUI.
 * [ ] **Custom 3D Aim Pointer (`X, Y, Z`):** Interactive 3D target locator (`Custom` mode alongside `Upper`, `Center`, `Lower`) allowing manual placement of the camera-space aim point in meters (`target_pos` is already supported in the underlying `shader_engine.py` raymarcher).
 * [ ] **Independent Per-Lamp Aim Pointer (`Key`, `Fill`, `Rim`):** Decoupled aim targets for each individual C-stand so `Key`, `Fill`, and `Rim` can independently target different subject zones (e.g., `Key` aimed at `Upper` face while `Rim` or `Fill` targets `Center` torso or custom coordinates).
 * [ ] **Temporal & Video Diffusion Integration:** Model-agnostic integration piping 32-bit linear photometric relighting plates into video diffusion attention streams and spatio-temporal latents (Wan 2.1, LTX-Video, Hunyuan).
@@ -562,15 +565,9 @@ python test_studiolight.py
 * [ ] **Expanded Model Architectures (Krea 2 & Beyond):** Conditioning adapters and native CFG response dynamics for newly released foundation models.
 * [ ] **Universal 2D Image Relighting (Img2Img):** Standalone relighting pipeline accepting existing 2D photographs or renders via intrinsic albedo estimation and depth/normal extraction.
 * [ ] **`StudioModifierTuner` Companion Node:** Dedicated utility node enabling continuous slider control over physical aperture diameter (0.01m – 3.00m), asymmetric modifier aspect ratios (stripbox width vs. length), and internal baffle diffusion softness.
-* [ ] **Native 3D Stage & Asset Ingestion:** Integrated lightweight Three.js/WebGL canvas supporting `.glb` / `.obj` positioning, camera alignment, and interactive light gizmos inside ComfyUI.
 * [ ] **Live Interactive Radar Overhaul:** Enhanced top-down radar console with multi-light distance ring manipulation and interactive beam-cone angles.
 * [ ] **Material-Aware Specular Routing:** Automatic dielectric vs. metallic reflectance handling to prevent edge solarization across high-contrast fabric combinations.
 * [ ] **Reference Pose-to-Lighting Matching:** Extract incident light directions from reference studio photographs and auto-populate the 3-point console coordinates.
-
----
-
-### Active Research & Exploration (R&D) 🔬
-* **Continuous Latent Trajectory Injection (Method B):** Non-destructive Euler ODE delta injection ($\Delta x = (x_0' - x_0) \cdot \text{strength}$) at flow step $\sigma_{10} = 0.863338$, exploring adaptive noise scaling to achieve material re-synthesis without stochastic restarts.
 
 ---
 
