@@ -28,7 +28,7 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 <a href="#how-it-works">PIPELINE</a> &nbsp;·&nbsp;
 <a href="#from-camera-space-lighting-pass-to-final-flux-render">THE PROOF</a> &nbsp;·&nbsp;
 <a href="#3d-camera-space-shadow-raymarching">3D SHADOWS</a> &nbsp;·&nbsp;
-<a href="#optical-modifiers--sampled-area-emitters">AREA EMITTERS</a> &nbsp;·&nbsp;
+<a href="#optical-modifiers--physically-motivated-area-emitters">AREA EMITTERS</a> &nbsp;·&nbsp;
 <a href="#core-production-suite">CORE SUITE</a> &nbsp;·&nbsp;
 <a href="#installation">INSTALL</a> &nbsp;·&nbsp;
 <a href="#master-workflow">WORKFLOW</a> &nbsp;·&nbsp;
@@ -126,7 +126,9 @@ ComfyUI-StudioLight is a **physically motivated, depth-reconstructed camera-spac
 <br>
 
 > [!NOTE]
-> **Scope, Renderer Fidelity & Diffusion Transfer Fidelity:**
+> **Release Scope (v1.0.0 vs. v2.0) & Fidelity Boundaries:**
+> * **Available in v1.0.0:** Camera-space 3-point lighting controls (`Key`, `Fill`, `Rim`), live VFX probe spheres (18% Grey + Chrome) & top-down studio radar, 2.5D depth-reconstructed shadow raymarching, linear Rec.709 photometric compositing, and the two-stage FLUX workflow.
+> * **Planned for v2.0:** Native 3D mesh ingestion (`.glb` / `.obj`), interactive pose manipulation, and geometry-driven normal/depth pass rendering (see [Roadmap](#roadmap)).
 > * **Renderer Fidelity (Deterministic Guidance Pass):** StudioLight performs screen-space raymarching over an estimated single-view 2.5D geometry field (`Depth Anything V2` + `DSINE` anchored to virtual camera space at $Z = -2.0\text{m}$). While fixture coordinates, area-emitter sampling (Turk 1990 uniform fan triangles), and projected depth occlusion are evaluated deterministically in camera space, single-view depth cannot reconstruct occluded back-faces, thin sub-pixel strands, or transparent volumes like a multi-view path tracer.
 > * **Diffusion Transfer Fidelity (Generative Interpretation):** The shader's relit composite serves as a spatial and tonal guidance plate for Pass 2 FLUX synthesis. How strictly the final render follows the lighting plate versus reinterpreting materials depends on Pass 2 denoise (`0.35 – 0.85+`) and prompt conditioning.
 
@@ -237,8 +239,8 @@ StudioLight replaces flat 2D screen-space offsets with **projected 3D camera-spa
 P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspective Projection ──► Bilinear Depth Lookup ──► P0 Occlusion Gate
 ```
 
-* **P0 Front-of-Ray Occlusion Gate ($D_{\text{scene}} \le D_{\text{ray}} - \epsilon$):** Evaluates depth strictly in front of the ray sample, suppressing false behind-ray occlusions and receiver self-shadow acne on curved faces in calibrated geometry while handling camera-side key lights and rear rim kickers symmetrically.
-* **Long-Distance Depth Projection:** Evaluated across expanding depth gaps (tested up to $24\text{m}$ in calibrated test geometry) without artificial screen-space search clamping, allowing foreground subjects to cast shadows onto distant architectural backgrounds.
+* **P0 Front-of-Ray Occlusion Gate ($D_{\text{scene}} \le D_{\text{ray}} - \epsilon$):** Evaluates depth strictly in front of the ray sample, demonstrating suppression of false behind-ray occlusions and receiver self-shadow acne across validated depth discontinuities and curved test geometry while handling camera-side key lights and rear rim kickers symmetrically.
+* **Long-Distance Depth Projection:** Evaluated across expanding depth gaps (validated up to $24\text{m}$ in synthetic test geometry, including $2\text{px}$ thin blades in front of $20\text{m}$ depth cliffs) without artificial screen-space search clamping, allowing foreground subjects to cast shadows onto distant backgrounds within the visible 2.5D frustum.
 * **Sampled Area-Emitter Penumbra:** Soft shadows emerge from multi-sample Quasi-Monte Carlo integration across the virtual aperture face (Octabox 1.40m, Stripbox 0.30×1.20m, Beauty Dish 55cm) with **Interleaved Gradient Noise (IGN)** sub-step dither to smooth discrete step transitions—without an artificial PCSS post-blur pass.
 
 <div align="center">
@@ -327,9 +329,9 @@ P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspect
 </table>
 
 > [!NOTE]
-> * **Pass Latency:** Complete shadow visibility pass execution time.
-> * **Ray-Sample Steps / sec:** Calculated as $(W \times H \times S \times \text{steps}) / \text{latency}$. For example, $1,617\text{ M/s}$ represents $1.62\times 10^9$ discrete ray-sample evaluations per second. Complete pass latency is $29.6\text{ ms}$ ($512^2$) and $83.0\text{ ms}$ ($1024^2$).
-> * Benchmarks can be directly verified locally by running `python tools/run_hardcore_stress_tests.py`.
+> * **Pass Latency:** Complete shadow visibility pass wall-clock execution time (`torch.cuda.synchronize()`).
+> * **Ray-Sample Steps / sec (Metric Definition):** Defined as $(W \times H \times S \times \text{Steps}) / \text{Pass Latency}$, measuring inner raymarch step evaluations per second (distinct from rays/sec $= (W \times H \times S)/\text{Latency}$, pixels/sec $= (W \times H)/\text{Latency}$, or full diffusion workflow time).
+> * Benchmarks can be reproduced on your local GPU by running `python tools/run_hardcore_stress_tests.py`.
 
 > [!TIP]
 > For the complete mathematical formulation, low-discrepancy sampling derivations, and shader implementation:
@@ -339,9 +341,9 @@ P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspect
 
 ---
 
-## Optical Modifiers & Sampled Area Emitters
+## Optical Modifiers & Physically Motivated Area Emitters
 
-StudioLight implements a **geometrically sampled studio area-emitter architecture**. Every studio modifier is modeled as a defined 3D virtual emitter with geometric dimensions ($W, H, R$), angular beam distributions, single-layer penumbra visibility, and an analytical aperture reflection in reflection space:
+StudioLight implements a **physically motivated, geometrically sampled area-emitter architecture**. Each studio modifier is modeled as a 3D virtual emitter with oriented tangent-space frames, uniform aperture sampling ($W, H, R$), cosine-weighted emission, $(r_{\text{ref}}/r)^2$ distance attenuation, single-layer depth visibility, and an analytical aperture footprint in reflection space:
 
 <br>
 <div align="center">
@@ -470,7 +472,7 @@ cd ComfyUI/custom_nodes
 git clone https://github.com/maciejtajber/ComfyUI-StudioLight.git
 pip install -r ComfyUI-StudioLight/requirements.txt
 ```
-*(ComfyUI Manager registry listing is currently pending submission).*
+*(`requirements.txt` installs only `numpy` and `Pillow`; PyTorch `torch>=2.0.0` is treated as a host-provided ComfyUI dependency so your existing CUDA / ROCm / Apple Silicon MPS PyTorch build is never altered).*
 
 ### Hardware & VRAM Requirements
 * **GPU Memory:** Tested on 24 GB VRAM GPUs (NVIDIA RTX 3090 / A40). For FLUX.1 [dev] paired with full geometry preprocessors (DSINE + Depth Anything V2), 16–24 GB VRAM is recommended (or $\ge 12\text{ GB}$ with fp8 quantized weights). The StudioLight lighting shader itself is lightweight, allocating only $\sim 469\text{ MB}$ at $1024^2$ resolution.

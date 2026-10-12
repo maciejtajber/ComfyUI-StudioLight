@@ -399,7 +399,9 @@ def test_octabox_polygon_sampling_invariants():
         f"Octabox radial second moment mismatch: empirical={empirical_r2:.6f}, analytical={expected_r2:.6f} (rel_err={r2_rel_err:.5f})"
     )
 
-    # 4. Strict Convex Polygon Containment: Apothem = R * cos(pi/8)
+    # 4. Strict Convex Polygon Containment & 32-Cell 2D Interior Uniformity:
+    # Partition all 8 sectors into 2 equal-area radial shells (d_perp < apothem/sqrt(2) vs >= apothem/sqrt(2))
+    # and 2 equal-area angular bisectors (0..pi/8 vs pi/8..pi/4) = 32 equal-area 2D cells tiling the octagon.
     apothem = R * math.cos(math.pi / 8.0)
     k = torch.arange(8, dtype=torch.float32)
     mid_angles = k * (math.pi / 4.0) + math.pi / 4.0
@@ -407,7 +409,21 @@ def test_octabox_polygon_sampling_invariants():
     proj = samples @ normals_oct.T
     assert float(proj.max().item()) <= apothem + 1e-5, "Sample escaped octagon boundary!"
 
-    print(f"  ✓ Centroid bias={centroid_err:.2e}m, 8-sector max_dev={max_sector_dev:.2e}, E[r^2] rel_err={r2_rel_err:.2e}.")
+    d_sector = proj[torch.arange(n_samples), sector_idx]
+    radial_shell = (d_sector >= (apothem / math.sqrt(2.0))).long()
+    local_angle = angles - sector_idx.float() * (math.pi / 4.0)
+    angular_half = (local_angle >= (math.pi / 8.0)).long()
+    cell_32_idx = sector_idx * 4 + radial_shell * 2 + angular_half
+    cell_32_freqs = torch.bincount(cell_32_idx, minlength=32).float() / n_samples
+    max_cell32_dev = float((cell_32_freqs - (1.0 / 32.0)).abs().max().item())
+    assert max_cell32_dev < 1.5e-3, (
+        f"2D interior 32-cell distribution is non-uniform: max cell deviation = {max_cell32_dev:.5f} (target 1/32 = 0.03125)"
+    )
+
+    print(
+        f"  ✓ Centroid bias={centroid_err:.2e}m, 8-sector max_dev={max_sector_dev:.2e}, "
+        f"32-cell 2D max_dev={max_cell32_dev:.2e}, E[r^2] rel_err={r2_rel_err:.2e}."
+    )
     print("✓ Octabox Polygon Uniform Sampling Invariants passed flawlessly!")
 
 

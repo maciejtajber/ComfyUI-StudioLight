@@ -6,7 +6,8 @@ authors = [
     { name = "Maciej Tajber", email = "maciej@tajber.pl" }
 ]
 license = { text = "MIT" }
-dependencies = ["torch>=2.0.0", "numpy>=1.24.0", "Pillow>=9.5.0"]
+# PyTorch (torch>=2.0.0) is provided by the host ComfyUI environment.
+dependencies = ["numpy>=1.24.0", "Pillow>=9.5.0"]
 readme = "README.md"
 
 [project.urls]

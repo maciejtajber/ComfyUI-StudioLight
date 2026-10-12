@@ -6,6 +6,7 @@ License: MIT
 """
 
 import logging
+import traceback
 
 logger = logging.getLogger("ComfyUI-StudioLight")
 
@@ -20,12 +21,18 @@ try:
     NODE_CLASS_MAPPINGS.update(_NODE_CLASS_MAPPINGS)
     NODE_DISPLAY_NAME_MAPPINGS.update(_NODE_DISPLAY_NAME_MAPPINGS)
 except Exception as exc:
-    logger.warning(
-        "[ComfyUI-StudioLight] Failed to initialize node mappings gracefully (server startup continues): %s",
+    logger.error(
+        "\n======================================================================\n"
+        "[ComfyUI-StudioLight] ERROR: Failed to initialize node mappings (%s).\n"
+        "ComfyUI server startup will continue, but StudioLight nodes may be unavailable.\n"
+        "Full traceback:\n%s"
+        "======================================================================",
         exc,
+        traceback.format_exc(),
     )
 
 WEB_DIRECTORY = "./web"
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+
 

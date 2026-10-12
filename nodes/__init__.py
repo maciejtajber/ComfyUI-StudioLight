@@ -1,5 +1,6 @@
 import importlib
 import logging
+import traceback
 
 logger = logging.getLogger("ComfyUI-StudioLight")
 
@@ -19,11 +20,17 @@ for _mod_name in _MODULES:
         NODE_CLASS_MAPPINGS.update(getattr(_mod, "NODE_CLASS_MAPPINGS", {}))
         NODE_DISPLAY_NAME_MAPPINGS.update(getattr(_mod, "NODE_DISPLAY_NAME_MAPPINGS", {}))
     except Exception as _exc:
-        logger.warning(
-            "[ComfyUI-StudioLight] Skipping module '%s' due to import error: %s",
+        logger.error(
+            "\n======================================================================\n"
+            "[ComfyUI-StudioLight] ERROR: Failed to load node module 'nodes%s' (%s).\n"
+            "Other independent StudioLight modules will continue loading.\n"
+            "Full traceback:\n%s"
+            "======================================================================",
             _mod_name,
             _exc,
+            traceback.format_exc(),
         )
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
+
 

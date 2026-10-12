@@ -1,3 +1,6 @@
-torch>=2.0.0
+# Note: PyTorch (torch>=2.0.0) is provided by the host ComfyUI environment and
+# intentionally omitted here so `pip install -r requirements.txt` never overwrites
+# or alters the user's CUDA / ROCm / Apple Silicon MPS PyTorch build.
 numpy>=1.24.0
 Pillow>=9.5.0
+
