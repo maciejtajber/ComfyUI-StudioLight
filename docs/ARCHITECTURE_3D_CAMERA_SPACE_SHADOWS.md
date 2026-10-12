@@ -9,23 +9,23 @@
 
 ## 1. Abstract & Scope
 
-ComfyUI-StudioLight integrates image-derived camera-space geometry, metric screen-space shadow raymarching, and sampled photographic area emitters into a controllable lighting workflow for generative image synthesis.
+ComfyUI-StudioLight integrates image-derived camera-space geometry, depth-reconstructed camera-space shadow raymarching, and sampled photographic area emitters into a controllable lighting workflow for generative image synthesis.
 
-Traditional generative relighting tools fall into distinct categories: learned diffusion models (which hallucinate lighting without explicit metric fixture control), 2D mask-based compositors, or full 3D polygonal mesh renderers. Screen-space approximations often clamp shadow search radii at $\sim 40\text{ px}$ or rely on artificial distance fading (`weight = 1.0 - s / steps`), preventing cast shadows from bridging metric depth gaps or wrapping across curved architecture.
+Traditional generative relighting tools fall into distinct categories: learned diffusion models (which hallucinate lighting without explicit camera-space fixture control), 2D mask-based compositors, or full 3D polygonal mesh renderers. Screen-space approximations often clamp shadow search radii at $\sim 40\text{ px}$ or rely on artificial distance fading (`weight = 1.0 - s / steps`), preventing cast shadows from bridging calibrated depth gaps or wrapping across curved architecture.
 
 StudioLight evaluates visibility by **raymarching in 3D camera space through a reconstructed depth field**. By parameterizing ray vectors in meters ($[X, Y, Z]$) and projecting samples back to Normalized Device Coordinates (NDC), cast shadows bridge depth gaps, deform across non-planar architecture, and produce contact-hardening penumbras directly from sampled area-emitter apertures.
 
-> **Scope & Engineering Limits:** StudioLight performs metric screen-space raymarching over an estimated single-view geometry field (Depth Anything V2 + DSINE calibrated to a configured studio scale). Monocular depth estimation provides relative depth, which StudioLight anchors to virtual camera space; it does not claim independently measured laser-metric survey data or unrestricted path tracing over complete multi-view 3D scenes.
+> **Scope & Engineering Limits:** StudioLight performs camera-space raymarching over an estimated single-view geometry field (Depth Anything V2 + DSINE calibrated to a configured studio scale). Monocular depth estimation provides relative depth, which StudioLight anchors to virtual camera space; it does not claim independently measured laser-survey data or unrestricted path tracing over complete multi-view 3D scenes.
 
 ---
 
 ## 2. Canonical Coordinate System & Camera Model
 
-StudioLight operates in an OpenGL-convention metric camera space:
+StudioLight operates in an OpenGL-convention calibrated camera space:
 * **$+X$:** Right (meters)
 * **$+Y$:** Up (meters)
 * **$-Z$:** Forward optical axis into the scene (meters)
-* **$D_{\text{scene}} = -Z > 0$:** Positive metric distance in front of the lens.
+* **$D_{\text{scene}} = -Z > 0$:** Positive calibrated distance in front of the lens.
 
 Given estimated depth $D(u, v)$ from monocular estimation calibrated to a configured studio scale (by default anchoring the subject plane at $Z = -2.0\text{m}$) and camera intrinsics with vertical field of view $\theta_{\text{FOV}}$ ($40^\circ$ portrait FOV), any pixel $(x, y) \in [0, W-1] \times [0, H-1]$ is back-projected to camera space:
 
@@ -48,7 +48,7 @@ $$\mathbf{P}_k(t) = \mathbf{P}_{\text{surf}} + t \cdot \mathbf{L}_k, \quad t \in
 Where $\alpha_0 = \frac{\text{ray\_start\_m}}{d_{\text{ray}}}$ offsets the ray from the receiver surface to prevent self-intersection, and $\alpha_1 = 1 - \frac{\text{ray\_end\_m}}{d_{\text{ray}}}$ terminates before entering the emitter fixture.
 
 ### Perspective Back-Projection to Screen NDC
-At each discrete ray step $t_i$, the 3D metric point $\mathbf{P}_k(t_i) = (X_i, Y_i, Z_i)$ is projected back to Normalized Device Coordinates:
+At each discrete ray step $t_i$, the 3D camera-space point $\mathbf{P}_k(t_i) = (X_i, Y_i, Z_i)$ is projected back to Normalized Device Coordinates:
 
 $$D_{\text{ray}}(t_i) = -Z_i$$
 
@@ -103,7 +103,16 @@ IGN converts low-frequency stepping bands into high-frequency, blue-noise-like s
 
 ## 6. Hardcore Stress-Test Suite & Empirical Results
 
-The engine was subjected to a 4-part mathematical stress suite executed directly on an NVIDIA GeForce RTX 3090:
+The engine was subjected to a mathematical stress suite executed directly on an NVIDIA GeForce RTX 3090:
+
+### Test 0: Grazing-Angle Wedge Receiver Self-Shadow Immunity
+Evaluated grazing-angle light rays across a sloped depth wedge to verify zero receiver self-shadow acne:
+
+<div align="center">
+<img src="../assets/stress_01_wedge_grazing_rays.png" width="90%" alt="Grazing-Angle Wedge Receiver Immunity" />
+<br>
+<sub>Grazing-angle wedge stress test verifying P0 front-of-ray self-shadow immunity.</sub>
+</div>
 
 ### Test 1: Slit Aperture Banding vs. IGN Dither (Reproducing Stepping Slices)
 Evaluated a sharp vertical occluder at $Z = -2.0\text{m}$ casting onto a background wall at $Z = -4.0\text{m}$ illuminated by a 1.4m Octabox:

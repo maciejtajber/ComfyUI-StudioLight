@@ -330,7 +330,7 @@ P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspect
 
 > [!NOTE]
 > * **Pass Latency:** Complete shadow visibility pass wall-clock execution time (`torch.cuda.synchronize()`).
-> * **Ray-Sample Steps / sec (Metric Definition):** Defined as $(W \times H \times S \times \text{Steps}) / \text{Pass Latency}$, measuring inner raymarch step evaluations per second (distinct from rays/sec $= (W \times H \times S)/\text{Latency}$, pixels/sec $= (W \times H)/\text{Latency}$, or full diffusion workflow time).
+> * **Ray-Sample Steps / sec (Throughput Formula):** Defined as $(W \times H \times S \times \text{Steps}) / \text{Pass Latency}$, measuring inner raymarch step evaluations per second (distinct from rays/sec $= (W \times H \times S)/\text{Latency}$, pixels/sec $= (W \times H)/\text{Latency}$, or full diffusion workflow time).
 > * Benchmarks can be reproduced on your local GPU by running `python tools/run_hardcore_stress_tests.py`.
 
 > [!TIP]

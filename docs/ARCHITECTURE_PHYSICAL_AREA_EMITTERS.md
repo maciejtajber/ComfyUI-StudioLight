@@ -1,11 +1,11 @@
-# Architecture Plan: StudioLight Physically Based Geometric Area-Emitter Architecture
+# Architecture Plan: StudioLight Physically Motivated Geometric Area-Emitter Architecture
 
 ## Goal Description
-Transform ComfyUI-StudioLight's modifier system from heuristic scalar coefficients into a **physically based geometric area-emitter architecture**. Every studio modifier becomes a defined virtual emitter with 3D metric dimensions, emission distribution, fully vectorized multi-sample area integration, single-layer penumbra visibility, and an analytical aperture reflection in reflection space.
+Transform ComfyUI-StudioLight's modifier system from heuristic scalar coefficients into a **physically motivated geometric area-emitter architecture**. Every studio modifier becomes a defined virtual emitter with 3D calibrated dimensions, emission distribution, fully vectorized multi-sample area integration, single-layer penumbra visibility, and an analytical aperture reflection in reflection space.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│             PHYSICALLY BASED GEOMETRIC AREA-EMITTER ARCHITECTURE            │
+│            PHYSICALLY MOTIVATED GEOMETRIC AREA-EMITTER ARCHITECTURE         │
 └─────────────────────────────────────────────────────────────────────────────┘
                                    EMITTER
         [Geometry: Dimensions in meters (W, H, R), Position, Aim Direction]
@@ -15,7 +15,7 @@ Transform ComfyUI-StudioLight's modifier system from heuristic scalar coefficien
    1. DIFFUSE EMISSION       2. SHADOW / VISIBILITY     3. SPECULAR REFLECTION
   Vectorized [S, H, W, 3]    Single-layer penumbra      Ray-plane intersection
   • S=16 sample points       • Binary blocker test      • Emitter 2D coordinate
-  • Physical 1 / r_k²          per sample point         • Continuous aperture
+  • Inverse-square 1 / r_k²    per sample point         • Continuous aperture
   • cos θ_e × cos θ_p        • Average across S           profile & roughness
   • Radiometric area norm      yields natural penumbra    • True fixture catchlights
             │                         │                         │
@@ -42,13 +42,13 @@ Transform ComfyUI-StudioLight's modifier system from heuristic scalar coefficien
 - PyTorch evaluates all $S=16$ directions, inverse-square distances, receiver cosines, and emitter cosines in parallel batch operations.
 - Benchmark target: $<50\text{ ms}$ on standard hardware.
 
-### 3. True Physical $1/r^2$ Separated from Studio Exposure
-- **Raw Physical Irradiance:**
+### 3. Inverse-Square $1/r^2$ Separated from Studio Exposure
+- **Raw Irradiance:**
   $$E_{\text{raw}}(P) = \frac{1}{S} \sum_{k=1}^S \frac{\max(\mathbf{N} \cdot \mathbf{L}_k, 0) \times \max(\mathbf{L}_{\text{aim}} \cdot (-\mathbf{L}_k), 0)}{r_k^2} V_k(P)$$
 - **Studio Exposure / Calibration:**
   $$E_{\text{calibrated}}(P) = E_{\text{raw}}(P) \times r_{\text{ref}}^2 \times \text{Intensity} \times C_{\text{studio}}$$
   where $r_{\text{ref}} = 1.8\text{m}$ standard portrait stand reference distance.
-  This grounds the engine in rigorous physics while preserving intuitive studio photography exposure control.
+  This grounds the engine in geometric inverse-square falloff while preserving intuitive studio photography exposure control.
 
 ### 4. Continuous Source Profiles (No Hardcoded Stereotypes)
 - **Beauty Dish:** Modeled as a parabolic reflector with central deflector disk. It is not an arbitrary zero-center boolean hole; rather, the deflector causes an analytical forward dip in irradiance, while the parabolic silver/white bowl maintains interior fill.
@@ -58,7 +58,7 @@ Transform ComfyUI-StudioLight's modifier system from heuristic scalar coefficien
 The codebase cleanly separates:
 ```
 nodes/
-  ├── color_utils.py       # Emitter physical dimensions & profiles
+  ├── color_utils.py       # Emitter aperture dimensions & profiles
   └── shader_engine.py
         ├── Emitter Frame & Sampling       (Geometry & tangent frames)
         ├── Diffuse Emission Integrator   (Vectorized 1/r² irradiance)
@@ -69,9 +69,9 @@ nodes/
 ---
 
 ## Implementation Order
-1. **Emitter Geometry:** Define metric profiles in `color_utils.py`.
+1. **Emitter Geometry:** Define calibrated aperture profiles in `color_utils.py`.
 2. **Vectorized Sampling:** Build `generate_emitter_samples_3d` in `shader_engine.py`.
-3. **Physical $1/r^2$ Irradiance:** Implement vectorized tensor broadcasting.
+3. **Inverse-Square $1/r^2$ Irradiance:** Implement vectorized tensor broadcasting.
 4. **Per-Sample Visibility:** Screen-space blocker tests without post-blur.
 5. **Aggregation & Exposure:** Combine diffuse + shadow with reference normalization.
 6. **Specular Aperture Footprint:** Ray-plane reflection space evaluator for chrome ball & bust.

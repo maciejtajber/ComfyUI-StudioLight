@@ -1,4 +1,4 @@
-# Architectural Discovery: 2D Screen-Space Shadows vs. True 3D Metric Raymarching
+# Architectural Discovery: 2D Screen-Space Shadows vs. 3D Camera-Space Raymarching
 
 **Date:** October 8, 2026  
 **Module:** `nodes/metric_shadow.py` (`screen_space_directional_shadow_metric`) · `nodes/shader_engine.py`  
@@ -10,7 +10,7 @@
 
 During calibrated live FLUX studio runs on full-body architectural plates (model standing in front of neoclassical columns and stone walls):
 * **Contact shadows:** Look crisp under chin, collar, and lapels.
-* **Cast shadows on background architecture:** Fail to behave like true 3D perspective shadows. Instead of projecting across the 3D metric gap $\Delta Z$ and wrapping across the cylindrical fluting of the columns, the shadow behaves like a **2D drop shadow / contact halo** tightly clinging to the coat silhouette.
+* **Cast shadows on background architecture:** Fail to behave like true 3D perspective shadows. Instead of projecting across the 3D camera-space gap $\Delta Z$ and wrapping across the cylindrical fluting of the columns, the shadow behaves like a **2D drop shadow / contact halo** tightly clinging to the coat silhouette.
 
 ---
 
@@ -35,17 +35,17 @@ for s in range(1, steps + 1):
 
 ### Why this fails 3D geometry:
 1. **Marches in Flat 2D Pixel Space $(u, v)$:** The ray steps fixed screen fractions (`max_dist = 0.08`, ~40 pixels). It **never advances along the 3D light ray vector $L_z$** in camera space.
-2. **Zero Metric Distance Gap ($\Delta Z$) Awareness:** Whether a background column is $0.5\text{m}$ or $8.0\text{m}$ behind the model, the algorithm searches the **identical 40 pixels on screen**. It cannot project across distance.
+2. **Zero Depth Gap ($\Delta Z$) Awareness:** Whether a background column is $0.5\text{m}$ or $8.0\text{m}$ behind the model, the algorithm searches the **identical 40 pixels on screen**. It cannot project across distance.
 3. **Artificial Screen Fade (`weight = 1.0 - s / steps`):** The further the 2D ray marches, the fainter the shadow becomes, turning it into an ambient occlusion / vignette edge rather than a solid cast shadow.
 4. **No Surface Wrapping:** Because it doesn't intersect 3D geometry, the shadow cannot deform over the curved 3D geometry of fluted columns, stairs, or walls.
 
 ---
 
-## 3. Mathematical Solution: True 3D Metric Camera-Space Raymarching
+## 3. Mathematical Solution: 3D Camera-Space Raymarching
 
-StudioLight already reconstructs the complete 3D metric coordinate field:
+StudioLight already reconstructs the complete 3D camera-space coordinate field:
 $$\mathbf{P}_{\text{surf}} = (X, Y, Z) \in \mathbb{R}^3$$
-using metric depth and camera intrinsics ($FOV = 40^\circ$).
+using monocular depth calibrated to studio scale and camera intrinsics ($FOV = 40^\circ$).
 
 ### The 3D Raymarching Algorithm:
 1. For any receiver point $\mathbf{P}_{\text{surf}} = (X_r, Y_r, Z_r)$, cast a ray toward the light source:
