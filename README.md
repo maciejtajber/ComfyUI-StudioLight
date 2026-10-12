@@ -481,7 +481,22 @@ python test_studiolight.py
 
 ## Master Workflow
 
-* [`workflows/StudioLight_Master.json`](workflows/StudioLight_Master.json): Complete 2-Stage FLUX.1 Krea Dev production pipeline with prompt decoupling, 3D camera-space shadow raymarching, photometric compositing, and live VFX sphere probes.
+> **Production Architecture:** Complete 2-Stage FLUX.1 Krea Dev pipeline with prompt decoupling, 3D camera-space shadow raymarching, photometric compositing, and live VFX sphere probes.
+
+<a href="assets/studiolight_master_workflow.png" target="_blank">
+  <img src="assets/studiolight_master_workflow.png" alt="StudioLight Master ComfyUI Production Workflow (8800x3600)" width="100%" />
+</a>
+
+<sub>*Click the workflow canvas above to inspect in full 8800×3600 resolution.*</sub>
+
+<br>
+<br>
+
+* **Ready-to-Run Workflow:** Download [`workflows/StudioLight_Master.json`](workflows/StudioLight_Master.json) and drag it directly into ComfyUI.
+* **Pipeline Breakdown:**
+  * **Stage 1 — Base Subject & Geometry:** Base latent generation with prompt sanitization, followed by surface normal extraction (`DSINE`) and metric depth estimation (`Depth Anything V2`).
+  * **Stage 2 — Photometric Shader Engine:** Camera-space area-emitter raymarching (`StudioLightRig` & `StudioLightShaderEngine`), rendering key, fill, and rim lights with physical inverse-square falloff, Kelvin color temperatures, and contact-hardening penumbras.
+  * **Stage 3 — Stochastic Diffusion Fusion:** 32-bit photometric relighting plates composited back into the latent stream for a targeted diffusion pass, locking identity while altering light vectors.
 
 ---
 
