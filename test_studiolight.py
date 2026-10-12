@@ -129,6 +129,9 @@ def test_prompt_synthesizer():
     assert "right side of the frame" in prompt_port
     assert "warm tungsten" in prompt_port
     assert "left side" in prompt_port
+    fill_right = dict(fill, azimuth=30.0)
+    prompt_port_fill_right = synthesize_high_signal_prompt(key, fill_right, rim, target_engine="Flux.1")
+    assert prompt_port != prompt_port_fill_right, "FLUX prompt must reflect fill_azimuth change (-30 vs +30)"
 
     # 2. Video Engine (Wan 2.1 / MiniMax)
     prompt_vid = synthesize_high_signal_prompt(key, fill, rim, target_engine="Video (Wan / MiniMax)")
@@ -145,7 +148,7 @@ def test_prompt_synthesizer():
 
 
 def test_studio_light_node():
-    print("Testing StudioLightRig node execution & server-side presets...")
+    print("Testing StudioLightRig node execution, server-side presets & B>1 batching...")
     node = StudioLightRig()
     # Test 1: Standalone execution (procedural 3D calibration sphere fallback)
     relight, probe, prompt, _spec = node.execute_rig(preset="Rembrandt Classic")
@@ -177,7 +180,18 @@ def test_studio_light_node():
     assert float((rel_rembrandt - rel_noir).abs().max().item()) > 0.05, "Server-side preset failed: Rembrandt == Film Noir"
     assert float((rel_rembrandt - rel_flash).abs().max().item()) > 0.05, "Server-side preset failed: Rembrandt == Direct Flash"
     assert prompt_rembrandt != prompt_noir and prompt_rembrandt != prompt_flash, "Server-side preset failed to update lighting_prompt"
-    print("✓ StudioLightRig node execution & server-side preset resolution passed perfectly!")
+
+    # Test 3: Multi-item batch (B=2) execution with depth_optional connected
+    batch_normals = mock_normals.expand(2, -1, -1, -1).contiguous()
+    batch_depth = mock_depth.expand(2, -1, -1, -1).contiguous()
+    rel_b2, _, _, spec_b2 = node.execute_rig(
+        preset="Rembrandt Classic",
+        normals_optional=batch_normals,
+        depth_optional=batch_depth,
+    )
+    assert rel_b2.shape == (2, 128, 128, 3) and spec_b2.shape == (2, 128, 128, 3)
+    assert torch.allclose(rel_b2[0:1], rel_rembrandt, atol=1e-5), "B=2 batch output must match B=1 render"
+    print("✓ StudioLightRig node execution, server-side presets & B=2 batching passed perfectly!")
 
 
 def test_end_to_end_workflow_and_product_behavior():
@@ -646,20 +660,23 @@ def test_prompt_sanitizer():
     assert NODE_DISPLAY_NAME_MAPPINGS["StudioPromptSanitizer"] == "StudioLight Prompt Sanitizer (Auto-Albedo)"
 
     sanitizer = NODE_CLASS_MAPPINGS["StudioPromptSanitizer"]()
-    test_prompt = "editorial portrait of a woman holding a glossy black patent leather handbag, liquid chrome jewelry, tailored wool coat"
+    test_prompt = (
+        "editorial portrait of a woman holding a glossy black patent leather handbag, "
+        "liquid chrome jewelry, dramatic blue rim light from the left, hard sunlight, tailored wool coat"
+    )
     p1, p2 = sanitizer.sanitize(test_prompt)
 
     # Pass 1 checks
     assert "smooth leather" in p1, "High-gloss leather must become smooth leather"
     assert "matte brushed metal" in p1, "Chrome must become matte brushed metal"
-    for forbidden in ["glossy", "patent", "chrome"]:
-        assert forbidden not in p1.lower(), f"Forbidden token '{forbidden}' leaked into Pass 1"
+    for forbidden in ["glossy", "patent", "chrome", "rim light", "hard sunlight"]:
+        assert forbidden not in p1.lower(), f"Forbidden token '{forbidden}' leaked into Pass 1: {p1}"
     assert "flat overcast diffuse daylight" in p1, "Default albedo suffix should be appended"
 
     # Pass 2 checks
     assert p2 == test_prompt, "Pass 2 must preserve 100% of user prompt verbatim"
 
-    print("  ✓ Decoupling verified: Pass 1 albedo prompt sanitizes high-specular terms; Pass 2 retains original prompt.")
+    print("  ✓ Decoupling verified: Pass 1 albedo prompt sanitizes directional & high-specular terms; Pass 2 retains original prompt.")
     print("✓ StudioPromptSanitizer passed!")
 
 
@@ -679,6 +696,8 @@ def test_optical_penumbra_shadows():
             assert abs(em.width_m - spec["width_m"]) < 1e-6 and abs(em.height_m - spec["height_m"]) < 1e-6
         else:
             assert abs(em.radius_m - spec["radius_m"]) < 1e-6
+            expected_r_in = float(spec["radius_m"]) * float(spec.get("deflector_ratio", 0.0))
+            assert abs(em.inner_radius_m - expected_r_in) < 1e-6, f"{mod_name} inner_radius_m mismatch"
 
     # 2. Verify >16M element quantile safety (4K/8K tensor protection)
     large_tensor = torch.linspace(0.0, 1.0, 20_000_000, dtype=torch.float32)

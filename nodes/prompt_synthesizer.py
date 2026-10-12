@@ -109,8 +109,8 @@ def synthesize_high_signal_prompt(
         if k_enabled:
             video_blocks.append(f"[Fixed key light from a studio {k_mod_name} {k_dir}, steady {k_kelvin}K {k_mood}]")
         if f_enabled:
-            fill_side = "left" if k_az >= 0 else "right"
-            video_blocks.append(f"[Subtle ambient fill light from the {fill_side} side]")
+            fill_side = "left" if f_az < -10 else ("right" if f_az > 10 else "front")
+            video_blocks.append(f"[Subtle {f_mood} ambient fill light from the {fill_side} side]")
         if r_enabled:
             video_blocks.append(f"[Steady {r_mood} rim kicker from behind for subject separation]")
         video_blocks.append("[Consistent color temperature, temporally stable lighting, no flickering shadows].")
@@ -133,8 +133,13 @@ def synthesize_high_signal_prompt(
     if k_enabled:
         clauses.append(f"Key light from a studio {k_mod_name} {k_dir}, calibrated {k_kelvin}K {k_mood}")
     if f_enabled:
-        fill_side = "left side of the frame" if k_az >= 0 else "right side of the frame"
-        clauses.append(f"subtle soft fill light from the {fill_side} to soften shadow density")
+        if f_az < -10:
+            fill_side = "left side of the frame"
+        elif f_az > 10:
+            fill_side = "right side of the frame"
+        else:
+            fill_side = "front on-axis"
+        clauses.append(f"subtle {f_mood} fill light from the {fill_side} to soften shadow density")
     if r_enabled:
         clauses.append(f"crisp {r_mood} rim kicker from behind creating a thin razor-edge highlight along the hair and shoulders")
 

@@ -71,6 +71,7 @@ class EmitterSpec:
     width_m: float = 0.30
     height_m: float = 0.30
     radius_m: float = 0.15
+    inner_radius_m: float = 0.0
     one_sided: bool = True
 
 
@@ -89,7 +90,9 @@ def _build_modifier_emitters() -> Dict[str, EmitterSpec]:
                 height_m=float(spec["height_m"]),
             )
         else:
-            emitters[name] = EmitterSpec("circle", radius_m=float(spec["radius_m"]))
+            r_out = float(spec["radius_m"])
+            r_in = r_out * float(spec.get("deflector_ratio", 0.0))
+            emitters[name] = EmitterSpec("circle", radius_m=r_out, inner_radius_m=r_in)
     emitters["Direct Flash"] = emitters["Direct On-Camera Flash"]
     return emitters
 
@@ -255,7 +258,10 @@ def generate_emitter_samples_3d(
         local_y = (samples01[:, 1] - 0.5) * emitter.height_m
         local = torch.stack((local_x, local_y), dim=-1)
     elif emitter.shape == "circle":
-        r = torch.sqrt(torch.clamp(samples01[:, 0], min=0.0, max=1.0)) * emitter.radius_m
+        u_clamped = torch.clamp(samples01[:, 0], min=0.0, max=1.0)
+        r_in2 = emitter.inner_radius_m * emitter.inner_radius_m
+        r_out2 = emitter.radius_m * emitter.radius_m
+        r = torch.sqrt(r_in2 + (r_out2 - r_in2) * u_clamped)
         theta = 2.0 * math.pi * samples01[:, 1]
         local = torch.stack((r * torch.cos(theta), r * torch.sin(theta)), dim=-1)
     elif emitter.shape == "octagon":

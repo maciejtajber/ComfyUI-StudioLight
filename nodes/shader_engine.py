@@ -16,7 +16,12 @@ import numpy as np
 from PIL import Image, ImageDraw
 from typing import Dict, Any, Optional, Tuple
 from .color_utils import kelvin_to_rgb, MODIFIER_PRESETS
-from .metric_shadow import screen_space_directional_shadow_metric
+from .metric_shadow import (
+    _hammersley_2d,
+    _regular_polygon_vertices,
+    _sample_polygon_uniform,
+    screen_space_directional_shadow_metric,
+)
 
 
 def _safe_quantile(t: torch.Tensor, q: float, max_samples: int = 524288) -> torch.Tensor:
@@ -180,6 +185,11 @@ def generate_emitter_samples_2d(preset: Dict[str, Any], num_samples: int = 16) -
             r = math.sqrt(r_in * r_in + (r_out * r_out - r_in * r_in) * frac)
             th = k * golden_angle
             offsets.append([r * math.cos(th), r * math.sin(th)])
+    elif geom == "octagon":
+        r_out = float(preset.get("radius_m", 0.70))
+        pts01 = _hammersley_2d(num_samples, torch.device("cpu"), torch.float32)
+        verts = _regular_polygon_vertices(8, r_out, r_out, torch.device("cpu"), torch.float32)
+        return _sample_polygon_uniform(pts01, verts)
     else:
         r_out = float(preset.get("radius_m", 0.70))
         for k in range(num_samples):
@@ -632,21 +642,21 @@ def compute_light_shading(
         # 1. DIFFUSE EMISSION: Vectorized Area-Light Integration (16 samples)
         num_samples = 16
         samples_2d = generate_emitter_samples_2d(preset, num_samples=num_samples).to(device=device, dtype=dtype)
-        # [S, 1, 1, 3] sample points in camera space
+        # [1, S, 1, 1, 3] sample points in camera space (broadcast-safe for arbitrary batch B >= 1)
         p_samples = (
-            p_light.view(1, 1, 1, 3)
-            + samples_2d[:, 0].view(num_samples, 1, 1, 1) * u_tangent.view(1, 1, 1, 3)
-            + samples_2d[:, 1].view(num_samples, 1, 1, 1) * v_tangent.view(1, 1, 1, 3)
+            p_light.view(1, 1, 1, 1, 3)
+            + samples_2d[:, 0].view(1, num_samples, 1, 1, 1) * u_tangent.view(1, 1, 1, 1, 3)
+            + samples_2d[:, 1].view(1, num_samples, 1, 1, 1) * v_tangent.view(1, 1, 1, 1, 3)
         )
 
-        # Vectorized [S, H, W, 3] broadcast
-        v_to_samples = p_samples - p_surf  # [S, H, W, 3]
+        # Vectorized [B, S, H, W, 3] broadcast
+        v_to_samples = p_samples - p_surf.unsqueeze(1)  # [B, S, H, W, 3]
         dist_to_samples = torch.norm(v_to_samples, dim=-1, keepdim=True) + 1e-6
         dir_to_samples = v_to_samples / dist_to_samples
 
         # Pure Lambertian cosine at receiver max(N . L, 0) and emitter off-axis cosine (w_aim . -L)
-        cos_p = torch.clamp(torch.sum(normals * dir_to_samples, dim=-1, keepdim=True), 0.0, 1.0)
-        cos_e = torch.clamp(torch.sum(w_aim.view(1, 1, 1, 3) * (-dir_to_samples), dim=-1, keepdim=True), 0.0, 1.0)
+        cos_p = torch.clamp(torch.sum(normals.unsqueeze(1) * dir_to_samples, dim=-1, keepdim=True), 0.0, 1.0)
+        cos_e = torch.clamp(torch.sum(w_aim.view(1, 1, 1, 1, 3) * (-dir_to_samples), dim=-1, keepdim=True), 0.0, 1.0)
 
         # Smooth calibrated FWHM + penumbra skirt beam profile
         beam_gate = evaluate_beam_profile(cos_e, preset)
@@ -654,9 +664,9 @@ def compute_light_shading(
         # True physical 1 / r^2 falloff (referenced to 1.8m studio portrait stand)
         inv_sq = torch.clamp((1.8 / dist_to_samples) ** 2.0, 0.0, 8.0)
 
-        # Average irradiance across samples -> [1, H, W, 1]
+        # Average irradiance across samples -> [B, H, W, 1]
         irradiance_samples = cos_p * beam_gate * inv_sq
-        raw_diffuse = torch.mean(irradiance_samples, dim=0, keepdim=True)
+        raw_diffuse = torch.mean(irradiance_samples, dim=1)
 
         # 2. SHADOW / VISIBILITY: Metric Camera-Space 3D Area Shadow Raymarching
         aim_point = aim_point_13.expand(B, 3)

@@ -36,7 +36,15 @@ class StudioPromptSanitizer:
         cleaned = re.sub(r'\b(ultra[- ]?glossy|high[- ]?gloss|glossy|patent|lacquered)\s+leather\b', 'smooth leather', cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r'\b(liquid\s+chrome|chrome)\b', 'matte brushed metal', cleaned, flags=re.IGNORECASE)
 
-        # 2. Strip standalone high-specular / wet / glare tokens
+        # 2. Strip directional / rim-light / sunlight / chiaroscuro phrases & clauses
+        directional_patterns = [
+            r'\b(?:dramatic|harsh|hard|direct|strong|intense|warm|cool|blue|cyan|amber|golden|neon|cinematic|soft|subtle)\s+(?:(?:\w+\s+){0,2})?(?:rim[- ]?light(?:ing)?|back[- ]?light(?:ing)?|sunlight|key[- ]?light|side[- ]?light|spot[- ]?light|hair[- ]?light|kicker(?:\s+light)?|shadows)\b(?:\s+from\s+(?:the\s+)?(?:left|right|behind|above|below|side|rear|front))?',
+            r'\b(?:rim[- ]?light(?:ing)?|back[- ]?light(?:ing)?|back[- ]?lit|hard\s+sunlight|direct\s+sunlight|sunlight|chiaroscuro(?:\s+lighting|\s+shadows)?|rembrandt\s+lighting|split\s+lighting|harsh\s+shadows|dramatic\s+lighting|dramatic\s+shadows|volumetric\s+(?:god\s+)?rays)\b(?:\s+from\s+(?:the\s+)?(?:left|right|behind|above|below|side|rear|front))?',
+        ]
+        for pat in directional_patterns:
+            cleaned = re.sub(pat, '', cleaned, flags=re.IGNORECASE)
+
+        # 3. Strip standalone high-specular / wet / glare tokens
         specular_tokens = [
             r'\bultra[- ]?glossy\b', r'\bhigh[- ]?gloss\b', r'\bglossy\b',
             r'\bpatent\b', r'\bshiny\b', r'\blacquered\b', r'\bvarnished\b',
@@ -45,7 +53,7 @@ class StudioPromptSanitizer:
         for token in specular_tokens:
             cleaned = re.sub(token, '', cleaned, flags=re.IGNORECASE)
 
-        # 3. Clean up punctuation artifacts & multi-spaces
+        # 4. Clean up punctuation artifacts & multi-spaces
         cleaned = re.sub(r'\s*,\s*,+', ',', cleaned)
         cleaned = re.sub(r'\s{2,}', ' ', cleaned).strip(' ,')
 
