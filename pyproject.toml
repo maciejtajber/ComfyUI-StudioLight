@@ -21,4 +21,3 @@ Homepage = "https://github.com/maciejtajber/ComfyUI-StudioLight"
 [tool.comfy]
 PublisherId = "maciejtajber"
 DisplayName = "ComfyUI-StudioLight"
-Icon = ""

@@ -26,7 +26,7 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 <a href="#the-problem-prompt-lottery-vs-spatial-control">THE PROBLEM</a> &nbsp;·&nbsp;
 <a href="#what-makes-studiolight-different">DIFFERENTIATION</a> &nbsp;·&nbsp;
 <a href="#how-it-works">PIPELINE</a> &nbsp;·&nbsp;
-<a href="#from-camera-space-lighting-pass-to-final-flux-render">THE PROOF</a> &nbsp;·&nbsp;
+<a href="#from-camera-space-lighting-pass-to-final-flux-render">PASS VS. RENDER</a> &nbsp;·&nbsp;
 <a href="#3d-camera-space-shadow-raymarching">3D SHADOWS</a> &nbsp;·&nbsp;
 <a href="#optical-modifiers--physically-motivated-area-emitters">AREA EMITTERS</a> &nbsp;·&nbsp;
 <a href="#core-production-suite">CORE SUITE</a> &nbsp;·&nbsp;
@@ -456,7 +456,7 @@ StudioLight implements a **physically motivated, geometrically sampled area-emit
 * **Rule 1: Pass 1 Functions Best as a Flat Albedo Carrier:** Prompting Pass 1 with directional sun bakes hard contours into base geometry. Use an albedo carrier suffix in Pass 1 (`", flat diffuse ambient lighting, shadowless, albedo"`) to give StudioLight clean geometric control.
 * **Rule 2: Matte Fabrics Require Dedicated Specular Isolation:** Dark wool has albedo near 0.02. High specular kicks cause grazing Fresnel spikes, turning black wool into metallic foil. Wire `specular_pass` directly into `StudioPhotometricComposite`, keep `specular_kick` at `0.30–0.50`, and set `chroma_bleed = 0.00` on dark garments.
 * **Rule 3: Radiometric Distance Falloff Replaces Artificial Depth Tapers:** Legacy screen-space shaders often clamp distant geometry (`d_norm < 0.20`) to suppress noise, which accidentally destroys shadows on distant walls. StudioLight evaluates unconstrained physical $(r_{\text{ref}}/r)^2$ radiometric falloff and directional beam profiles ($\cos\theta > 0$), allowing foreground subjects to naturally cast geometric shadows across architectural depth gaps.
-* **Rule 4: Calibrated Normal Boost (`normal_boost = 1.35`) Prevents Grazing-Angle Terminator Seams:** Under steep grazing key lights (e.g. $75^\circ$ elevation Fresnel/Snoot), over-amplifying DSINE normal maps (`normal_boost >= 2.5`) sharpens the $\mathbf{N}\cdot\mathbf{L}=0$ terminator and cavity AO gradient faster than Pass 2 diffusion (`denoise = 0.48`) can blend, creating hard forehead seams or dark eye-socket dots. Keeping `normal_boost` at the calibrated **`1.35`** default preserves 3D facial sculpting while eliminating grazing-angle terminator artifacts.
+* **Rule 4: Calibrated Normal Boost (`normal_boost = 1.35`) Reduces Grazing-Angle Terminator Seams:** Under steep grazing key lights (e.g. $75^\circ$ elevation Fresnel/Snoot), over-amplifying DSINE normal maps (`normal_boost >= 2.5`) sharpens the $\mathbf{N}\cdot\mathbf{L}=0$ terminator and cavity AO gradient faster than Pass 2 diffusion (`denoise = 0.48`) can blend, creating hard forehead seams or dark eye-socket dots. Keeping `normal_boost` at the calibrated **`1.35`** default preserves 3D facial sculpting while reducing grazing-angle terminator seams in our tests.
 * **Rule 5: Pass 2 Denoise Governs Illumination Integration & Creative Freedom:**
   * `0.35 – 0.45` (Feature Lock & Subtle Fill): Preserves exact identity, original micro-textures, and fine facial features with a gentle lighting wash.
   * `0.50 – 0.65` (Balanced Relighting): Default zone for studio lighting integration—synthesizes skin subsurface scattering, specular eye catchlights, and realistic fabric wraps while anchoring geometry.
@@ -506,7 +506,7 @@ python test_studiolight.py
 
 * **Ready-to-Run Workflow:** Download [`workflows/StudioLight_Master.json`](workflows/StudioLight_Master.json) and drag it directly into ComfyUI.
 * **Pipeline Breakdown:**
-  * **Stage 1 — Base Subject & Geometry:** Base latent generation with prompt sanitization, followed by surface normal extraction (`DSINE`) and metric depth estimation (`Depth Anything V2`).
+  * **Stage 1 — Base Subject & Geometry:** Base latent generation with prompt sanitization, followed by surface normal extraction (`DSINE`) and monocular depth estimation (`Depth Anything V2`).
   * **Stage 2 — Photometric Shader Engine:** Camera-space area-emitter raymarching (`StudioLightRig` via `nodes/shader_engine.py`), rendering key, fill, and rim lights with inverse-square falloff, Kelvin color temperatures, and contact-hardening penumbras.
   * **Stage 3 — Stochastic Diffusion Fusion:** 32-bit photometric relighting plates composited back into the latent stream for a targeted diffusion pass, locking identity while altering light vectors.
 
