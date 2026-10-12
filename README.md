@@ -46,6 +46,10 @@ Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin contr
 
 > **Locked Seed:** `424242` | *Identical Base Prompt, Geometry, and Seed across FLUX.1 Krea Dev*
 
+https://github.com/user-attachments/assets/f82d96d9-08ac-4dfb-8f1a-a65432f33a32
+
+<br>
+
 <table>
   <thead>
     <tr>
