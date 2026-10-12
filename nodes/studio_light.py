@@ -11,21 +11,9 @@ prompt synthesis, and visual VFX probe previews.
 from typing import Dict, Any, Optional
 import torch
 from .color_utils import MODIFIER_PRESETS
-from .preset_manager import list_presets
+from .preset_manager import list_presets, get_all_presets_flattened
 from .shader_engine import render_studio_lighting, AIM_TARGET_OPTIONS
 from .prompt_synthesizer import synthesize_high_signal_prompt
-
-
-FRAMING_OPTIONS = [
-    "Portrait (Classical Bust)",
-    "American Plan (3/4 Shot)",
-    "Full Body (Standing Lookbook)",
-    "Tabletop / Luxury (Perfume Bottle / Small Product)",
-    "Industrial Design (Chair / Medium Product)",
-    "Automotive Cove (Car / Large Vehicle)",
-    "Volumetric Cyc (Crowds / Dynamic)",
-    "Auto (Detect from Prompt)",
-]
 
 
 class StudioLightRig:
@@ -202,7 +190,7 @@ class StudioLightRig:
                 "target_engine": (["Flux.1", "SDXL"], {
                     "default": "Flux.1",
                 }),
-                # NOTE: widget-type optionals serialize in order AFTER the 27 required widgets.
+                # NOTE: widget-type optionals serialize in order AFTER the 26 required widgets (26 + 5 = 31 total).
                 # Only ever APPEND new widgets here, never insert, or old workflows shift.
                 "invert_depth": ("BOOLEAN", {
                     "default": False,
@@ -278,11 +266,38 @@ class StudioLightRig:
         extra_pnginfo: Optional[Dict] = None,
         **kwargs,
     ):
-        # 1. Resolve active normal and depth tensors
+        # 1. Server-side preset resolution (ensures API, headless, and Python invocations honor `preset`)
+        if preset and preset != "Custom":
+            p_flat = get_all_presets_flattened().get(preset)
+            if p_flat:
+                ambient_intensity = float(p_flat.get("ambient_intensity", ambient_intensity))
+                key_enabled = bool(p_flat.get("key_enabled", key_enabled))
+                key_azimuth = float(p_flat.get("key_azimuth", key_azimuth))
+                key_elevation = float(p_flat.get("key_elevation", key_elevation))
+                key_distance = float(p_flat.get("key_distance", key_distance))
+                key_intensity = float(p_flat.get("key_intensity", key_intensity))
+                key_kelvin = int(p_flat.get("key_kelvin", key_kelvin))
+                key_modifier = str(p_flat.get("key_modifier", key_modifier))
+                fill_enabled = bool(p_flat.get("fill_enabled", fill_enabled))
+                fill_azimuth = float(p_flat.get("fill_azimuth", fill_azimuth))
+                fill_elevation = float(p_flat.get("fill_elevation", fill_elevation))
+                fill_distance = float(p_flat.get("fill_distance", fill_distance))
+                fill_intensity = float(p_flat.get("fill_intensity", fill_intensity))
+                fill_kelvin = int(p_flat.get("fill_kelvin", fill_kelvin))
+                fill_modifier = str(p_flat.get("fill_modifier", fill_modifier))
+                rim_enabled = bool(p_flat.get("rim_enabled", rim_enabled))
+                rim_azimuth = float(p_flat.get("rim_azimuth", rim_azimuth))
+                rim_elevation = float(p_flat.get("rim_elevation", rim_elevation))
+                rim_distance = float(p_flat.get("rim_distance", rim_distance))
+                rim_intensity = float(p_flat.get("rim_intensity", rim_intensity))
+                rim_kelvin = int(p_flat.get("rim_kelvin", rim_kelvin))
+                rim_modifier = str(p_flat.get("rim_modifier", rim_modifier))
+                normal_boost = float(p_flat.get("normal_boost", normal_boost))
+                ao_anchoring = float(p_flat.get("ao_anchoring", ao_anchoring))
+
         active_normals = normals_optional
         active_depth = depth_optional
         effective_invert_x = invert_normals_x
-        framing = kwargs.get("framing", "Portrait (Classical Bust)")
         target_pos = kwargs.get("target_pos", None)
         vertical_fov_deg = float(kwargs.get("vertical_fov_deg", 40.0))
 
@@ -314,7 +329,7 @@ class StudioLightRig:
             "distance": float(rim_distance),
         }
 
-        # 2. Render Physical Relighting Map (Lit proxy plate) and Dual-Sphere VFX Probe
+        # 2. Render Relighting Map and Dual-Sphere VFX Probe
         relighting_map, probe_preview, diff_pass, spec_pass = render_studio_lighting(
             normals=active_normals,
             depth=active_depth,
@@ -326,8 +341,6 @@ class StudioLightRig:
             normal_boost=normal_boost,
             ao_anchoring=ao_anchoring,
             preview_resolution=512,
-            framing=framing,
-            detected_prompt="",
             return_passes=True,
             invert_normals_x=effective_invert_x,
             invert_depth=bool(invert_depth),
@@ -339,7 +352,7 @@ class StudioLightRig:
 
         # 3. Synthesize High-Signal Photographic Prompt Tokens
         lighting_prompt = synthesize_high_signal_prompt(
-            key_params, fill_params, rim_params, framing=framing, target_engine=target_engine
+            key_params, fill_params, rim_params, target_engine=target_engine
         )
 
         specular_pass = torch.clamp(spec_pass.float(), 0.0, 1.0)

@@ -63,7 +63,20 @@ def test_presets():
     assert "Rembrandt Classic" in flattened
     assert flattened["Rembrandt Classic"]["key_azimuth"] == 45.0
     assert flattened["High-Fashion Beauty"]["rim_azimuth"] == 140.0
-    print("✓ preset_manager passed!")
+
+    # Verify JS fallback PRESET_MAP in web/studio_light_presets.js is in sync with presets/*.json
+    with open(os.path.join(BASE_DIR, "web", "studio_light_presets.js"), "r", encoding="utf-8") as js_f:
+        js_src = js_f.read()
+    assert "scene_3d" not in js_src and "SCENE_3D" not in js_src, "web/studio_light_presets.js still references scene_3d!"
+    for p_name, p_dict in flattened.items():
+        assert f'"{p_name}"' in js_src, f"Preset '{p_name}' missing from web/studio_light_presets.js"
+        for field in ("key_azimuth", "key_elevation", "key_kelvin", "key_modifier", "fill_kelvin", "rim_kelvin"):
+            val = p_dict[field]
+            expected_str = f'"{val}"' if isinstance(val, str) else str(int(val) if float(val).is_integer() else val)
+            assert f"{field}: {expected_str}" in js_src, (
+                f"JS preset '{p_name}' field '{field}' drifted from JSON ({expected_str})"
+            )
+    print("✓ preset_manager & JS SSOT sync passed!")
 
 
 def test_shader_engine():
@@ -91,36 +104,12 @@ def test_shader_engine():
     radar = draw_studio_radar_diagram(key, fill, rim, width=256, height=128)
     assert radar.shape == (1, 128, 256, 3)
 
-    # 4. Studio lighting with mannequin bust fallback (Portrait)
-    relight_bust, probe_bust = render_studio_lighting(None, None, key, fill, rim, preview_resolution=256, framing="Portrait (Classical Bust)")
-    assert relight_bust.shape == (1, 1024, 1024, 3)
-    assert probe_bust.shape == (1, 256, 256, 3)
+    # 4. Studio lighting with procedural 3D calibration ellipsoid fallback (normals=None)
+    relight_fallback, probe_fallback = render_studio_lighting(None, None, key, fill, rim, preview_resolution=256)
+    assert relight_fallback.shape == (1, 1024, 1024, 3)
+    assert probe_fallback.shape == (1, 256, 256, 3)
 
-    # 5. Studio lighting with American Plan
-    relight_med, _ = render_studio_lighting(None, None, key, fill, rim, framing="American Plan (3/4 Shot)")
-    assert relight_med.shape == (1, 1200, 896, 3)
-
-    # 6. Studio lighting with Full Body
-    relight_full, _ = render_studio_lighting(None, None, key, fill, rim, framing="Full Body (Standing Lookbook)")
-    assert relight_full.shape == (1, 1264, 848, 3)
-
-    # 7. Studio lighting with Volumetric Cyc (Room probe)
-    relight_cyc, _ = render_studio_lighting(None, None, key, fill, rim, framing="Volumetric Cyc (Crowds / Dynamic)")
-    assert relight_cyc.shape == (1, 1152, 896, 3)
-
-    # 8. Studio lighting with Tabletop / Luxury (Perfume)
-    relight_perfume, _ = render_studio_lighting(None, None, key, fill, rim, framing="Tabletop / Luxury (Perfume Bottle / Small Product)")
-    assert relight_perfume.shape == (1, 1024, 1024, 3)
-
-    # 9. Studio lighting with Industrial Design (Chair)
-    relight_chair, _ = render_studio_lighting(None, None, key, fill, rim, framing="Industrial Design (Chair / Medium Product)")
-    assert relight_chair.shape == (1, 1024, 1024, 3)
-
-    # 10. Studio lighting with Automotive Cove
-    relight_auto, _ = render_studio_lighting(None, None, key, fill, rim, framing="Automotive Cove (Car / Large Vehicle)")
-    assert relight_auto.shape == (1, 768, 1280, 3)
-
-    # 11. Studio lighting with mock normals
+    # 5. Studio lighting with explicit normals
     mock_normals = torch.zeros(1, 128, 128, 3)
     mock_normals[..., 2] = 1.0  # Facing front
     mock_relight, _ = render_studio_lighting(mock_normals, None, key, fill, rim, preview_resolution=128)
@@ -135,87 +124,60 @@ def test_prompt_synthesizer():
     rim = {"enabled": True, "azimuth": 160.0, "elevation": 45.0, "intensity": 1.1, "kelvin": 6500, "modifier": "Stripbox"}
 
     # 1. Flux.1 Engine (Narrative Cause & Effect)
-    prompt_port = synthesize_high_signal_prompt(key, fill, rim, framing="Portrait (Classical Bust)", target_engine="Flux.1")
+    prompt_port = synthesize_high_signal_prompt(key, fill, rim, target_engine="Flux.1")
     assert "Studio fashion portrait" in prompt_port
     assert "right side of the frame" in prompt_port
     assert "warm tungsten" in prompt_port
     assert "left side" in prompt_port
 
     # 2. Video Engine (Wan 2.1 / MiniMax)
-    prompt_vid = synthesize_high_signal_prompt(key, fill, rim, framing="Portrait (Classical Bust)", target_engine="Video (Wan / MiniMax)")
+    prompt_vid = synthesize_high_signal_prompt(key, fill, rim, target_engine="Video (Wan / MiniMax)")
     assert "[Cinematic studio lighting]" in prompt_vid
     assert "[Stationary three-point light setup]" in prompt_vid
     assert "right side of the frame" in prompt_vid
     assert "temporally stable" in prompt_vid
 
     # 3. SDXL Engine
-    prompt_sdxl = synthesize_high_signal_prompt(key, fill, rim, framing="Portrait (Classical Bust)", target_engine="SDXL")
+    prompt_sdxl = synthesize_high_signal_prompt(key, fill, rim, target_engine="SDXL")
     assert "studio portrait" in prompt_sdxl
     assert "right side 45 degree" in prompt_sdxl
-
-    # 4. Product Framing
-    prompt_prod = synthesize_high_signal_prompt(key, fill, rim, framing="Tabletop / Luxury (Perfume Bottle / Small Product)")
-    assert "Commercial luxury product photography" in prompt_prod
-
-    prompt_chair = synthesize_high_signal_prompt(key, fill, rim, framing="Industrial Design (Chair / Medium Product)")
-    assert "Industrial design photography" in prompt_chair
-
-    prompt_car = synthesize_high_signal_prompt(key, fill, rim, framing="Automotive Cove (Car / Large Vehicle)")
-    assert "Commercial automotive studio photography" in prompt_car
     print("✓ prompt_synthesizer passed across all engines (Flux, Video, SDXL)!")
 
 
-
 def test_studio_light_node():
-    print("Testing StudioLightRig node execution...")
+    print("Testing StudioLightRig node execution & server-side presets...")
     node = StudioLightRig()
-    # Test 1: Explicit framing (Full Body)
-    relight, probe, prompt, _spec = node.execute_rig(
-        preset="Rembrandt Classic",
-        framing="Full Body (Standing Lookbook)",
-        ambient_intensity=0.05,
-        invert_normals_y=False,
-        key_enabled=True,
-        key_azimuth=45.0,
-        key_elevation=35.0,
-        key_intensity=1.0,
-        key_kelvin=5500,
-        key_modifier="Octabox (Soft)",
-        fill_enabled=True,
-        fill_azimuth=-30.0,
-        fill_elevation=15.0,
-        fill_intensity=0.35,
-        fill_kelvin=4800,
-        fill_modifier="Octabox (Soft)",
-        rim_enabled=True,
-        rim_azimuth=160.0,
-        rim_elevation=45.0,
-        rim_intensity=1.1,
-        rim_kelvin=6500,
-        rim_modifier="Stripbox",
-    )
-
+    # Test 1: Standalone execution (procedural 3D calibration sphere fallback)
+    relight, probe, prompt, _spec = node.execute_rig(preset="Rembrandt Classic")
     assert relight is not None and isinstance(relight, torch.Tensor)
-    assert relight.shape == (1, 1264, 848, 3)
+    assert relight.shape == (1, 1024, 1024, 3)
     assert probe is not None and isinstance(probe, torch.Tensor)
     assert isinstance(prompt, str)
 
-    # Test 2: Explicit normals_optional and depth_optional execution
-    mock_normals = torch.zeros((1, 512, 512, 3), dtype=torch.float32)
-    mock_normals[..., 2] = 1.0  # Camera-facing flat normal
-    mock_depth = torch.ones((1, 512, 512, 1), dtype=torch.float32) * 0.5
+    # Test 2: Server-side preset resolution (API / headless invocation without slider overrides)
+    mock_normals = torch.zeros((1, 128, 128, 3), dtype=torch.float32)
+    mock_normals[..., 2] = 1.0
+    mock_depth = torch.ones((1, 128, 128, 1), dtype=torch.float32) * 0.5
 
-    relight_scene, probe_scene, prompt_scene, _spec_scene = node.execute_rig(
+    rel_rembrandt, _, prompt_rembrandt, _ = node.execute_rig(
         preset="Rembrandt Classic",
         normals_optional=mock_normals,
         depth_optional=mock_depth,
-        key_enabled=True,
-        key_azimuth=45.0,
     )
-    assert relight_scene is not None and relight_scene.shape == (1, 512, 512, 3)
-    assert probe_scene is not None
-    assert isinstance(prompt_scene, str)
-    print("✓ StudioLightRig node execution passed perfectly!")
+    rel_noir, _, prompt_noir, _ = node.execute_rig(
+        preset="Cinematic Film Noir",
+        normals_optional=mock_normals,
+        depth_optional=mock_depth,
+    )
+    rel_flash, _, prompt_flash, _ = node.execute_rig(
+        preset="Direct On-Camera Flash",
+        normals_optional=mock_normals,
+        depth_optional=mock_depth,
+    )
+    assert float((rel_rembrandt - rel_noir).abs().max().item()) > 0.05, "Server-side preset failed: Rembrandt == Film Noir"
+    assert float((rel_rembrandt - rel_flash).abs().max().item()) > 0.05, "Server-side preset failed: Rembrandt == Direct Flash"
+    assert prompt_rembrandt != prompt_noir and prompt_rembrandt != prompt_flash, "Server-side preset failed to update lighting_prompt"
+    print("✓ StudioLightRig node execution & server-side preset resolution passed perfectly!")
 
 
 def test_end_to_end_workflow_and_product_behavior():
@@ -550,7 +512,7 @@ def test_external_review_fixes():
     )
     assert out_map.shape == (1, 64, 64, 3)
     assert "SDXL" in prompt or "key light" in prompt
-    print(f"  ✓ StudioLightRig 27-widget required schema locked, optional invert_normals_x and target_engine fully operational.")
+    print("  ✓ StudioLightRig 26-widget required schema (31 total widgets) locked, optional invert_normals_x and target_engine fully operational.")
     assert list(inputs["optional"])[-3:] == ["invert_depth", "aim_target", "depth_relief_scale"], "new widget-type optionals must be APPENDED in order"
     print("✓ All External Review Fixes passed flawlessly!")
 
@@ -589,7 +551,7 @@ def test_workflow_widget_schema():
     import glob, json
     print("Testing workflow widget schema stability...")
     it = StudioLightRig.INPUT_TYPES()
-    widgets = list(it["required"]) + [k for k, v in it["optional"].items() if v[0] not in ("SCENE_3D", "IMAGE")]
+    widgets = list(it["required"]) + [k for k, v in it["optional"].items() if v[0] != "IMAGE"]
     out_types = list(StudioLightRig.RETURN_TYPES)
     checked, skipped, failures = 0, [], []
     for path in sorted(glob.glob(os.path.join(BASE_DIR, "workflows", "*.json"))):
@@ -1220,7 +1182,7 @@ def test_reviewer_signoff_numerical_stability_and_beam_calculus():
        - Multi-resolution invariance across 128x128, 256x256, 512x512, 1024x1024.
        - Affine depth normalization invariance (d' = 0.35 * d + 0.25).
        - Normal-map noise stability (sigma = 0.04).
-       - Smooth synthetic android/mannequin head (zero facial micro-features + angled flat wall).
+       - Smooth synthetic 3D calibration head (zero facial micro-features + angled flat wall).
        - Confidence fallback when upper region is a flat wall above a lower tabletop object.
     """
     import math

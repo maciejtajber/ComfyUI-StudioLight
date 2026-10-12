@@ -648,14 +648,6 @@ def resolve_aim_target(
         res_c = _region_fg_median(0.10, 0.90, 0.15, 0.85)
         return res_c if res_c is not None else default_center
 
-    if aim_mode == "Center (Subject Centroid)":
-        res_c = _region_fg_median(0.10, 0.90, 0.15, 0.85)
-        return res_c if res_c is not None else default_center
-
-    if aim_mode == "Upper Third":
-        res_u = _region_fg_median(0.06, 0.34, 0.20, 0.80)
-        return res_u if res_u is not None else torch.tensor([[0.0, 0.42, -2.0]], device=device, dtype=dtype)
-
     if aim_mode == "Center":
         res_m = _region_fg_median(0.34, 0.66, 0.20, 0.80)
         return res_m if res_m is not None else default_center
@@ -682,6 +674,7 @@ def compute_light_shading(
     vertical_fov_deg: float = 40.0,
     aim_target: str = "Upper",
     depth_relief_scale: float = 0.30,
+    precomputed_surface: Optional[Tuple[torch.Tensor, torch.Tensor, float]] = None,
 ) -> torch.Tensor:
     """
     Computes diffuse irradiance and specular reflection using a physically based
@@ -712,25 +705,31 @@ def compute_light_shading(
     if depth is not None:
         B, H, W, _ = normals.shape
         aspect = float(W) / float(H)
-        p_surf, d_norm, d_split = reconstruct_metric_surface(
-            depth.to(device=device, dtype=dtype),
-            H=H,
-            W=W,
-            vertical_fov_deg=float(vertical_fov_deg),
-            depth_relief_scale=float(depth_relief_scale),
-        )
+        if precomputed_surface is not None:
+            p_surf, d_norm, d_split = precomputed_surface
+        else:
+            p_surf, d_norm, d_split = reconstruct_metric_surface(
+                depth.to(device=device, dtype=dtype),
+                H=H,
+                W=W,
+                vertical_fov_deg=float(vertical_fov_deg),
+                depth_relief_scale=float(depth_relief_scale),
+            )
 
         # Resolve unified 3D aim_point [1, 3] and place fixture relative to aim_point
-        aim_point_13 = resolve_aim_target(
-            p_surf=p_surf,
-            d_norm=d_norm,
-            normals=normals,
-            aim_mode=aim_target,
-            d_split=d_split,
-            target_pos=target_pos,
-            device=device,
-            dtype=dtype,
-        )
+        if target_pos is not None:
+            aim_point_13 = target_pos.to(device=device, dtype=dtype).reshape(-1, 3)[:1]
+        else:
+            aim_point_13 = resolve_aim_target(
+                p_surf=p_surf,
+                d_norm=d_norm,
+                normals=normals,
+                aim_mode=aim_target,
+                d_split=d_split,
+                target_pos=None,
+                device=device,
+                dtype=dtype,
+            )
         p_light = aim_point_13.view(1, 1, 1, 3) + r_stand * stand_direction
         beam_axis_vec = aim_point_13.view(1, 1, 1, 3) - p_light
         beam_axis_vec = beam_axis_vec / (torch.norm(beam_axis_vec, dim=-1, keepdim=True) + 1e-7)
@@ -931,7 +930,7 @@ def render_studio_lighting(
     normal_boost: float = 1.35,
     ao_anchoring: float = 0.60,
     preview_resolution: int = 512,
-    framing: str = "Portrait (Classical Bust)",
+    framing: str = "Studio Portrait",
     detected_prompt: str = "",
     return_passes: bool = False,
     invert_normals_x: bool = True,
@@ -970,128 +969,77 @@ def render_studio_lighting(
     rim_vec = azimuth_elevation_to_vector(rim_params["azimuth"], rim_params["elevation"])
     rim_col = kelvin_to_rgb(rim_params["kelvin"])
 
-    is_built_in_mannequin = (normals is None)
-
-    # 1. Relighting Map Computation: Select framing mannequin, product asset, or volumetric cyc
+    is_procedural_fallback = (normals is None)
     asset_mask = None
+    resolved_aim_point = target_pos
+    total_diffuse = None
+    total_specular = None
+    subject_mask = None
+
+    # 1. Relighting Map Computation: Procedural 3D calibration ellipsoid fallback when normals_optional is unconnected
     if normals is None:
-        effective_framing = framing
-        if "Auto" in framing and detected_prompt:
-            p_low = detected_prompt.lower()
-            if any(w in p_low for w in ["car", "vehicle", "automobile", "porsche", "ferrari", "bmw", "mercedes", "motor", "hood", "windshield"]):
-                effective_framing = "Automotive Cove (Car / Large Vehicle)"
-            elif any(w in p_low for w in ["perfume", "bottle", "cosmetics", "serum", "watch", "jewelry", "flacon", "tabletop", "scent", "glass"]):
-                effective_framing = "Tabletop / Luxury (Perfume Bottle / Small Product)"
-            elif any(w in p_low for w in ["chair", "furniture", "sofa", "armchair", "lamp", "stool", "table", "product design"]):
-                effective_framing = "Industrial Design (Chair / Medium Product)"
-            elif any(w in p_low for w in ["full body", "full length", "standing", "gown", "dress", "shoes", "heels", "head to toe"]):
-                effective_framing = "Full Body (Standing Lookbook)"
-            elif any(w in p_low for w in ["american", "cowboy", "waist up", "hips", "mid-thigh", "jacket", "suit", "coat"]):
-                effective_framing = "American Plan (3/4 Shot)"
-            elif any(w in p_low for w in ["crowd", "group", "two models", "three models", "runway", "sitting", "lounging"]):
-                effective_framing = "Volumetric Cyc (Crowds / Dynamic)"
-            else:
-                effective_framing = "Portrait (Classical Bust)"
+        fh, fw = 1024, 1024
+        gy, gx = torch.meshgrid(
+            torch.linspace(-1.0, 1.0, fh, device=device),
+            torch.linspace(-1.0, 1.0, fw, device=device),
+            indexing="ij",
+        )
+        r2 = (gx / 0.55) ** 2 + (gy / 0.65) ** 2
+        inside = (r2 <= 1.0).float()
+        nz = torch.sqrt(torch.clamp(1.0 - r2, min=0.0))
+        nx = (gx / 0.55) * inside
+        ny = (-gy / 0.65) * inside
+        nz = nz * inside + (1.0 - inside)
+        normals = torch.stack([(nx + 1.0) * 0.5, (ny + 1.0) * 0.5, (nz + 1.0) * 0.5], dim=-1).unsqueeze(0)
+        asset_mask = inside.unsqueeze(0).unsqueeze(-1)
 
-        assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
-        if "Portrait" in effective_framing:
-            asset_file, fallback_hw = "mannequin_bust_normal.png", (1024, 1024)
-        elif "American" in effective_framing:
-            asset_file, fallback_hw = "mannequin_medium_normal.png", (1200, 896)
-        elif "Full Body" in effective_framing:
-            asset_file, fallback_hw = "mannequin_full_normal.png", (1264, 848)
-        elif "Tabletop" in effective_framing or "Perfume" in effective_framing:
-            asset_file, fallback_hw = "product_perfume_normal.png", (1024, 1024)
-        elif "Industrial" in effective_framing or "Chair" in effective_framing:
-            asset_file, fallback_hw = "product_chair_normal.png", (1024, 1024)
-        elif "Automotive" in effective_framing or "Car" in effective_framing:
-            asset_file, fallback_hw = "product_car_normal.png", None
+    n = normals.clone()
+    if n.shape[-1] != 3 and n.shape[1] == 3:
+        n = n.permute(0, 2, 3, 1)
+
+    norm_unpacked = n * 2.0 - 1.0
+    if not is_procedural_fallback and invert_normals_x:
+        norm_unpacked[..., 0] = -norm_unpacked[..., 0]
+    if invert_normals_y:
+        norm_unpacked[..., 1] = -norm_unpacked[..., 1]
+
+    # Normal Amplification (Curvature Boost for shallow 2.5D diffusion drafts)
+    if float(normal_boost) != 1.0:
+        boost = max(float(normal_boost), 0.5)
+        norm_unpacked[..., 0] = norm_unpacked[..., 0] * boost
+        norm_unpacked[..., 1] = norm_unpacked[..., 1] * boost
+
+    norm_len = torch.norm(norm_unpacked, dim=-1, keepdim=True) + 1e-7
+    norm_unit = norm_unpacked / norm_len
+
+    # Separate surface validity from relative depth magnitude:
+    # In real scenes (e.g. DepthAnythingV2 normalized to [0, 1]), depth values < 0.02 belong to
+    # the farthest background wall, not empty void. Pixels are excluded only when an explicit
+    # alpha mask is present or when the normal map encodes genuinely invalid zero-length pixels (RGB norm <= 0.05).
+    if asset_mask is not None:
+        subject_mask = asset_mask
+    else:
+        raw_rgb_norm = torch.norm(n, dim=-1, keepdim=True)
+        if bool((raw_rgb_norm > 0.05).any()):
+            subject_mask = (raw_rgb_norm > 0.05).float()
         else:
-            # Volumetric Cyc (rendered procedurally)
-            asset_file, fallback_hw = None, None
+            subject_mask = torch.ones_like(norm_unit[..., :1])
 
-        if asset_file:
-            asset_path = os.path.join(assets_dir, asset_file)
-            if not os.path.exists(asset_path):
-                asset_path = os.path.join(assets_dir, "studio_head_normal.png")
-            if os.path.exists(asset_path):
-                img_asset = Image.open(asset_path)
-                if img_asset.mode == "RGBA":
-                    arr_asset = np.array(img_asset).astype(np.float32) / 255.0
-                    normals = torch.from_numpy(arr_asset[..., :3]).unsqueeze(0).to(device)
-                    asset_mask = torch.from_numpy(arr_asset[..., 3:4]).unsqueeze(0).to(device)
-                else:
-                    img_asset = img_asset.convert("RGB")
-                    arr_asset = np.array(img_asset).astype(np.float32) / 255.0
-                    normals = torch.from_numpy(arr_asset).unsqueeze(0).to(device)
-                    asset_mask = None
-            elif fallback_hw is not None:
-                fh, fw = fallback_hw
-                gy, gx = torch.meshgrid(
-                    torch.linspace(-1.0, 1.0, fh, device=device),
-                    torch.linspace(-1.0, 1.0, fw, device=device),
-                    indexing="ij",
-                )
-                r2 = (gx / 0.55) ** 2 + (gy / 0.65) ** 2
-                inside = (r2 <= 1.0).float()
-                nz = torch.sqrt(torch.clamp(1.0 - r2, min=0.0))
-                nx = (gx / 0.55) * inside
-                ny = (-gy / 0.65) * inside
-                nz = nz * inside + (1.0 - inside)
-                normals = torch.stack([(nx + 1.0) * 0.5, (ny + 1.0) * 0.5, (nz + 1.0) * 0.5], dim=-1).unsqueeze(0)
-                asset_mask = inside.unsqueeze(0).unsqueeze(-1)
+    total_diffuse = torch.zeros_like(norm_unit)
+    total_specular = torch.zeros_like(norm_unit)
 
-    if normals is not None:
-        n = normals.clone()
-        if n.shape[-1] != 3 and n.shape[1] == 3:
-            n = n.permute(0, 2, 3, 1)
-
-        norm_unpacked = n * 2.0 - 1.0
-        if not is_built_in_mannequin and invert_normals_x:
-            norm_unpacked[..., 0] = -norm_unpacked[..., 0]
-        if invert_normals_y:
-            norm_unpacked[..., 1] = -norm_unpacked[..., 1]
-
-        # 1. Normal Amplification (Curvature Boost for shallow 2.5D diffusion drafts)
-        if float(normal_boost) != 1.0:
-            boost = max(float(normal_boost), 0.5)
-            norm_unpacked[..., 0] = norm_unpacked[..., 0] * boost
-            norm_unpacked[..., 1] = norm_unpacked[..., 1] * boost
-
-        norm_len = torch.norm(norm_unpacked, dim=-1, keepdim=True) + 1e-7
-        norm_unit = norm_unpacked / norm_len
-
-        # Separate surface validity from relative depth magnitude:
-        # In real scenes (e.g. DepthAnythingV2 normalized to [0, 1]), depth values < 0.02 belong to
-        # the farthest background wall, not empty void. Pixels are excluded only when an explicit
-        # alpha mask is present, when using a built-in mannequin backdrop, or when the normal map
-        # encodes genuinely invalid zero-length pixels (RGB norm <= 0.05).
-        if asset_mask is not None:
-            subject_mask = asset_mask
-        elif is_built_in_mannequin:
-            corner_val = norm_unit[:, :6, :6, :].mean(dim=(1, 2), keepdim=True)
-            diff_from_corner = torch.norm(norm_unit - corner_val, dim=-1, keepdim=True)
-            subject_mask = (diff_from_corner > 0.04).float()
-        else:
-            raw_rgb_norm = torch.norm(n, dim=-1, keepdim=True)
-            if bool((raw_rgb_norm > 0.05).any()):
-                subject_mask = (raw_rgb_norm > 0.05).float()
-            else:
-                subject_mask = torch.ones_like(norm_unit[..., :1])
-
-        total_diffuse = torch.zeros_like(norm_unit)
-        total_specular = torch.zeros_like(norm_unit)
-
-        resolved_aim_point = target_pos
-        if resolved_aim_point is None and depth is not None:
-            B_n, H_n, W_n, _ = norm_unit.shape
-            p_surf_tmp, d_norm_tmp, d_split_tmp = reconstruct_metric_surface(
-                depth.to(device=norm_unit.device, dtype=norm_unit.dtype),
-                H=H_n,
-                W=W_n,
-                vertical_fov_deg=float(vertical_fov_deg),
-                depth_relief_scale=float(depth_relief_scale),
-            )
+    precomputed_surf = None
+    if depth is not None:
+        B_n, H_n, W_n, _ = norm_unit.shape
+        precomputed_surf = reconstruct_metric_surface(
+            depth.to(device=norm_unit.device, dtype=norm_unit.dtype),
+            H=H_n,
+            W=W_n,
+            vertical_fov_deg=float(vertical_fov_deg),
+            depth_relief_scale=float(depth_relief_scale),
+        )
+        if resolved_aim_point is None:
+            p_surf_tmp, d_norm_tmp, d_split_tmp = precomputed_surf
             resolved_aim_point = resolve_aim_target(
                 p_surf=p_surf_tmp,
                 d_norm=d_norm_tmp,
@@ -1103,91 +1051,36 @@ def render_studio_lighting(
                 dtype=norm_unit.dtype,
             )
 
-        for p_dict, p_vec, p_col in [
-            (key_params, key_vec, key_col),
-            (fill_params, fill_vec, fill_col),
-            (rim_params, rim_vec, rim_col),
-        ]:
-            if p_dict.get("enabled", True):
-                d_rgb, s_rgb = compute_light_shading(
-                    norm_unit, p_vec, p_col, p_dict["intensity"], p_dict["modifier"], depth,
-                    distance=p_dict.get("distance", 1.8),
-                    return_separate=True,
-                    target_pos=resolved_aim_point,
-                    vertical_fov_deg=float(vertical_fov_deg),
-                    aim_target=aim_target,
-                    depth_relief_scale=float(depth_relief_scale),
-                )
-                total_diffuse = total_diffuse + d_rgb
-                total_specular = total_specular + s_rgb
+    for p_dict, p_vec, p_col in [
+        (key_params, key_vec, key_col),
+        (fill_params, fill_vec, fill_col),
+        (rim_params, rim_vec, rim_col),
+    ]:
+        if p_dict.get("enabled", True):
+            d_rgb, s_rgb = compute_light_shading(
+                norm_unit, p_vec, p_col, p_dict["intensity"], p_dict["modifier"], depth,
+                distance=p_dict.get("distance", 1.8),
+                return_separate=True,
+                target_pos=resolved_aim_point,
+                vertical_fov_deg=float(vertical_fov_deg),
+                aim_target=aim_target,
+                depth_relief_scale=float(depth_relief_scale),
+                precomputed_surface=precomputed_surf,
+            )
+            total_diffuse = total_diffuse + d_rgb
+            total_specular = total_specular + s_rgb
 
-        total_shading = total_diffuse + total_specular
+    total_shading = total_diffuse + total_specular
 
-        # 2. Ambient Occlusion / Cavity Anchoring from Normal Field Divergence
-        if float(ao_anchoring) > 0.0:
-            cavity_ao = compute_cavity_ao_map(norm_unit, strength=float(ao_anchoring) * 2.5)
-            total_shading = total_shading * cavity_ao
+    # Ambient Occlusion / Cavity Anchoring from Normal Field Divergence
+    if float(ao_anchoring) > 0.0:
+        cavity_ao = compute_cavity_ao_map(norm_unit, strength=float(ao_anchoring) * 2.5)
+        total_shading = total_shading * cavity_ao
 
-        # Composite subject with dark studio cyc backdrop
-        bg_backdrop = torch.full_like(total_shading, max(float(ambient_intensity), 0.03))
-        relighting_map = (total_shading + float(ambient_intensity)) * subject_mask + bg_backdrop * (1.0 - subject_mask)
-        relighting_map = torch.clamp(relighting_map, 0.0, 1.0)
-    elif "Automotive" in framing or ("Auto" in framing and "Automotive" in effective_framing):
-        # Commercial Automotive Infinity Cove (1280 x 768)
-        # Giant curved cyclorama cove with dual overhead stripbox light banks
-        res_h = 768
-        res_w = 1280
-        y, x = torch.meshgrid(
-            torch.linspace(-1.0, 1.0, res_h, device=device),
-            torch.linspace(-1.0, 1.0, res_w, device=device),
-            indexing="ij"
-        )
-        # Parabolic cyclorama wall & floor perspective
-        floor_grad = torch.clamp((y - 0.15) / 0.85, 0.0, 1.0)
-        cove_curve = torch.clamp(1.0 - torch.abs(y - 0.15) * 1.2, 0.0, 1.0)
-
-        # Key & Fill directional washes
-        lx = key_vec[0].to(device)
-        flx = fill_vec[0].to(device)
-        key_wash = torch.clamp((x * lx + 0.6) / 1.4, 0.0, 1.0) * key_params["intensity"]
-        fill_wash = torch.clamp((x * flx + 0.5) / 1.5, 0.0, 1.0) * fill_params["intensity"] * 0.45
-
-        # Dual overhead elongated stripbox reflection banks
-        strip1 = torch.exp(-((x - 0.28) / 0.14)**4) * torch.exp(-((y + 0.50) / 0.12)**2) * key_params["intensity"] * 1.2
-        strip2 = torch.exp(-((x + 0.32) / 0.18)**4) * torch.exp(-((y + 0.48) / 0.10)**2) * fill_params["intensity"] * 0.8
-
-        c_k = torch.tensor(key_col, device=device).view(1, 1, 3)
-        c_f = torch.tensor(fill_col, device=device).view(1, 1, 3)
-        overhead_white = torch.tensor([1.0, 1.0, 1.0], device=device).view(1, 1, 3)
-
-        cove = (key_wash.unsqueeze(-1) * c_k + fill_wash.unsqueeze(-1) * c_f) * (0.45 + cove_curve.unsqueeze(-1) * 0.55)
-        cove = cove + (strip1 + strip2).unsqueeze(-1) * overhead_white * 0.85
-        cove = cove * (1.0 - (x**2).unsqueeze(-1) * 0.15)
-        cove = cove + float(ambient_intensity)
-        relighting_map = torch.clamp(cove.unsqueeze(0), 0.0, 1.0)
-    else:
-        # Volumetric Studio Cyc environment (curved wall + floor room gradient, 1152 x 896)
-        res_h = 1152
-        res_w = 896
-        y, x = torch.meshgrid(
-            torch.linspace(-1.0, 1.0, res_h, device=device),
-            torch.linspace(-1.0, 1.0, res_w, device=device),
-            indexing="ij"
-        )
-        lx = key_vec[0].to(device)
-        ly = key_vec[1].to(device)
-        key_grad = torch.clamp((x * lx - y * ly * 0.4 + 0.6) / 1.4, 0.0, 1.0) * key_params["intensity"]
-
-        flx = fill_vec[0].to(device)
-        fill_grad = torch.clamp((x * flx + 0.5) / 1.5, 0.0, 1.0) * fill_params["intensity"] * 0.4
-
-        c_k = torch.tensor(key_col, device=device).view(1, 1, 3)
-        c_f = torch.tensor(fill_col, device=device).view(1, 1, 3)
-        vignette = 1.0 - (x**2 + y**2) * 0.22
-
-        cyc = (key_grad.unsqueeze(-1) * c_k + fill_grad.unsqueeze(-1) * c_f) * vignette.unsqueeze(-1)
-        cyc = cyc + float(ambient_intensity)
-        relighting_map = torch.clamp(cyc.unsqueeze(0), 0.0, 1.0)
+    # Composite subject with dark studio cyc backdrop
+    bg_backdrop = torch.full_like(total_shading, max(float(ambient_intensity), 0.03))
+    relighting_map = (total_shading + float(ambient_intensity)) * subject_mask + bg_backdrop * (1.0 - subject_mask)
+    relighting_map = torch.clamp(relighting_map, 0.0, 1.0)
 
     # 2. Dual-Sphere Probe Preview Generation (Top: Balls, Bottom: Radar)
     probe_res = preview_resolution
@@ -1250,7 +1143,6 @@ def render_studio_lighting(
             p_light_probe = d_val * lv_dir
             u_t, v_t, w_a = generate_emitter_tangent_frame(lv_dir)
 
-
             mod_preset = MODIFIER_PRESETS.get(p.get("modifier", "Octabox (Soft)"), MODIFIER_PRESETS["Octabox (Soft)"])
             # True photographic geometric aperture reflection on mirror chrome ball
             spec_spot = evaluate_fixture_aperture_footprint(
@@ -1266,21 +1158,19 @@ def render_studio_lighting(
             col_t = torch.tensor(col, device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
             chrome_ball = chrome_ball + spec_spot * float(p["intensity"]) * col_t
 
-
     chrome_ball = torch.clamp((chrome_ball + ambient_intensity * 0.12) * sphere_mask, 0.0, 1.0)
 
     # Top half: Grey Ball & Chrome Ball side-by-side
     top_half = torch.cat([grey_ball, chrome_ball], dim=2)  # [1, half_h, probe_res, 3]
 
     # Bottom half: 2D Studio Radar Diagram
-    radar_aim = resolved_aim_point if "resolved_aim_point" in locals() else target_pos
     bottom_half = draw_studio_radar_diagram(
         key_params,
         fill_params,
         rim_params,
         width=probe_res,
         height=half_h,
-        aim_point=radar_aim,
+        aim_point=resolved_aim_point,
         aim_target=aim_target,
     )
     bottom_half = bottom_half.to(device=device)
@@ -1289,8 +1179,8 @@ def render_studio_lighting(
     probe_preview = torch.cat([top_half, bottom_half], dim=1)  # [1, probe_res, probe_res, 3]
 
     if return_passes:
-        diff_out = (total_diffuse * subject_mask).cpu() if "total_diffuse" in locals() else relighting_map.cpu()
-        spec_out = (total_specular * subject_mask).cpu() if "total_specular" in locals() else torch.zeros_like(relighting_map).cpu()
+        diff_out = (total_diffuse * subject_mask).cpu() if total_diffuse is not None else relighting_map.cpu()
+        spec_out = (total_specular * subject_mask).cpu() if total_specular is not None else torch.zeros_like(relighting_map).cpu()
         return relighting_map.cpu(), probe_preview.cpu(), diff_out, spec_out
     return relighting_map.cpu(), probe_preview.cpu()
 

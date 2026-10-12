@@ -7,11 +7,17 @@ with all image assets embedded as Base64 data URIs.
 import base64
 import re
 import json
+import sys
 from pathlib import Path
 
 repo_dir = Path(__file__).resolve().parent.parent
 readme_path = repo_dir / "README.md"
-out_html = Path.home() / "Desktop" / "STUDIOLIGHT_GITHUB_MIRROR.html"
+desktop_dir = Path.home() / "Desktop"
+out_html = (
+    Path(sys.argv[1])
+    if len(sys.argv) > 1
+    else (desktop_dir / "STUDIOLIGHT_GITHUB_MIRROR.html" if desktop_dir.is_dir() else repo_dir / "STUDIOLIGHT_GITHUB_MIRROR.html")
+)
 
 with open(readme_path, "r", encoding="utf-8") as f:
     md_content = f.read()

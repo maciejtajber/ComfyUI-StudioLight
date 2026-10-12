@@ -26,7 +26,7 @@ from nodes.studio_light import StudioLightRig  # noqa: E402
 
 IT = StudioLightRig.INPUT_TYPES()
 REQUIRED = list(IT["required"])
-WIDGET_OPTIONAL = [k for k, v in IT["optional"].items() if v[0] not in ("SCENE_3D", "IMAGE")]
+WIDGET_OPTIONAL = [k for k, v in IT["optional"].items() if v[0] != "IMAGE"]
 WIDGETS = REQUIRED + WIDGET_OPTIONAL
 OUTPUT_TYPES = list(StudioLightRig.RETURN_TYPES)
 OUTPUT_NAMES = list(StudioLightRig.RETURN_NAMES)

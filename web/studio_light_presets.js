@@ -219,7 +219,7 @@ function decorateLightHeader(node, widgetName, badgeTitle, badgeColor, bgColor, 
 function cleanObsoleteSlots(node) {
     if (!node) return;
 
-    const VALID_INPUTS = new Set(["scene_3d", "normals_optional", "depth_optional"]);
+    const VALID_INPUTS = new Set(["normals_optional", "depth_optional"]);
     const VALID_OUTPUTS = new Set(["relighting_map", "probe_preview", "lighting_prompt", "specular_pass"]);
     const OBSOLETE_WIDGETS = new Set(["start_step", "end_step", "conditioning_strength", "weight_type"]);
 
@@ -263,17 +263,6 @@ function cleanObsoleteSlots(node) {
                 node.widgets.splice(i, 1);
                 changed = true;
             }
-        }
-    }
-
-    // 4. Ensure scene_3d input is present
-    if (node.inputs && !node.inputs.some((inp) => inp.name === "scene_3d")) {
-        if (typeof node.addInput === "function") {
-            node.addInput("scene_3d", "SCENE_3D");
-            const lastIdx = node.inputs.length - 1;
-            const sceneInp = node.inputs.splice(lastIdx, 1)[0];
-            node.inputs.unshift(sceneInp);
-            changed = true;
         }
     }
 

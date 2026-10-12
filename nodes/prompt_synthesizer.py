@@ -75,7 +75,6 @@ def synthesize_high_signal_prompt(
     key_params: Dict[str, Any],
     fill_params: Dict[str, Any],
     rim_params: Dict[str, Any],
-    framing: str = "Portrait (Classical Bust)",
     target_engine: str = "Flux.1",
 ) -> str:
     """
@@ -120,16 +119,7 @@ def synthesize_high_signal_prompt(
 
     # --- SDXL ENGINE (COMMA-DELIMITED TAGS) ---
     if "SDXL" in target_engine:
-        tags = []
-        if "Tabletop" in framing or "Perfume" in framing:
-            tags.append("commercial product photography, luxury tabletop lighting")
-        elif "Automotive" in framing or "Car" in framing:
-            tags.append("commercial automotive photography, infinity cove lighting")
-        elif "Industrial" in framing or "Chair" in framing:
-            tags.append("industrial design photography, studio furniture showcase")
-        else:
-            tags.append("studio portrait, editorial fashion photography")
-
+        tags = ["studio portrait, editorial fashion photography"]
         if k_enabled:
             tags.append(f"key light from {k_dir}, studio {k_mod_name}, {k_kelvin}K {k_mood}")
         if f_enabled:
@@ -150,15 +140,7 @@ def synthesize_high_signal_prompt(
         clauses.append(f"crisp {r_mood} rim kicker from behind creating a thin razor-edge highlight along the hair and shoulders")
 
     lighting_narrative = ". ".join(clauses) if clauses else "clean calibrated studio ambient illumination"
-
-    if "Tabletop" in framing or "Perfume" in framing:
-        return f"Commercial luxury product photography. {lighting_narrative}. Calibrated specular reflections, crystalline highlights, editorial advertising photography."
-    elif "Industrial" in framing or "Chair" in framing:
-        return f"Industrial design photography. Studio furniture showcase. {lighting_narrative}. Calibrated dynamic range, architectural digest photography."
-    elif "Automotive" in framing or "Car" in framing:
-        return f"Commercial automotive studio photography. {lighting_narrative}. Infinity cove horizon line reflections, glossy clearcoat sheen, calibrated dynamic range."
-    else:
-        return f"Studio fashion portrait. {lighting_narrative}. Calibrated dynamic range, natural skin subsurface scattering, high-end editorial fashion photography."
+    return f"Studio fashion portrait. {lighting_narrative}. Calibrated dynamic range, natural skin subsurface scattering, high-end editorial fashion photography."
 
 
 def encode_scheduled_conditioning(

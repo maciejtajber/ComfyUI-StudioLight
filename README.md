@@ -60,9 +60,9 @@ https://github.com/user-attachments/assets/f82d96d9-08ac-4dfb-8f1a-a65432f33a32
   </thead>
   <tbody>
     <tr>
-      <td align="center"><img src="assets/MethodA_Calibrated_Final_00028_.png" width="100%" alt="High-Fashion Beauty" /></td>
-      <td align="center"><img src="assets/MethodA_Calibrated_Final_00030_.png" width="100%" alt="Direct On-Camera Flash" /></td>
-      <td align="center"><img src="assets/MethodA_Calibrated_Final_00027_.png" width="100%" alt="Golden Hour Window" /></td>
+      <td align="center"><img src="assets/showcase_high_fashion_beauty.png" width="100%" alt="High-Fashion Beauty" /></td>
+      <td align="center"><img src="assets/showcase_direct_flash.png" width="100%" alt="Direct On-Camera Flash" /></td>
+      <td align="center"><img src="assets/showcase_golden_hour.png" width="100%" alt="Golden Hour Window" /></td>
     </tr>
   </tbody>
 </table>
@@ -249,15 +249,15 @@ P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspect
 <sub>Slit Aperture Penumbra Stress Test (Row 1: S=4 no dither, S=8 no dither, S=4 dither. Row 2: S=8 dither [Balanced Default], S=16 dither [High-End], S=64 Quasi-Monte Carlo Ground Truth).</sub>
 </div>
 
-### NVIDIA RTX 3090 Performance Benchmarks
+### NVIDIA RTX 3090 Performance Benchmarks (Shader Parameter Study)
 
-*Measured via `tools/run_hardcore_stress_tests.py` on an NVIDIA GeForce RTX 3090 (PyTorch 2.13, CUDA 12.6, 5 warm runs averaged with `torch.cuda.synchronize()`):*
+*Measured via `tools/run_hardcore_stress_tests.py` on an NVIDIA GeForce RTX 3090 (PyTorch 2.13, CUDA 12.6, 5 warm runs averaged with `torch.cuda.synchronize()`). `StudioLightRig` locks to the **Balanced Default ($S=8, \text{Steps}=16$)** configuration in the UI; $S=4$ and $S=16$ represent code-level `shader_engine.py` parameter study tiers:*
 
 <table>
   <thead>
     <tr>
       <th align="left">Resolution</th>
-      <th align="left">Preset</th>
+      <th align="left">Configuration Tier</th>
       <th align="center">Samples&nbsp;(S)</th>
       <th align="center">Steps</th>
       <th align="center">Pass&nbsp;Latency (RTX&nbsp;3090)</th>
@@ -507,7 +507,7 @@ python test_studiolight.py
 * **Ready-to-Run Workflow:** Download [`workflows/StudioLight_Master.json`](workflows/StudioLight_Master.json) and drag it directly into ComfyUI.
 * **Pipeline Breakdown:**
   * **Stage 1 — Base Subject & Geometry:** Base latent generation with prompt sanitization, followed by surface normal extraction (`DSINE`) and metric depth estimation (`Depth Anything V2`).
-  * **Stage 2 — Photometric Shader Engine:** Camera-space area-emitter raymarching (`StudioLightRig` & `StudioLightShaderEngine`), rendering key, fill, and rim lights with physical inverse-square falloff, Kelvin color temperatures, and contact-hardening penumbras.
+  * **Stage 2 — Photometric Shader Engine:** Camera-space area-emitter raymarching (`StudioLightRig` via `nodes/shader_engine.py`), rendering key, fill, and rim lights with inverse-square falloff, Kelvin color temperatures, and contact-hardening penumbras.
   * **Stage 3 — Stochastic Diffusion Fusion:** 32-bit photometric relighting plates composited back into the latent stream for a targeted diffusion pass, locking identity while altering light vectors.
 
 ---
