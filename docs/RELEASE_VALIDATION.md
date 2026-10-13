@@ -89,3 +89,13 @@ python tools/run_visual_corrections.py --baseline /path/to/original/results --ou
 Eight renders reuse exact saved float32 drafts, depth and normals: cases 17 and 19 with background protection; 26 and 28 at -1/-2 EV; Noir case 4 and Beauty case 8 as regression checks. Each capture checks that draft, geometry and raw lighting match the original to 1e-6. The manifest records the tested compositor SHA256. Existing completed correction cases are skipped; use a fresh output folder after any code/settings change. These controls require visual inspection; numerical passes do not constitute artistic acceptance.
 
 Add `--matrix natural` to run four additional neutral/warm comparisons on the same two stress drafts: Octabox key at 1.8 m/intensity 1, gentle fill, no rim, normal boost 1, catchlight kick 0.15, chroma bleed 0.65 and 0 EV. This deliberately changes the light setup; replay equality is required for draft/depth/normals, not for the lighting fields. Use a separate output folder for each matrix.
+
+### Separating warmth, refinement and downstream clipping
+
+Additional portable matrices use fresh output directories:
+
+- `--matrix color`: six renders comparing 3200K versus 5500K at matched raw-light luminance and final denoise 0.55 versus 0.35, on both stress seeds. The 5500K intensity is 1.950249 rather than 3 to compensate Kelvin conversion luminance, preserving reference brightness.
+- `--matrix highlight`: six renders turning the post-tone-map highlight boost off, comparing warm and matched neutral at -2 EV plus the original warm setup at 0 EV.
+- `--matrix safe_darkroom`: two accepted regular-preset checks (Noir/Beauty) with the highlight boost neutral.
+
+The original +0.15 darkroom boost is retained in the stored baseline prompts; these tests change it explicitly. Compare composite, darkroom and final floats separately. With all darkroom adjustments neutral, composite and darkroom must match exactly. Warmth is an intended light-temperature response; display-channel clipping is a separate loss of information. Standard workflows now default to neutral highlight adjustment.

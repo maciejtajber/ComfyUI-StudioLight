@@ -8,7 +8,7 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--baseline',type=Path,required=True,help='Original 28-case results: case_XX folders directly or under generations/')
 parser.add_argument('--out',type=Path,required=True)
 parser.add_argument('--url',default='http://127.0.0.1:8188')
-parser.add_argument('--matrix',choices=('correction','natural'),default='correction',help='Correction isolation or gentler neutral/warm light setups')
+parser.add_argument('--matrix',choices=('correction','natural','color','highlight','safe_darkroom'),default='correction',help='Correction isolation or gentler neutral/warm light setups')
 parser.add_argument('--source-session',default='STUDIOLIGHT_RELEASE_20261013',help='Existing captures under ComfyUI output/StudioLightRelease/')
 args=parser.parse_args()
 ROOT=args.baseline.resolve()
@@ -21,6 +21,12 @@ def req(path,data=None):
 rows=[('halo_17',17,0),('halo_19',19,0),('stress_26_ev1',26,-1),('stress_26_ev2',26,-2),('stress_28_ev1',28,-1),('stress_28_ev2',28,-2),('regression_noir_04',4,0),('regression_beauty_08',8,0)]
 if args.matrix=='natural':
  rows=[('natural_neutral_777',26,0),('natural_warm_777',26,0),('natural_neutral_424',28,0),('natural_warm_424',28,0)]
+if args.matrix=='color':
+ rows=[('neutral_777',26,-2),('warm_low_denoise_777',26,-2),('neutral_low_denoise_777',26,-2),('neutral_424',28,-2),('warm_low_denoise_424',28,-2),('neutral_low_denoise_424',28,-2)]
+if args.matrix=='highlight':
+ rows=[('warm_no_boost_777',26,-2),('neutral_no_boost_777',26,-2),('warm_no_boost_ev0_777',26,0),('warm_no_boost_424',28,-2),('neutral_no_boost_424',28,-2),('warm_no_boost_ev0_424',28,0)]
+if args.matrix=='safe_darkroom':
+ rows=[('safe_noir',4,0),('safe_beauty',8,0)]
 q=req('/queue')
 if q.get('queue_running') or q.get('queue_pending'):raise SystemExit('Queue busy: no tests submitted')
 info=req('/object_info')
@@ -48,6 +54,17 @@ for name,case,ev in rows:
  if args.matrix=='natural':
   g['15']['inputs'].update(preset='Custom',ambient_intensity=.05,key_enabled=True,key_modifier='Octabox (Soft)',key_distance=1.8,key_intensity=1.,key_azimuth=15.,key_elevation=35.,key_kelvin=5000 if 'warm' in name else 5500,fill_enabled=True,fill_modifier='Octabox (Soft)',fill_distance=2.5,fill_intensity=.2,fill_azimuth=-30.,fill_elevation=0.,fill_kelvin=6500 if 'warm' in name else 5500,rim_enabled=False,normal_boost=1.,ao_anchoring=.45)
   g['17']['inputs'].update(specular_kick=.15,chroma_bleed=.65)
+ if args.matrix in ('color','highlight') and 'neutral' in name:
+  sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
+  from nodes.color_utils import kelvin_to_rgb
+  weights=(.212639,.715169,.072192)
+  warm_y=sum(a*b for a,b in zip(kelvin_to_rgb(3200),weights))
+  neutral_y=sum(a*b for a,b in zip(kelvin_to_rgb(5500),weights))
+  g['15']['inputs'].update(key_kelvin=5500,key_intensity=3.*warm_y/neutral_y)
+ if args.matrix=='color' and 'low_denoise' in name:
+  g['25']['inputs']['denoise']=.35
+ if args.matrix in ('highlight','safe_darkroom'):
+  g['18']['inputs']['highlight_amount']=0.
  prefix='StudioLightCorrections/'+output_session+'/'+name
  g['27']['inputs']['filename_prefix']=prefix+'/final'
  stages={'draft':['12',0],'depth':['29',0],'normals':['14',0],'lighting_raw':['15',0],'specular_raw':['15',3],'lighting_used':['15',0],'specular_used':['15',3],'composite':['17',0],'darkroom':['18',0],'final':['26',0]}
@@ -73,12 +90,23 @@ for name,case,ev in rows:
    with urlopen(BASE+'/view?'+urlencode(meta),timeout=90) as f:p.write_bytes(f.read())
    files.append(p.name)
  import numpy as np
- replay_stages=('draft','depth','normals') if args.matrix=='natural' else ('draft','depth','normals','lighting_raw','specular_raw')
+ replay_stages=('draft','depth','normals') if args.matrix in ('natural','color','highlight') else ('draft','depth','normals','lighting_raw','specular_raw')
  for stage in replay_stages:
   before=np.load(old/(stage+'.npz'))['image'];after=np.load(folder/(stage+'.npz'))['image']
   delta=float(np.max(np.abs(before-after)))
   if delta>1e-6:raise AssertionError(f'{name}: {stage} changed by {delta}')
- (folder/'completed.json').write_text(json.dumps({'prompt_id':pid,'baseline_case':case,'exposure_ev':ev,'files':files,'replay_gates_passed':list(replay_stages),'light_setup_changed':args.matrix=='natural'},indent=2))
+ if args.matrix in ('color','highlight') and 'neutral' in name:
+  weights=np.array([.212639,.715169,.072192],dtype=np.float32)
+  original_light=np.load(old/'lighting_raw.npz')['image']
+  new_light=np.load(folder/'lighting_raw.npz')['image']
+  delta=float(np.max(np.abs(original_light@weights-new_light@weights)))
+  (folder/'luminance_gate.json').write_text(json.dumps({'maximum_difference':delta,'tolerance':1e-5}))
+  if delta>1e-5:raise AssertionError(f'{name}: Kelvin pair changed raw-light luminance by {delta}')
+ if args.matrix in ('highlight','safe_darkroom'):
+  composite=np.load(folder/'composite.npz')['image']
+  darkroom=np.load(folder/'darkroom.npz')['image']
+  if not np.array_equal(composite,darkroom):raise AssertionError(f'{name}: neutral darkroom changed display image')
+ (folder/'completed.json').write_text(json.dumps({'prompt_id':pid,'baseline_case':case,'exposure_ev':ev,'files':files,'replay_gates_passed':list(replay_stages),'light_setup_changed':args.matrix=='natural' or (args.matrix in ('color','highlight') and 'neutral' in name)},indent=2))
  print('Saved',name,flush=True)
 (OUT/'runner_exit_code.txt').write_text('0\n')
 print(f'All {len(rows)} {args.matrix} renders and replay gates passed.',flush=True)

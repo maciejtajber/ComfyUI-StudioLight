@@ -47,6 +47,22 @@ class VisualCorrectionTests(unittest.TestCase):
    self.comp.composite(img,img,depth_map=torch.ones((3,2,2,1),device=self.device))
   with self.assertRaisesRegex(ValueError,'requires a depth_map'):
    self.comp.composite(img,img,background_protection=1.)
+ def test_master_pipeline_preserves_hdr_display_headroom(self):
+  import json
+  from pathlib import Path
+  from nodes.si_shadow_highlight import SIShadowHighlight
+  wf=json.loads((Path(__file__).parent/'workflows/StudioLight_Master.json').read_text())
+  settings=next(n for n in wf['nodes'] if n['id']==18)['widgets_values_named']
+  img=torch.full((1,3,3,3),.7,device=self.device)
+  light=torch.tensor([2.,3.,4.],device=self.device).view(1,1,3,1).expand_as(img)
+  mapped=self.comp.composite(img,light,tone_mapping='Luminance HDR')[0]
+  prepared=SIShadowHighlight().adjust(mapped,**settings)[0]
+  self.assertTrue(torch.equal(prepared,mapped))
+  self.assertTrue((prepared<1).all())
+  self.assertTrue((prepared[0,0,1:,0]>prepared[0,0,:-1,0]).all())
+  legacy=SIShadowHighlight().adjust(mapped,**{**settings,'highlight_amount':.15})[0]
+  self.assertGreater(int((legacy>=1).sum()),0)
+
  def test_depth_normalization_is_independent_per_item(self):
   a=torch.tensor([0.,.05,.15,1.],device=self.device).view(1,1,4,1)
   b=a*4.+7.

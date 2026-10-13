@@ -702,14 +702,14 @@
       },
       "widgets_values": [
         0,
-        0.15,
+        0.0,
         0.5,
         0.5,
         1
       ],
       "widgets_values_named": {
         "shadow_amount": 0,
-        "highlight_amount": 0.15,
+        "highlight_amount": 0.0,
         "shadow_tonal_width": 0.5,
         "highlight_tonal_width": 0.5,
         "midtone_contrast": 1
