@@ -565,6 +565,31 @@ def resolve_aim_target(
     return default_center
 
 
+
+def integrate_area_diffuse(normals, surface_xyz, light_pos, aim_point, preset, num_samples=16):
+    """Normalized area-emitter irradiance used by scene and calibration probe.
+
+    This is the same finite-aperture/beam approximation throughout the package;
+    intensity is a calibrated reference gain, not watts or lux.
+    """
+    device, dtype = normals.device, normals.dtype
+    p_light = light_pos.reshape(1, 1, 1, 3)
+    axis = aim_point.reshape(1, 1, 1, 3) - p_light
+    axis = axis / (torch.norm(axis, dim=-1, keepdim=True) + 1e-7)
+    u, v, forward = generate_emitter_tangent_frame(-axis.view(3))
+    samples = generate_emitter_samples_2d(preset, num_samples).to(device=device, dtype=dtype)
+    points = (p_light.view(1, 1, 1, 1, 3)
+        + samples[:, 0].view(1, num_samples, 1, 1, 1) * u.view(1, 1, 1, 1, 3)
+        + samples[:, 1].view(1, num_samples, 1, 1, 1) * v.view(1, 1, 1, 1, 3))
+    offset = points - surface_xyz.unsqueeze(1)
+    distance = torch.norm(offset, dim=-1, keepdim=True) + 1e-6
+    direction = offset / distance
+    receiver_cos = torch.clamp(torch.sum(normals.unsqueeze(1) * direction, dim=-1, keepdim=True), 0., 1.)
+    emitter_cos = torch.clamp(torch.sum(forward.view(1, 1, 1, 1, 3) * -direction, dim=-1, keepdim=True), 0., 1.)
+    beam = evaluate_beam_profile(emitter_cos, preset)
+    return torch.mean(receiver_cos * beam * (1.8 / distance) ** 2., dim=1)
+
+
 def compute_light_shading(
     normals: torch.Tensor,
     light_vec: torch.Tensor,
@@ -661,6 +686,12 @@ def compute_light_shading(
                 depth_relief_scale=float(depth_relief_scale),
             )
 
+        # Perspective reflection uses the receiver-to-camera direction at each pixel.
+        # A constant +Z view is valid only for the no-depth orthographic fallback.
+        v_vec = F.normalize(-p_surf, dim=-1, eps=1e-7)
+        n_dot_v = torch.clamp(torch.sum(normals * v_vec, dim=-1, keepdim=True), 0.0, 1.0)
+        refl_rays = F.normalize(2.0 * n_dot_v * normals - v_vec, dim=-1, eps=1e-7)
+
         # Resolve unified 3D aim_point [1, 3] and place fixture relative to aim_point
         if target_pos is not None:
             aim_point_13 = target_pos.to(device=device, dtype=dtype).reshape(-1, 3)[:1]
@@ -680,34 +711,7 @@ def compute_light_shading(
         beam_axis_vec = beam_axis_vec / (torch.norm(beam_axis_vec, dim=-1, keepdim=True) + 1e-7)
         u_tangent, v_tangent, w_aim = generate_emitter_tangent_frame(-beam_axis_vec.view(3))
 
-        # 1. DIFFUSE EMISSION: Vectorized Area-Light Integration (16 samples)
-        num_samples = 16
-        samples_2d = generate_emitter_samples_2d(preset, num_samples=num_samples).to(device=device, dtype=dtype)
-        # [1, S, 1, 1, 3] sample points in camera space (broadcast-safe for arbitrary batch B >= 1)
-        p_samples = (
-            p_light.view(1, 1, 1, 1, 3)
-            + samples_2d[:, 0].view(1, num_samples, 1, 1, 1) * u_tangent.view(1, 1, 1, 1, 3)
-            + samples_2d[:, 1].view(1, num_samples, 1, 1, 1) * v_tangent.view(1, 1, 1, 1, 3)
-        )
-
-        # Vectorized [B, S, H, W, 3] broadcast
-        v_to_samples = p_samples - p_surf.unsqueeze(1)  # [B, S, H, W, 3]
-        dist_to_samples = torch.norm(v_to_samples, dim=-1, keepdim=True) + 1e-6
-        dir_to_samples = v_to_samples / dist_to_samples
-
-        # Pure Lambertian cosine at receiver max(N . L, 0) and emitter off-axis cosine (w_aim . -L)
-        cos_p = torch.clamp(torch.sum(normals.unsqueeze(1) * dir_to_samples, dim=-1, keepdim=True), 0.0, 1.0)
-        cos_e = torch.clamp(torch.sum(w_aim.view(1, 1, 1, 1, 3) * (-dir_to_samples), dim=-1, keepdim=True), 0.0, 1.0)
-
-        # Smooth calibrated FWHM + penumbra skirt beam profile
-        beam_gate = evaluate_beam_profile(cos_e, preset)
-
-        # True physical 1 / r^2 falloff (referenced to 1.8m studio portrait stand)
-        inv_sq = torch.clamp((1.8 / dist_to_samples) ** 2.0, 0.0, 8.0)
-
-        # Average irradiance across samples -> [B, H, W, 1]
-        irradiance_samples = cos_p * beam_gate * inv_sq
-        raw_diffuse = torch.mean(irradiance_samples, dim=1)
+        raw_diffuse = integrate_area_diffuse(normals, p_surf, p_light, aim_point_13, preset)
 
         # 2. SHADOW / VISIBILITY: Metric Camera-Space 3D Area Shadow Raymarching
         aim_point = aim_point_13.expand(B, 3)
@@ -747,7 +751,7 @@ def compute_light_shading(
         l_vec = stand_direction
         dist_val = max(float(distance), 0.3)
         dist_ratio = 1.8 / dist_val
-        attenuation = float(torch.clamp(torch.tensor(dist_ratio) ** 2.0, min=0.0, max=4.0))
+        attenuation = dist_ratio ** 2.0
         cast_sh = 1.0
 
         n_dot_l = torch.clamp(torch.sum(normals * l_vec, dim=-1, keepdim=True), 0.0, 1.0)
@@ -1074,12 +1078,13 @@ def render_studio_lighting(
             total_diffuse = total_diffuse + d_rgb
             total_specular = total_specular + s_rgb
 
-    total_shading = total_diffuse + total_specular
-
-    # Ambient Occlusion / Cavity Anchoring from Normal Field Divergence
+    # Cavity anchoring is an artistic attenuation, applied consistently to both
+    # components so exported passes account for the combined shading exactly.
     if float(ao_anchoring) > 0.0:
         cavity_ao = compute_cavity_ao_map(norm_unit, strength=float(ao_anchoring) * 2.5)
-        total_shading = total_shading * cavity_ao
+        total_diffuse = total_diffuse * cavity_ao
+        total_specular = total_specular * cavity_ao
+    total_shading = total_diffuse + total_specular
 
     # Composite subject with dark studio cyc backdrop
     bg_backdrop = torch.full_like(total_shading, max(float(ambient_intensity), 0.03))
@@ -1116,28 +1121,18 @@ def render_studio_lighting(
     ]:
         if p_dict.get("enabled", True):
             d_val = max(float(p_dict.get("distance", 1.8)), 0.3)
-            lv_dir = p_vec.to(device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
-            p_light_probe = d_val * lv_dir
-            v_to_probe_light = p_light_probe - p_sphere
-            dist_probe = torch.norm(v_to_probe_light, dim=-1, keepdim=True) + 1e-6
-            l_probe_local = v_to_probe_light / dist_probe
-
-            # Physical inverse-square falloff on the sphere surface referenced to 1.8m standard
-            probe_dist_ratio = 1.8 / dist_probe
-            probe_attenuation = torch.clamp(torch.pow(probe_dist_ratio, 1.5), min=0.10, max=2.8)
-
-            n_dot_l_probe = torch.clamp(torch.sum(sphere_normals * l_probe_local, dim=-1, keepdim=True), min=0.0, max=1.0)
+            light_pos = d_val * p_vec.to(device=device, dtype=sphere_normals.dtype).reshape(1, 3)
+            aim = torch.zeros_like(light_pos)
             mod_preset = MODIFIER_PRESETS.get(p_dict.get("modifier", "Octabox (Soft)"), MODIFIER_PRESETS["Octabox (Soft)"])
-            wrap_p = min(mod_preset.get("wrap_factor", 0.0), 0.45)
-            if wrap_p > 0.0:
-                diff_p = torch.clamp((n_dot_l_probe + wrap_p) / (1.0 + wrap_p), min=0.0, max=1.0)
-            else:
-                diff_p = n_dot_l_probe
-
+            irradiance = integrate_area_diffuse(sphere_normals, p_sphere, light_pos, aim, mod_preset)
             col_t = torch.tensor(p_col, device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
-            grey_shd = grey_shd + diff_p * probe_attenuation * float(p_dict["intensity"]) * col_t
+            grey_shd = grey_shd + irradiance * float(p_dict["intensity"]) * col_t
 
-    grey_ball = torch.clamp((grey_shd + ambient_intensity) * sphere_mask * 0.72, 0.0, 1.0)
+    # An 18% Lambertian reference uses 0.18 linear reflectance, then the same
+    # standardized HDR display transform for both probe balls (white point 3.5).
+    from .photometric_composite import luminance_hdr_tonemap, linear_to_srgb
+    grey_linear = (grey_shd + ambient_intensity) * 0.18
+    grey_ball = linear_to_srgb(luminance_hdr_tonemap(grey_linear)) * sphere_mask
 
     # Mirror Chrome Ball with distance-dependent specular spot size and intensity
     chrome_ball = torch.zeros_like(sphere_normals)
@@ -1172,7 +1167,7 @@ def render_studio_lighting(
             col_t = torch.tensor(col, device=device, dtype=sphere_normals.dtype).view(1, 1, 1, 3)
             chrome_ball = chrome_ball + spec_spot * float(p["intensity"]) * col_t
 
-    chrome_ball = torch.clamp((chrome_ball + ambient_intensity * 0.12) * sphere_mask, 0.0, 1.0)
+    chrome_ball = linear_to_srgb(luminance_hdr_tonemap(chrome_ball + ambient_intensity)) * sphere_mask
 
     # Top half: Grey Ball & Chrome Ball side-by-side
     top_half = torch.cat([grey_ball, chrome_ball], dim=2)  # [1, half_h, probe_res, 3]

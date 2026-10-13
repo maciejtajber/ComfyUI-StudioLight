@@ -1670,7 +1670,7 @@
       ],
       "size": [
         380,
-        310
+        330
       ],
       "flags": {},
       "order": 27,
@@ -1721,7 +1721,8 @@
         3.5,
         0.0,
         "Luminance HDR",
-        1.0
+        1.0,
+        true
       ],
       "widgets_values_named": {
         "lighting_strength": 1.2,
@@ -1731,7 +1732,8 @@
         "filmic_white_point": 3.5,
         "exposure_ev": 0.0,
         "tone_mapping": "Luminance HDR",
-        "background_protection": 1.0
+        "background_protection": 1.0,
+        "lighting_map_includes_specular": true
       },
       "color": "#244131",
       "bgcolor": "#102d1d"

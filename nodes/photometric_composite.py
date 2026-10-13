@@ -158,6 +158,8 @@ class StudioPhotometricComposite:
                 # Isolated Blinn-Phong lobes from StudioLightRig.specular_pass. When connected, catchlights are
                 # confined to the real specular lobes instead of any region where the light map exceeds 0.70.
                 "specular_map": ("IMAGE",),
+                "lighting_map_includes_specular": ("BOOLEAN", {"default": True,
+                    "tooltip": "StudioLightRig.relighting_map contains diffuse + specular. Subtract the connected specular pass before diffuse modulation. Disable only for an externally supplied diffuse-only map."}),
             },
         }
 
@@ -184,6 +186,7 @@ class StudioPhotometricComposite:
         tone_mapping: str = "Legacy per-channel",
         background_protection: float = 0.0,
         depth_map=None,
+        lighting_map_includes_specular: bool = True,
     ):
         batches = {"image": image.shape[0], "lighting_map": lighting_map.shape[0]}
         if depth_map is not None:
@@ -207,6 +210,18 @@ class StudioPhotometricComposite:
             ).permute(0, 2, 3, 1).contiguous()
         else:
             light_resized = light
+
+        # Rig's combined map already includes the isolated specular component.
+        # Remove that component before albedo modulation; it is added once below.
+        resolved_specular = None
+        if specular_map is not None:
+            resolved_specular = specular_map.to(device=device, dtype=torch.float32)
+            if resolved_specular.shape[1:3] != img.shape[1:3]:
+                resolved_specular = F.interpolate(resolved_specular.permute(0, 3, 1, 2).contiguous(),
+                    size=img.shape[1:3], mode="bilinear", align_corners=False).permute(0, 2, 3, 1).contiguous()
+            resolved_specular = torch.nan_to_num(resolved_specular, nan=0.0, posinf=0.0, neginf=0.0)
+            if lighting_map_includes_specular:
+                light_resized = torch.clamp(light_resized - resolved_specular, min=0.0)
 
         # 2. Linearize Base plate (IEC 61966-2-1 sRGB -> Linear Rec.709);
         #    lighting_map is already scene-referred linear radiance from StudioLightRig (including ambient_intensity).
@@ -234,11 +249,7 @@ class StudioPhotometricComposite:
         if float(specular_kick) > 0.0:
             if specular_map is not None:
                 # Lobe-accurate path: peak comes from the rig's isolated specular pass (Kelvin-tinted, per channel).
-                spec = specular_map.to(device=device, dtype=torch.float32)
-                if spec.shape[1:3] != img.shape[1:3]:
-                    spec = F.interpolate(spec.permute(0, 3, 1, 2).contiguous(), size=(img.shape[1], img.shape[2]),
-                                         mode="bilinear", align_corners=False).permute(0, 2, 3, 1).contiguous()
-                spec = torch.nan_to_num(spec, nan=0.0, posinf=0.0, neginf=0.0)
+                spec = resolved_specular
                 spec_peak = torch.clamp(spec * float(lighting_strength) / SPEC_PASS_REFERENCE, 0.0, 1.0)
             else:
                 # Legacy path: threshold the summed light map. Veils any broad bright region, not just lobes.

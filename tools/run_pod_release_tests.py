@@ -142,7 +142,7 @@ def main():
     print('Running local CUDA numerical gates...',flush=True)
     env={**os.environ,'STUDIOLIGHT_TEST_DEVICE':'cuda'}
     with (a.out/'numerical-tests.log').open('w') as log:
-        subprocess.run([sys.executable,'-m','unittest','test_workflow_migration','test_release_candidate','test_pod_harness','test_visual_corrections','-v'],cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
+        subprocess.run([sys.executable,'-m','unittest','test_workflow_migration','test_release_candidate','test_pod_harness','test_visual_corrections','test_transport_math','-v'],cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
         subprocess.run([sys.executable,'test_studiolight.py'],cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
     info=request(a.url,'/object_info')
     for kind in ('StudioLightTestClamp','StudioLightTestCapture'):

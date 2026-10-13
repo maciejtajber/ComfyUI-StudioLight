@@ -27,4 +27,4 @@ jobs:
       - name: Run 22-test StudioLight verification suite
         run: |
           python test_studiolight.py
-          python -m unittest test_workflow_migration test_release_candidate test_pod_harness test_visual_corrections -v
+          python -m unittest test_workflow_migration test_release_candidate test_pod_harness test_visual_corrections test_transport_math -v
