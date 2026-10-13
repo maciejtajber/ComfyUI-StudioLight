@@ -347,7 +347,7 @@ class StudioLightRig:
             key_params, fill_params, rim_params, target_engine=target_engine
         )
 
-        specular_pass = torch.clamp(spec_pass.float(), 0.0, 1.0)
+        specular_pass = torch.clamp(spec_pass.float(), min=0.0)
         return (relighting_map, probe_preview, lighting_prompt, specular_pass)
 
 

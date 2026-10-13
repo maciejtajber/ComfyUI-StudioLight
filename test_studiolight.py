@@ -274,7 +274,7 @@ def test_end_to_end_workflow_and_product_behavior():
         wf = json.load(f)
     wf_nodes = {n["id"]: n for n in wf["nodes"]}
     custom_in_wf = {n["type"] for n in wf["nodes"] if n["type"] in expected_nodes}
-    assert custom_in_wf == {"StudioLightRig", "StudioPhotometricComposite", "SIShadowHighlight"}, (
+    assert custom_in_wf == expected_nodes, (
         f"Missing core nodes in StudioLight_Master.json: {custom_in_wf}"
     )
     for link in wf["links"]:
@@ -693,7 +693,7 @@ def test_specular_pass_wiring():
     out = rig.execute_rig(preset="Custom", key_modifier="Beauty Dish (Silver)", key_intensity=1.5)
     assert len(out) == 4 and len(StudioLightRig.RETURN_TYPES) == 4 and StudioLightRig.RETURN_NAMES[3] == "specular_pass"
     light, spec = out[0], out[3]
-    assert spec.shape == light.shape and 0.0 <= float(spec.min()) and float(spec.max()) <= 1.0 and float(spec.max()) > 0.05
+    assert spec.shape == light.shape and 0.0 <= float(spec.min()) and torch.isfinite(spec).all() and float(spec.max()) > 0.05
     black = torch.full(light.shape, 0.152)  # sRGB 0.152 == linear 0.02 black leather
     off = comp.composite(black, light, specular_kick=0.0)[0]
     legacy = comp.composite(black, light, specular_kick=1.0)[0]

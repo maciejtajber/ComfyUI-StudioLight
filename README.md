@@ -576,3 +576,11 @@ python test_studiolight.py
 ## License & Credits
 
 * **Code & Shaders:** MIT License. Created by [Maciej Tajber](https://github.com/maciejtajber) // **METAMATERIAL** Applied VFX Systems.
+
+### HDR guidance and release validation
+
+`StudioLightRig.relighting_map` and `specular_pass` retain nonnegative float32 scene-linear values above 1.0. They are guidance fields, not display-ready sRGB images: PreviewImage/SaveImage may clip them. `StudioPhotometricComposite` modulates the base in linear space, then applies its shoulder and encodes display sRGB. `chroma_bleed` controls color transfer; `specular_kick` adds artistic catchlights. Neither restores values clipped earlier. Existing renders may change with this HDR correction; compare locked seeds before release.
+
+The master workflow uses `StudioPromptSanitizer` for Pass 1 while retaining the full master prompt for Pass 2. Batches must match or use a singleton map for broadcasting; incompatible batch counts raise an explicit error.
+
+See [RTX 3090 release test plan](docs/RELEASE_VALIDATION.md).

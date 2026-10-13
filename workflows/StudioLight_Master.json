@@ -41,63 +41,64 @@
     },
     {
       "id": 8,
-      "type": "StringConcatenate",
+      "type": "StudioPromptSanitizer",
       "pos": [
         -1700,
-        350
+        60
       ],
       "size": [
         380,
-        170
+        300
       ],
-      "flags": {
-        "collapsed": true
-      },
+      "flags": {},
       "order": 13,
       "mode": 0,
       "inputs": [
         {
-          "name": "string_a",
+          "name": "master_prompt",
           "type": "STRING",
           "widget": {
-            "name": "string_a"
+            "name": "master_prompt"
           },
           "link": 4
         },
         {
-          "name": "string_b",
+          "name": "albedo_suffix",
           "type": "STRING",
           "widget": {
-            "name": "string_b"
+            "name": "albedo_suffix"
           },
           "link": 5
         }
       ],
       "outputs": [
         {
-          "name": "STRING",
+          "name": "pass1_albedo_prompt",
           "type": "STRING",
           "slot_index": 0,
           "links": [
             6
           ]
+        },
+        {
+          "name": "pass2_lit_prompt",
+          "type": "STRING",
+          "slot_index": 1,
+          "links": [
+            29
+          ]
         }
       ],
-      "title": "Concat Pass 1 (Subject + Shadowless)",
       "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0",
-        "Node name for S&R": "StringConcatenate"
+        "Node name for S&R": "StudioPromptSanitizer"
       },
       "widgets_values": [
         "",
-        "",
-        ""
+        ", flat diffuse high-key ambient lighting, shadowless, Vogue cover style"
       ],
       "widgets_values_named": {
-        "string_a": "",
-        "string_b": "",
-        "delimiter": ""
+        "master_prompt": "",
+        "albedo_suffix": ", flat diffuse high-key ambient lighting, shadowless, Vogue cover style"
       }
     },
     {
@@ -1173,8 +1174,7 @@
           "type": "STRING",
           "slot_index": 0,
           "links": [
-            4,
-            29
+            4
           ]
         }
       ],
@@ -1951,8 +1951,8 @@
     ],
     [
       29,
-      6,
-      0,
+      8,
+      1,
       21,
       0,
       "STRING"

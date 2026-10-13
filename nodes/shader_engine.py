@@ -608,6 +608,8 @@ def compute_light_shading(
     refl_rays = 2.0 * n_dot_v * normals - v_vec
     refl_rays = refl_rays / (torch.norm(refl_rays, dim=-1, keepdim=True) + 1e-7)
 
+    if depth is not None and depth.shape[0] not in (1, normals.shape[0]):
+        raise ValueError(f"StudioLight shading: depth batch ({depth.shape[0]}) must be 1 or match normals batch ({normals.shape[0]}).")
     if depth is not None and normals.shape[0] > 1:
         B_multi = normals.shape[0]
         diff_list, spec_list, sum_list = [], [], []
@@ -886,9 +888,15 @@ def render_studio_lighting(
     Renders the complete 3-point photographic studio lighting pass and dual-probe preview.
     Multi-image batches (B > 1) are normalized and auto-aimed independently per batch item.
     Returns:
-      relighting_map: [B, H, W, 3] in range [0, 1]
+      relighting_map: [B, H, W, 3] nonnegative scene-linear HDR radiance (may exceed 1)
       probe_preview:  [1, H, W, 3] in range [0, 1] (Grey ball + Chrome ball + 2D Radar)
     """
+    if normals is not None and depth is not None:
+        bn, bd = normals.shape[0], depth.shape[0]
+        if bn < 1 or bd < 1 or (bn != bd and bn != 1 and bd != 1):
+            raise ValueError(f"StudioLight: normals batch ({bn}) and depth batch ({bd}) must match or one must be 1.")
+    elif (normals is not None and normals.shape[0] < 1) or (depth is not None and depth.shape[0] < 1):
+        raise ValueError("StudioLight: image batches must contain at least one image.")
     b_norm = normals.shape[0] if normals is not None else 1
     b_depth = depth.shape[0] if depth is not None else 1
     B_batch = max(b_norm, b_depth)
@@ -1076,7 +1084,9 @@ def render_studio_lighting(
     # Composite subject with dark studio cyc backdrop
     bg_backdrop = torch.full_like(total_shading, max(float(ambient_intensity), 0.03))
     relighting_map = (total_shading + float(ambient_intensity)) * subject_mask + bg_backdrop * (1.0 - subject_mask)
-    relighting_map = torch.clamp(relighting_map, 0.0, 1.0)
+    # Preserve HDR energy and Kelvin ratios for downstream compositing.
+    # Preview/SaveImage nodes may clip for display; the compositor tone-maps after modulation.
+    relighting_map = torch.clamp(relighting_map, min=0.0)
 
     if not _render_probe:
         probe_preview = torch.empty((1, 1, 1, 3), dtype=torch.float32)

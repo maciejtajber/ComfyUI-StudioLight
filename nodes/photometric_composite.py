@@ -132,6 +132,11 @@ class StudioPhotometricComposite:
         filmic_white_point: float = 3.5,
         specular_map=None,
     ):
+        batches = {"image": image.shape[0], "lighting_map": lighting_map.shape[0]}
+        if specular_map is not None:
+            batches["specular_map"] = specular_map.shape[0]
+        if any(count < 1 for count in batches.values()) or len({count for count in batches.values() if count != 1}) > 1:
+            raise ValueError(f"StudioLight composite: image/map batches must match or be 1; got {batches}.")
         device = image.device
         img = image.to(device=device, dtype=torch.float32)
         light = lighting_map.to(device=device, dtype=torch.float32)

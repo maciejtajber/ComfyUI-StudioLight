@@ -2,6 +2,13 @@
 
 All notable changes to **ComfyUI-StudioLight** are documented in this file.
 
+## [Unreleased]
+
+- Preserve scene-linear HDR lighting and specular radiance until compositing.
+- Wire prompt sanitizer into the master workflow without changing sampler settings.
+- Reject incompatible geometry/compositor batches; retain matched and singleton broadcast behavior.
+- Add release regression checks and an automated CUDA/ComfyUI visual comparison harness.
+
 ## [1.0.0] — 2026-10-12
 
 ### Added
