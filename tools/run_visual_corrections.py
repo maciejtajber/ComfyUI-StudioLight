@@ -8,6 +8,7 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--baseline',type=Path,required=True,help='Original 28-case results: case_XX folders directly or under generations/')
 parser.add_argument('--out',type=Path,required=True)
 parser.add_argument('--url',default='http://127.0.0.1:8188')
+parser.add_argument('--matrix',choices=('correction','natural'),default='correction',help='Correction isolation or gentler neutral/warm light setups')
 parser.add_argument('--source-session',default='STUDIOLIGHT_RELEASE_20261013',help='Existing captures under ComfyUI output/StudioLightRelease/')
 args=parser.parse_args()
 ROOT=args.baseline.resolve()
@@ -18,13 +19,15 @@ GENERATIONS=ROOT/'generations' if (ROOT/'generations').is_dir() else ROOT
 def req(path,data=None):
  with urlopen(Request(BASE+path,data=None if data is None else json.dumps(data).encode(),headers={'Content-Type':'application/json'}),timeout=60) as f:return json.load(f)
 rows=[('halo_17',17,0),('halo_19',19,0),('stress_26_ev1',26,-1),('stress_26_ev2',26,-2),('stress_28_ev1',28,-1),('stress_28_ev2',28,-2),('regression_noir_04',4,0),('regression_beauty_08',8,0)]
+if args.matrix=='natural':
+ rows=[('natural_neutral_777',26,0),('natural_warm_777',26,0),('natural_neutral_424',28,0),('natural_warm_424',28,0)]
 q=req('/queue')
 if q.get('queue_running') or q.get('queue_pending'):raise SystemExit('Queue busy: no tests submitted')
 info=req('/object_info')
 assert 'StudioLightTestLoad' in info and 'exposure_ev' in info['StudioPhotometricComposite']['input']['optional']
 baseline_manifest=next((p for p in (ROOT/'manifest.json',ROOT/'validation/manifest.json') if p.is_file()),None)
 baseline_revision=json.loads(baseline_manifest.read_text()).get('commit','unknown') if baseline_manifest else 'unknown'
-manifest={'baseline_commit':baseline_revision, 'baseline_directory':str(ROOT),'source_sha256':hashlib.sha256((Path(__file__).resolve().parent.parent/'nodes/photometric_composite.py').read_bytes()).hexdigest(),'cases':rows,'note':'Saved float32 drafts and geometry; original seeds, prompts and refinement settings retained. No early-stage regeneration.'}
+manifest={'baseline_commit':baseline_revision, 'baseline_directory':str(ROOT),'source_sha256':hashlib.sha256((Path(__file__).resolve().parent.parent/'nodes/photometric_composite.py').read_bytes()).hexdigest(),'cases':rows,'matrix':args.matrix,'note':'Saved float32 drafts and geometry; original seeds, prompts and refinement settings retained. No early-stage regeneration.'}
 output_session=OUT.name+'_'+hashlib.sha256(json.dumps(manifest,sort_keys=True).encode()).hexdigest()[:12]
 manifest['output_session']=output_session
 manifest_path=OUT/'manifest.json'
@@ -42,6 +45,9 @@ for name,case,ev in rows:
   g[nid]={'class_type':'StudioLightTestLoad','inputs':{'file':f'StudioLightRelease/{args.source_session}/case_{case:02d}/{stage}.npz'}}
  # Force unclipped light/specular arrays for every corrected arm.
  g['17']['inputs'].update(lighting_map=['15',0],specular_map=['15',3],exposure_ev=ev,tone_mapping='Luminance HDR',background_protection=1.,depth_map=['29',0])
+ if args.matrix=='natural':
+  g['15']['inputs'].update(preset='Custom',ambient_intensity=.05,key_enabled=True,key_modifier='Octabox (Soft)',key_distance=1.8,key_intensity=1.,key_azimuth=15.,key_elevation=35.,key_kelvin=5000 if 'warm' in name else 5500,fill_enabled=True,fill_modifier='Octabox (Soft)',fill_distance=2.5,fill_intensity=.2,fill_azimuth=-30.,fill_elevation=0.,fill_kelvin=6500 if 'warm' in name else 5500,rim_enabled=False,normal_boost=1.,ao_anchoring=.45)
+  g['17']['inputs'].update(specular_kick=.15,chroma_bleed=.65)
  prefix='StudioLightCorrections/'+output_session+'/'+name
  g['27']['inputs']['filename_prefix']=prefix+'/final'
  stages={'draft':['12',0],'depth':['29',0],'normals':['14',0],'lighting_raw':['15',0],'specular_raw':['15',3],'lighting_used':['15',0],'specular_used':['15',3],'composite':['17',0],'darkroom':['18',0],'final':['26',0]}
@@ -67,11 +73,12 @@ for name,case,ev in rows:
    with urlopen(BASE+'/view?'+urlencode(meta),timeout=90) as f:p.write_bytes(f.read())
    files.append(p.name)
  import numpy as np
- for stage in ('draft','depth','normals','lighting_raw','specular_raw'):
+ replay_stages=('draft','depth','normals') if args.matrix=='natural' else ('draft','depth','normals','lighting_raw','specular_raw')
+ for stage in replay_stages:
   before=np.load(old/(stage+'.npz'))['image'];after=np.load(folder/(stage+'.npz'))['image']
   delta=float(np.max(np.abs(before-after)))
   if delta>1e-6:raise AssertionError(f'{name}: {stage} changed by {delta}')
- (folder/'completed.json').write_text(json.dumps({'prompt_id':pid,'baseline_case':case,'exposure_ev':ev,'files':files,'unchanged_draft_geometry_and_raw_lighting':True},indent=2))
+ (folder/'completed.json').write_text(json.dumps({'prompt_id':pid,'baseline_case':case,'exposure_ev':ev,'files':files,'replay_gates_passed':list(replay_stages),'light_setup_changed':args.matrix=='natural'},indent=2))
  print('Saved',name,flush=True)
 (OUT/'runner_exit_code.txt').write_text('0\n')
-print('All eight correction renders and exact replay gates passed.',flush=True)
+print(f'All {len(rows)} {args.matrix} renders and replay gates passed.',flush=True)

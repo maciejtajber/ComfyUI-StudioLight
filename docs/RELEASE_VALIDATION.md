@@ -87,3 +87,5 @@ python tools/run_visual_corrections.py --baseline /path/to/original/results --ou
 ```
 
 Eight renders reuse exact saved float32 drafts, depth and normals: cases 17 and 19 with background protection; 26 and 28 at -1/-2 EV; Noir case 4 and Beauty case 8 as regression checks. Each capture checks that draft, geometry and raw lighting match the original to 1e-6. The manifest records the tested compositor SHA256. Existing completed correction cases are skipped; use a fresh output folder after any code/settings change. These controls require visual inspection; numerical passes do not constitute artistic acceptance.
+
+Add `--matrix natural` to run four additional neutral/warm comparisons on the same two stress drafts: Octabox key at 1.8 m/intensity 1, gentle fill, no rim, normal boost 1, catchlight kick 0.15, chroma bleed 0.65 and 0 EV. This deliberately changes the light setup; replay equality is required for draft/depth/normals, not for the lighting fields. Use a separate output folder for each matrix.
