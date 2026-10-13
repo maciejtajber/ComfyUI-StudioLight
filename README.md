@@ -595,3 +595,7 @@ The master example now selects `Luminance HDR` tone mapping. It compresses lumin
 The companion example `workflows/StudioLight_Gentle_Editorial.json` uses a 1.8 m soft Octabox key, gentle fill and restrained catchlights. It keeps the same draft/refinement sampling as the master. The 2026-10-13 visual review preferred this gentler transformation and the low-light Noir example; bright close-light stress variants remained rejected.
 
 The HDR examples leave `SIShadowHighlight.highlight_amount` at 0. Positive values brighten the already tone-mapped display image and can clip color channels before VAE encoding. In the original close-light stress cases, the +0.15 boost raised pixels touching the display ceiling from roughly 0% to 27–35%; this is separate from the intentional 3200K warmth. Keep the boost neutral when evaluating HDR highlight detail.
+
+### Accepted reference workflows
+
+The operator selected four references on 2026-10-13: neutral close-light on two seeds, low-light Noir and Beauty. The exact configurations are saved as `StudioLight_Accepted_Neutral_Close.json`, `StudioLight_Accepted_Noir.json` and `StudioLight_Accepted_Beauty.json` under `workflows/`. Neutral close-light uses 5500K, luminance-matched key intensity 1.950249, distance 0.8 m and -2 EV. Noir/Beauty retain their respective presets at 0 EV. All use neutral darkroom highlight gain; sampling defaults remain unchanged. These are accepted references, not a guarantee for every light setting.
