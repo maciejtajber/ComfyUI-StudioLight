@@ -1,13 +1,14 @@
 """Offline checks of all planned API graphs and float capture helpers."""
 import importlib.util
 import json
+import hashlib
 from pathlib import Path
 import sys
 import tempfile
 import types
 import unittest
 import torch
-from tools.run_pod_release_tests import arms,build_case,to_api
+from tools.run_pod_release_tests import arms,build_case,to_api,candidate_commit
 
 ROOT=Path(__file__).parent
 class HarnessTests(unittest.TestCase):
@@ -34,6 +35,15 @@ class HarnessTests(unittest.TestCase):
             self.assertEqual(g['17']['inputs']['lighting_map'],['15',0] if row['hdr'] else ['80',0])
             self.assertEqual(g['17']['inputs']['specular_map'],['15',3] if row['hdr'] else ['81',0])
             self.assertEqual(sum(n['class_type']=='StudioLightTestCapture' for n in g.values()),10)
+
+    def test_zip_provenance_verifies_files_and_refuses_changes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);file=root/'code.py';file.write_text('candidate code')
+            meta={'commit':'a'*40,'files':{'code.py':hashlib.sha256(file.read_bytes()).hexdigest()}}
+            (root/'STUDIOLIGHT_CANDIDATE.json').write_text(json.dumps(meta))
+            self.assertEqual(candidate_commit(root),'a'*40)
+            file.write_text('different code')
+            with self.assertRaises(ValueError): candidate_commit(root)
 
     def test_capture_retains_hdr_and_rejects_path_escape(self):
         import numpy as np

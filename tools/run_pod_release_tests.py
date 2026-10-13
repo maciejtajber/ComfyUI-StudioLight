@@ -14,6 +14,27 @@ from urllib.parse import urlencode
 
 ROOT=Path(__file__).resolve().parent.parent
 
+def candidate_commit(root):
+    """ZIP deployments verify tracked-file hashes; checkouts use their Git revision."""
+    marker=root/'STUDIOLIGHT_CANDIDATE.json'
+    if marker.exists():
+        meta=json.loads(marker.read_text())
+        commit=meta['commit']
+        if len(commit)!=40 or any(c not in '0123456789abcdef' for c in commit):
+            raise ValueError('Invalid candidate commit metadata')
+        for relative,expected in meta['files'].items():
+            file=(root/relative).resolve()
+            if root.resolve() not in file.parents or not file.is_file():
+                raise ValueError(f'Invalid/missing candidate file: {relative}')
+            if hashlib.sha256(file.read_bytes()).hexdigest()!=expected:
+                raise ValueError(f'Candidate file differs from manifest: {relative}')
+        return commit
+    result=subprocess.run(['git','rev-parse','HEAD'],cwd=root,text=True,capture_output=True)
+    if result.returncode:
+        raise RuntimeError('ZIP install requires STUDIOLIGHT_CANDIDATE.json; use the verified candidate package')
+    return result.stdout.strip()
+
+
 def request(base,path,data=None):
     req=Request(base.rstrip('/')+path,data=None if data is None else json.dumps(data).encode(),
                 headers={'Content-Type':'application/json'})
@@ -108,7 +129,7 @@ def main():
     a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
     wf=json.loads((ROOT/'workflows/StudioLight_Master.json').read_text())
     matrix=arms()
-    commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    commit=candidate_commit(ROOT)
     manifest={'commit':commit,'workflow_sha256':hashlib.sha256(json.dumps(wf,sort_keys=True).encode()).hexdigest(),
               'unet_override':a.unet,'t5_override':a.t5,'cases':matrix}
     manifest_path=a.out/'manifest.json'
