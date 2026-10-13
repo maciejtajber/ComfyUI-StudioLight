@@ -12,13 +12,13 @@ node schema so old workflows cannot shift widgets (e.g. 5500 landing in key_inte
 Legacy layouts handled (rig node only):
   22 values  pre-distance layout (preset .. rim_modifier)
   26 values  22 + four obsolete trailing widgets (dropped)
-  27-29      current layout missing trailing optionals (defaults appended)
+  26-30      current layout missing trailing optionals (defaults appended; schema validated)
 Migration is BEHAVIOUR-PRESERVING for legacy layouts: distances 1.8 m (attenuation 1.0), normal_boost 1.0, ao_anchoring 0.0.
 
 Workflows that link to rig outputs which no longer exist (old `conditioning` / `lit_composite` slots) are reported as
 OBSOLETE and never rewritten: their graph needs rebuilding, not widget patching.
 """
-import argparse, glob, json, os, sys
+import argparse, glob, json, os, sys, math
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, ROOT)
@@ -41,32 +41,55 @@ def default_of(name):
     return spec[1]["default"]
 
 
+def values_valid(values, names):
+    """Validate serialized values before interpreting or rewriting a layout."""
+    if len(values) != len(names):
+        return False
+    for value, name in zip(values, names):
+        spec = IT["required"].get(name) or IT["optional"][name]
+        kind = spec[0]
+        if isinstance(kind, list):
+            if value not in kind:
+                return False
+        elif kind == "BOOLEAN":
+            if not isinstance(value, bool):
+                return False
+        elif kind in ("FLOAT", "INT"):
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                return False
+            if kind == "INT" and not isinstance(value, int):
+                return False
+            if not spec[1].get("min", -math.inf) <= value <= spec[1].get("max", math.inf):
+                return False
+    return True
+
+
 def migrate_values(wv):
-    """Returns (new_values, note) or (None, reason)."""
+    """Returns validated values or refuses an unknown/invalid layout."""
     n = len(wv)
-    if n == len(WIDGETS):
-        return list(wv), "current"
-    if LEGACY_BASE <= n <= 26 and n in (22, 26):
+    # Current layouts are recognized by schema, not count alone: 26 values
+    # can mean today's required widgets OR an old layout with framing.
+    if len(REQUIRED) <= n <= len(WIDGETS) and values_valid(wv, WIDGETS[:n]):
+        out = list(wv) + [default_of(k) for k in WIDGETS[n:]]
+        return out, "current" if n == len(WIDGETS) else f"short-{n}"
+    if n in (22, 26) and isinstance(wv[1], str) and wv[1]:
         base = list(wv[:LEGACY_BASE])
-        # Legacy layout had framing at index 1: [preset, framing, ambient, invert_y, ...]
-        # Current layout drops framing: [preset, ambient, invert_y, ...]
         out = [base[0], base[2], base[3]]
         for i in range(3):
             en, az, el, inten, kel, mod = base[4 + 6 * i: 10 + 6 * i]
             out += [en, az, el, 1.8, inten, kel, mod]
-        out += [1.0, 0.0]  # normal_boost, ao_anchoring: legacy look preserved
+        out += [1.0, 0.0]
         out += [default_of(k) for k in WIDGET_OPTIONAL]
-        return out, f"legacy-{n}"
-    if len(REQUIRED) <= n < len(WIDGETS):
-        return list(wv) + [default_of(k) for k in WIDGETS[n:]], f"short-{n}"
-    return None, f"unrecognised widget count {n}"
+        if values_valid(out, WIDGETS):
+            return out, f"legacy-{n}"
+    return None, f"unrecognised or invalid widget layout ({n} values)"
 
 
 def outputs_ok(links, rig_ids):
     bad = []
     for l in links:  # [id, origin, origin_slot, target, target_slot, type]
         if l[1] in rig_ids:
-            if l[2] >= len(OUTPUT_TYPES) or l[5] != OUTPUT_TYPES[l[2]]:
+            if not isinstance(l[2], int) or isinstance(l[2], bool) or not 0 <= l[2] < len(OUTPUT_TYPES) or l[5] != OUTPUT_TYPES[l[2]]:
                 bad.append(l)
     return bad
 
@@ -111,7 +134,7 @@ def fix_api(d):
     for rid, node in rigs.items():
         for k, v in d.items():
             for iname, val in (v.get("inputs", {}) if isinstance(v, dict) else {}).items():
-                if isinstance(val, list) and len(val) == 2 and str(val[0]) == rid and val[1] >= 3 and k != rid:
+                if isinstance(val, list) and len(val) == 2 and str(val[0]) == rid and (not isinstance(val[1], int) or isinstance(val[1], bool) or not 0 <= val[1] < len(OUTPUT_TYPES)):
                     return "obsolete", f"node {k}.{iname} reads removed rig output slot {val[1]}", False
         unknown = [i for i in node["inputs"] if i not in IT["required"] and i not in IT["optional"]]
         if unknown:

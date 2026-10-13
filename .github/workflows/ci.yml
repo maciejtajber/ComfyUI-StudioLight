@@ -25,4 +25,6 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run 22-test StudioLight verification suite
-        run: python test_studiolight.py
+        run: |
+          python test_studiolight.py
+          python -m unittest test_workflow_migration -v
