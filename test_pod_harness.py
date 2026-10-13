@@ -57,6 +57,9 @@ class HarnessTests(unittest.TestCase):
                 module.StudioLightTestCapture().capture(a,'test/lighting')
                 saved=np.load(Path(tmp)/'test/lighting.npz')['image']
                 self.assertEqual(float(saved.max()),4.)
+                replay=module.StudioLightTestLoad().load('test/lighting.npz')[0]
+                self.assertTrue(torch.equal(replay,a))
+                with self.assertRaises(ValueError): module.StudioLightTestLoad().load('../escape.npz')
                 self.assertEqual(json.loads((Path(tmp)/'test/lighting.json').read_text())['channels_over_one_fraction'],1.)
                 with self.assertRaises(ValueError): module.StudioLightTestCapture().capture(a,'../escape')
             finally:

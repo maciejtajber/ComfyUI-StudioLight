@@ -61,6 +61,49 @@ def filmic_reinhard_tonemap(x: torch.Tensor, white_point: float = 3.5) -> torch.
     return torch.where(x > threshold, threshold + compressed_excess, x)
 
 
+def luminance_hdr_tonemap(x: torch.Tensor, white_point: float = 3.5) -> torch.Tensor:
+    """Continuous luminance shoulder plus luminance-preserving display gamut compression.
+
+    Midtones below 0.60 remain linear. HDR RGB ratios are preserved until display
+    gamut compression is required; out-of-gamut chroma moves toward neutral at
+    the mapped luminance instead of clipping each RGB channel independently.
+    """
+    x = torch.clamp(x, min=0.0)
+    y = rgb_to_luminance(x)
+    threshold, headroom = 0.60, 0.40
+    excess = torch.clamp(y - threshold, min=0.0)
+    term = excess / max(float(white_point) - threshold, 0.2)
+    shoulder = excess * (1.0 + term)
+    mapped_y = torch.where(y > threshold, threshold + headroom * shoulder / (shoulder + headroom), y)
+    mapped = x * (mapped_y / torch.clamp(y, min=1e-8))
+    delta = mapped - mapped_y
+    upper = torch.where(delta > 0.0, (1.0 - mapped_y) / torch.clamp(delta, min=1e-8), torch.ones_like(delta))
+    lower = torch.where(delta < 0.0, mapped_y / torch.clamp(-delta, min=1e-8), torch.ones_like(delta))
+    chroma_scale = torch.minimum(upper, lower).amin(dim=-1, keepdim=True).clamp(0.0, 1.0)
+    return mapped_y + delta * chroma_scale
+
+
+def distant_background_weight(depth: torch.Tensor, size) -> torch.Tensor:
+    """Artistic far-background protection, not a sky classifier or validity mask.
+
+    Near-is-white relative depth: protect the farthest 5%, smoothly fade to zero
+    at 15%. Normalize independently per image. Constant-depth plates get no
+    protection so a flat studio wall is not silently excluded from relighting.
+    """
+    if depth.ndim != 4 or depth.shape[-1] not in (1, 3):
+        raise ValueError('StudioLight background depth must be [B,H,W,1 or 3].')
+    if not bool(torch.isfinite(depth).all()):
+        raise ValueError('StudioLight background depth must be finite.')
+    d = depth[..., :1]
+    if d.shape[1:3] != size:
+        d = F.interpolate(d.permute(0, 3, 1, 2), size=size, mode='bilinear', align_corners=False).permute(0, 2, 3, 1)
+    lo, hi = d.amin(dim=(1, 2), keepdim=True), d.amax(dim=(1, 2), keepdim=True)
+    span = hi - lo
+    normalized = (d - lo) / span.clamp(min=1e-6)
+    t = ((normalized - 0.05) / 0.10).clamp(0.0, 1.0)
+    return torch.where(span > 1e-6, 1.0 - t * t * (3.0 - 2.0 * t), torch.zeros_like(t))
+
+
 class StudioPhotometricComposite:
     """
     Composites 3D deferred relighting maps onto base/draft images in physical linear space.
@@ -106,6 +149,12 @@ class StudioPhotometricComposite:
                 }),
             },
             "optional": {
+                "exposure_ev": ("FLOAT", {"default": 0.0, "min": -8.0, "max": 8.0, "step": 0.25,
+                    "tooltip": "Exposure in stops before tone mapping. Reduce for close, powerful lights; -2 EV is one quarter of the energy."}),
+                "tone_mapping": (["Legacy per-channel", "Luminance HDR"], {"default": "Legacy per-channel"}),
+                "background_protection": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.05,
+                    "tooltip": "Preserve draft pixels in the farthest relative-depth region. Artistic background protection, not sky detection; requires near-is-white depth_map."}),
+                "depth_map": ("IMAGE",),
                 # Isolated Blinn-Phong lobes from StudioLightRig.specular_pass. When connected, catchlights are
                 # confined to the real specular lobes instead of any region where the light map exceeds 0.70.
                 "specular_map": ("IMAGE",),
@@ -131,8 +180,14 @@ class StudioPhotometricComposite:
         chroma_bleed: float = 0.40,
         filmic_white_point: float = 3.5,
         specular_map=None,
+        exposure_ev: float = 0.0,
+        tone_mapping: str = "Legacy per-channel",
+        background_protection: float = 0.0,
+        depth_map=None,
     ):
         batches = {"image": image.shape[0], "lighting_map": lighting_map.shape[0]}
+        if depth_map is not None:
+            batches["depth_map"] = depth_map.shape[0]
         if specular_map is not None:
             batches["specular_map"] = specular_map.shape[0]
         if any(count < 1 for count in batches.values()) or len({count for count in batches.values() if count != 1}) > 1:
@@ -194,11 +249,23 @@ class StudioPhotometricComposite:
         else:
             lit_hdr = lit_diffuse
 
-        # 7. Filmic Tone Reproduction (Extended Reinhard)
-        lit_toned = filmic_reinhard_tonemap(lit_hdr, white_point=float(filmic_white_point))
+        # Explicit exposure retains scene-referred HDR until the display transform.
+        lit_hdr = lit_hdr * (2.0 ** float(exposure_ev))
+        if tone_mapping == "Luminance HDR":
+            lit_toned = luminance_hdr_tonemap(lit_hdr, white_point=float(filmic_white_point))
+        elif tone_mapping == "Legacy per-channel":
+            lit_toned = filmic_reinhard_tonemap(lit_hdr, white_point=float(filmic_white_point))
+        else:
+            raise ValueError(f"Unknown StudioLight tone mapping: {tone_mapping}")
 
         # 8. Encode back to display sRGB
         lit_srgb = linear_to_srgb(lit_toned)
+        protection = min(max(float(background_protection), 0.0), 1.0)
+        if protection > 0.0:
+            if depth_map is None:
+                raise ValueError('StudioLight background protection requires a depth_map.')
+            weight = distant_background_weight(depth_map.to(device=device, dtype=torch.float32), img.shape[1:3]) * protection
+            lit_srgb = lit_srgb * (1.0 - weight) + img * weight
         return (lit_srgb,)
 
 

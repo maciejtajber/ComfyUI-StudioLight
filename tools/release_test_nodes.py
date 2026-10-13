@@ -39,3 +39,29 @@ class StudioLightTestCapture:
         return {'ui':{'studiolight_files':[entry(target),entry(meta)]}}
 
 NODE_CLASS_MAPPINGS={'StudioLightTestClamp':StudioLightTestClamp,'StudioLightTestCapture':StudioLightTestCapture}
+
+
+class StudioLightTestLoad:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'file': ('STRING', {'default': ''})}}
+    RETURN_TYPES=('IMAGE',)
+    FUNCTION='load'
+    CATEGORY='_StudioLightReleaseTests'
+    @classmethod
+    def IS_CHANGED(cls,file):
+        import hashlib
+        root=Path(folder_paths.get_output_directory()).resolve()
+        target=(root/file).resolve()
+        if root not in target.parents or not target.is_file(): raise ValueError('Replay file must be inside the output directory')
+        return hashlib.sha256(target.read_bytes()).hexdigest()
+    def load(self,file):
+        root=Path(folder_paths.get_output_directory()).resolve()
+        target=(root/file).resolve()
+        if root not in target.parents or target.suffix!='.npz': raise ValueError('Replay file must be an NPZ inside the output directory')
+        with np.load(target,allow_pickle=False) as data:
+            a=data['image']
+            if a.ndim!=4 or a.shape[-1] not in (1,3) or not np.isfinite(a).all(): raise ValueError('Invalid saved replay tensor')
+            return (torch.from_numpy(a.astype(np.float32,copy=True)),)
+
+NODE_CLASS_MAPPINGS['StudioLightTestLoad']=StudioLightTestLoad

@@ -76,3 +76,14 @@ A higher saturated-pixel count is not automatically failure: legitimate catchlig
 Load the UI master workflow and verify sanitizer connections. Select presets and confirm displayed settings. Adjust a lamp, confirm preset becomes Custom, queue a candidate, save/reload and confirm settings/links survive. Browser behavior requires a live browser session and is not certified by the API harness.
 
 After numerical, visual and browser acceptance, rebuild the archive from the final tracked commit and tag/publish that revision. Back up all pod outputs, float passes, prompts, manifest, contact sheet and logs locally and to the established R2 session archive **before terminating the pod**.
+
+
+## Fixed-draft visual correction replay
+
+Install the updated test-only helpers with `prepare_pod_release_tests.py`, then restart the test server when its queue is empty. `StudioLightTestLoad` reads only finite NPZ images inside ComfyUI's output directory. Keep the original 28-case captures on the pod.
+
+```bash
+python tools/run_visual_corrections.py --baseline /path/to/original/results --out /path/to/new/correction/results --url http://127.0.0.1:8188 --source-session STUDIOLIGHT_RELEASE_20261013
+```
+
+Eight renders reuse exact saved float32 drafts, depth and normals: cases 17 and 19 with background protection; 26 and 28 at -1/-2 EV; Noir case 4 and Beauty case 8 as regression checks. Each capture checks that draft, geometry and raw lighting match the original to 1e-6. The manifest records the tested compositor SHA256. Existing completed correction cases are skipped; use a fresh output folder after any code/settings change. These controls require visual inspection; numerical passes do not constitute artistic acceptance.
