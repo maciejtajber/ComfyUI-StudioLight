@@ -1731,8 +1731,8 @@
         "chroma_bleed": 0.45,
         "filmic_white_point": 3.5,
         "exposure_ev": 0.0,
-        "tone_mapping": "Luminance HDR",
-        "background_protection": 1.0,
+        "tone_mapping": "Legacy per-channel",
+        "background_protection": 0.0,
         "lighting_map_includes_specular": true
       },
       "color": "#244131",

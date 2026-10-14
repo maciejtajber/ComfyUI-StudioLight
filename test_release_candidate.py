@@ -67,6 +67,8 @@ class ReleaseTests(unittest.TestCase):
         nodes={n['id']:n for n in wf['nodes']}; edges={l[0]:l for l in wf['links']}
         compositor=nodes[17]
         self.assertEqual(compositor['widgets_values'][6:8], ['Legacy per-channel',0.0])
+        self.assertEqual(compositor['widgets_values_named']['tone_mapping'],'Legacy per-channel')
+        self.assertEqual(compositor['widgets_values_named']['background_protection'],0.0)
         for name,source,slot in [('depth_map',29,0),('specular_map',15,3)]:
             index=next(i for i,x in enumerate(compositor['inputs']) if x['name']==name)
             edge=edges[compositor['inputs'][index]['link']]
