@@ -13,7 +13,7 @@ All notable changes to **ComfyUI-StudioLight** are documented in this file.
 - Remove the post-tone-map +0.15 highlight boost from HDR workflow examples; retain display headroom before VAE encoding and add an end-to-end regression.
 
 - Add explicit scene-linear exposure and luminance-based HDR tone mapping with display gamut compression; preserve legacy defaults for existing workflows.
-- Add opt-in relative-depth background protection and enable it in the master example. Far backgrounds are protected artistically, not classified as sky or invalid geometry.
+- Add opt-in relative-depth background protection; keep it disabled in the release master. Far backgrounds are protected artistically, not classified as sky or invalid geometry.
 - Add eight CPU/CUDA correction regressions and safe float32 replay loading for fixed-draft visual comparisons.
 
 - Preserve scene-linear HDR lighting and specular radiance until compositing.

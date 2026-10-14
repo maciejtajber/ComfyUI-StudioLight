@@ -1,6 +1,6 @@
 # RTX 3090 release validation: sanitizer, HDR and batches
 
-This is an **unreleased candidate**. The original harness instructions are preserved below; completed 2026-10-14 checks are recorded in the appended result section. Final operator visual sign-off remains pending. Production registration stays at four nodes. Shader outputs now retain nonnegative float32 radiance above 1; display PNG previews can clip this data. PhotometricComposite remains responsible for modulation, shoulder compression and display encoding. Neither chroma_bleed nor specular_kick restores radiance lost upstream.
+This is an **unreleased candidate**. The original harness instructions are preserved below; completed 2026-10-14 checks are recorded in the appended result section. Maciej accepted the final exposure-confirmation result visually on 2026-10-14. Production registration stays at four nodes. Shader outputs now retain nonnegative float32 radiance above 1; display PNG previews can clip this data. PhotometricComposite remains responsible for modulation, shoulder compression and display encoding. Neither chroma_bleed nor specular_kick restores radiance lost upstream.
 
 ## Pod prerequisites
 
@@ -111,7 +111,7 @@ The shipped master completed successfully. An exact-input replay of the close 32
 
 A single -3.75 EV confirmation kept the same draft, depth, normals and raw diffuse/specular lighting exactly. Composite and final pixels with a channel >=0.99 fell to zero. The final maximum was 0.93164. This exposure was computed to keep the measured maximum below the legacy shoulder threshold; it is specific to this test and is not the master default. Warm Kelvin output remains intentional.
 
-The default master uses legacy tone mapping and background protection off. Other exposure/light combinations can deliberately produce near-white highlights. The renderer is approximate and intensity is a normalized reference gain. These checks do not guarantee physically complete simulation, all workflow combinations, or all diffusion color behavior. Final visual acceptance remains the operator’s decision.
+The default master uses legacy tone mapping and background protection off. Other exposure/light combinations can deliberately produce near-white highlights. The renderer is approximate and intensity is a normalized reference gain. These checks do not guarantee physically complete simulation, all workflow combinations, or all diffusion color behavior. Maciej accepted this final result visually on 2026-10-14. Acceptance covers the demonstrated result and does not guarantee every possible light, prompt, or material.
 
 Fresh-pod geometry setup must include timm for DSINE, in addition to the preprocessor package’s requirements. Preserve the host CUDA PyTorch build during dependency installation.
 
