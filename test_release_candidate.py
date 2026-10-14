@@ -62,6 +62,16 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'batch'): comp.composite(base[:1],torch.ones_like(base),specular_map=wrong)
         self.assertEqual(comp.composite(base,torch.ones(1,4,4,3,device=self.device))[0].shape,base.shape)
 
+    def test_master_compositor_defaults_and_optional_connections(self):
+        wf=json.loads((Path(__file__).parent/'workflows/StudioLight_Master.json').read_text())
+        nodes={n['id']:n for n in wf['nodes']}; edges={l[0]:l for l in wf['links']}
+        compositor=nodes[17]
+        self.assertEqual(compositor['widgets_values'][6:8], ['Legacy per-channel',0.0])
+        for name,source,slot in [('depth_map',29,0),('specular_map',15,3)]:
+            index=next(i for i,x in enumerate(compositor['inputs']) if x['name']==name)
+            edge=edges[compositor['inputs'][index]['link']]
+            self.assertEqual(edge[1:5],[source,slot,17,index])
+
     def test_master_graph_routes_both_sanitizer_outputs(self):
         wf=json.loads((Path(__file__).parent/'workflows/StudioLight_Master.json').read_text())
         nodes={n['id']:n for n in wf['nodes']}

@@ -4,6 +4,12 @@ All notable changes to **ComfyUI-StudioLight** are documented in this file.
 
 ## [Unreleased]
 
+- Correct perspective reflection direction, exported cavity attenuation and specular component accounting; remove artificial inverse-square attenuation caps.
+- Share the scene/probe diffuse integrator and encode the 18% grey reference correctly.
+- Keep the master at legacy tone mapping with background protection disabled; document optional controls and numerical versus visual verification scope.
+- Add analytical transport regressions and explicit master depth/specular connection checks.
+
+
 - Remove the post-tone-map +0.15 highlight boost from HDR workflow examples; retain display headroom before VAE encoding and add an end-to-end regression.
 
 - Add explicit scene-linear exposure and luminance-based HDR tone mapping with display gamut compression; preserve legacy defaults for existing workflows.

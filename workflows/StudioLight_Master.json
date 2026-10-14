@@ -1720,8 +1720,8 @@
         0.45,
         3.5,
         0.0,
-        "Luminance HDR",
-        1.0,
+        "Legacy per-channel",
+        0.0,
         true
       ],
       "widgets_values_named": {

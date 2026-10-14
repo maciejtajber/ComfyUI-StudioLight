@@ -21,3 +21,13 @@ Homepage = "https://github.com/maciejtajber/ComfyUI-StudioLight"
 [tool.comfy]
 PublisherId = "maciejtajber"
 DisplayName = "ComfyUI-StudioLight"
+
+[tool.setuptools]
+packages = ["comfyui_studiolight", "comfyui_studiolight.nodes"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+comfyui_studiolight = "."
+
+[tool.setuptools.package-data]
+comfyui_studiolight = ["web/*.js", "presets/*.json", "workflows/*.json", "docs/*.md"]
