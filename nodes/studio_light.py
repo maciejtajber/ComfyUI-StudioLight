@@ -209,9 +209,9 @@ class StudioLightRig:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "IMAGE", "STRING", "IMAGE")
-    RETURN_NAMES = ("relighting_map", "probe_preview", "lighting_prompt", "specular_pass")
-    FUNCTION = "execute_rig"
+    RETURN_TYPES = ("IMAGE", "IMAGE", "STRING", "IMAGE", "STUDIOLIGHT_TELEMETRY")
+    RETURN_NAMES = ("relighting_map", "probe_preview", "lighting_prompt", "specular_pass", "telemetry")
+    FUNCTION = "execute_rig_with_telemetry"
     CATEGORY = "StudioLight/Rig"
     DESCRIPTION = (
         "ComfyUI-StudioLight: Professional Photographic 3-Point Studio Rig.\n"
@@ -220,6 +220,11 @@ class StudioLightRig:
         "• lighting_prompt: Concise, high-signal photographic tokens for Flux/SDXL.\n"
         "• specular_pass: isolated Blinn-Phong specular lobes (feed StudioPhotometricComposite.specular_map)."
     )
+
+    def execute_rig_with_telemetry(self, **kwargs):
+        """ComfyUI entrypoint; execute_rig keeps its four-output Python API."""
+        result = self.execute_rig(**kwargs)
+        return (*result, getattr(result[0], "_studiolight_telemetry", {}))
 
     def execute_rig(
         self,
@@ -348,6 +353,9 @@ class StudioLightRig:
         )
 
         specular_pass = torch.clamp(spec_pass.float(), min=0.0)
+        if hasattr(relighting_map, "_studiolight_telemetry") and isinstance(relighting_map._studiolight_telemetry, dict):
+            relighting_map._studiolight_telemetry["lights"] = [key_params, fill_params, rim_params]
+            relighting_map._studiolight_telemetry["camera_fov_deg"] = float(vertical_fov_deg)
         return (relighting_map, probe_preview, lighting_prompt, specular_pass)
 
 

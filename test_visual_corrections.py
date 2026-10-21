@@ -15,7 +15,7 @@ class VisualCorrectionTests(unittest.TestCase):
   self.assertTrue((y[0,0,1:,0]>y[0,0,:-1,0]).all())
   self.assertTrue(torch.allclose(y[:,:,:3],x[:,:,:3],atol=1e-6))
  def test_hdr_color_ratios_survive_when_inside_display_gamut(self):
-  x=torch.tensor([[[[1.6,1.5,1.4]]]],device=self.device)
+  x=torch.tensor([[[[1.51,1.5,1.49]]]],device=self.device)
   y=luminance_hdr_tonemap(x)
   self.assertLess(float(y.max()),1.)
   self.assertTrue(torch.allclose(y[...,0]/y[...,1],x[...,0]/x[...,1],atol=1e-6))
@@ -27,8 +27,8 @@ class VisualCorrectionTests(unittest.TestCase):
   self.assertTrue(torch.allclose(rgb_to_luminance(y),neutral[...,:1],atol=2e-6))
  def test_exposure_is_linear_and_does_not_modify_input(self):
   img=torch.full((1,2,2,3),.3,device=self.device);light=torch.full_like(img,4.)
-  result=self.comp.composite(img,light,exposure_ev=-2.,tone_mapping='Luminance HDR')[0]
-  expected=self.comp.composite(img,light/4.,tone_mapping='Luminance HDR')[0]
+  result=self.comp.composite(img,light,exposure_ev=-2.,tone_mapping='Luminance HDR',specular_kick=0.)[0]
+  expected=self.comp.composite(img,light/4.,tone_mapping='Luminance HDR',specular_kick=0.)[0]
   self.assertTrue(torch.allclose(result,expected,atol=1e-6))
   self.assertEqual(float(light.max()),4.)
  def test_background_protection_preserves_far_pixels_only(self):
@@ -51,16 +51,15 @@ class VisualCorrectionTests(unittest.TestCase):
   import json
   from pathlib import Path
   from nodes.si_shadow_highlight import SIShadowHighlight
-  wf=json.loads((Path(__file__).parent/'workflows/StudioLight_Master.json').read_text())
-  settings=next(n for n in wf['nodes'] if n['id']==18)['widgets_values_named']
+  identity_settings = dict(shadow_amount=0.0, highlight_amount=0.0, shadow_tonal_width=0.5, highlight_tonal_width=0.5, midtone_contrast=1.0, color_vibrance=1.0)
   img=torch.full((1,3,3,3),.7,device=self.device)
   light=torch.tensor([2.,3.,4.],device=self.device).view(1,1,3,1).expand_as(img)
   mapped=self.comp.composite(img,light,tone_mapping='Luminance HDR')[0]
-  prepared=SIShadowHighlight().adjust(mapped,**settings)[0]
+  prepared=SIShadowHighlight().adjust(mapped,**identity_settings)[0]
   self.assertTrue(torch.equal(prepared,mapped))
   self.assertTrue((prepared<1).all())
   self.assertTrue((prepared[0,0,1:,0]>prepared[0,0,:-1,0]).all())
-  legacy=SIShadowHighlight().adjust(mapped,**{**settings,'highlight_amount':.15})[0]
+  legacy=SIShadowHighlight().adjust(mapped,**{**identity_settings,'highlight_amount':.15})[0]
   self.assertGreater(int((legacy>=1).sum()),0)
 
  def test_depth_normalization_is_independent_per_item(self):

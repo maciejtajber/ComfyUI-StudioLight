@@ -66,10 +66,17 @@ class ReleaseTests(unittest.TestCase):
         wf=json.loads((Path(__file__).parent/'workflows/StudioLight_Master.json').read_text())
         nodes={n['id']:n for n in wf['nodes']}; edges={l[0]:l for l in wf['links']}
         compositor=nodes[17]
-        self.assertEqual(compositor['widgets_values'][6:8], ['Legacy per-channel',0.0])
-        self.assertEqual(compositor['widgets_values_named']['tone_mapping'],'Legacy per-channel')
-        self.assertEqual(compositor['widgets_values_named']['background_protection'],0.0)
-        for name,source,slot in [('depth_map',29,0),('specular_map',15,3)]:
+        schema = StudioPhotometricComposite.INPUT_TYPES()
+        widgets = {k: v for group in schema.values() for k, v in group.items()
+                   if isinstance(v[0], list) or v[0] in ('FLOAT', 'INT', 'BOOLEAN')}
+        self.assertEqual(len(compositor['widgets_values']), len(widgets))
+        self.assertEqual(dict(zip(widgets, compositor['widgets_values'])), compositor['widgets_values_named'])
+        self.assertEqual(compositor['widgets_values_named']['filmic_white_point'], 3.5)
+        self.assertEqual(compositor['widgets_values_named']['wall_shadow_density'], 0.65)
+        self.assertEqual(compositor['widgets_values_named']['room_bounce_strength'], 0.0)
+        self.assertEqual(nodes[11]['widgets_values_named']['end_at_step'],10)
+        self.assertEqual(nodes[25]['widgets_values_named']['denoise'],0.55)
+        for name,source,slot in [('depth_map',29,0),('specular_map',15,3),('telemetry',15,4)]:
             index=next(i for i,x in enumerate(compositor['inputs']) if x['name']==name)
             edge=edges[compositor['inputs'][index]['link']]
             self.assertEqual(edge[1:5],[source,slot,17,index])
@@ -89,8 +96,8 @@ class ReleaseTests(unittest.TestCase):
             self.assertIn(nodes[dst]['inputs'][ds]['type'],(kind,'*'))
         master=nodes[6]['widgets_values'][0]
         draft,final=StudioPromptSanitizer().sanitize(master,nodes[7]['widgets_values'][0])
-        self.assertNotIn('glossy',draft.lower())
-        self.assertNotIn('patent',draft.lower())
-        self.assertEqual(final,master.strip())
+        # Bug 5 fix: Material nouns (glossy, patent leather, liquid chrome) must pass through untouched
+        self.assertIn('patent', draft.lower())
+        self.assertEqual(final, master.strip())
 
 if __name__=='__main__': unittest.main()

@@ -221,7 +221,7 @@ function cleanObsoleteSlots(node) {
 
     const widgetNames = (node.widgets || []).map((w) => w.name);
     const VALID_INPUTS = new Set(["normals_optional", "depth_optional", ...widgetNames]);
-    const VALID_OUTPUTS = new Set(["relighting_map", "probe_preview", "lighting_prompt", "specular_pass"]);
+    const VALID_OUTPUTS = new Set(["relighting_map", "probe_preview", "lighting_prompt", "specular_pass", "telemetry", "shared_rig"]);
     const OBSOLETE_WIDGETS = new Set(["start_step", "end_step", "conditioning_strength", "weight_type"]);
 
     let changed = false;
@@ -280,7 +280,7 @@ app.registerExtension({
     async setup() {
         if (app.graph && app.graph._nodes) {
             for (const n of app.graph._nodes) {
-                if (n.comfyClass === "StudioLightRig" || n.type === "StudioLightRig") {
+                if (["StudioLightRig", "StudioLightConsole"].includes(n.comfyClass || n.type)) {
                     cleanObsoleteSlots(n);
                     hookNodePresets(n);
                 }
@@ -289,14 +289,14 @@ app.registerExtension({
     },
 
     nodeCreated(node) {
-        if (node.comfyClass === "StudioLightRig" || node.type === "StudioLightRig") {
+        if (["StudioLightRig", "StudioLightConsole"].includes(node.comfyClass || node.type)) {
             cleanObsoleteSlots(node);
             hookNodePresets(node);
         }
     },
 
     loadedGraphNode(node) {
-        if (node.comfyClass === "StudioLightRig" || node.type === "StudioLightRig") {
+        if (["StudioLightRig", "StudioLightConsole"].includes(node.comfyClass || node.type)) {
             cleanObsoleteSlots(node);
             hookNodePresets(node);
         }

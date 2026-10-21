@@ -65,3 +65,18 @@ class StudioLightTestLoad:
             return (torch.from_numpy(a.astype(np.float32,copy=True)),)
 
 NODE_CLASS_MAPPINGS['StudioLightTestLoad']=StudioLightTestLoad
+
+
+class StudioLightTestClampTelemetry:
+    """Clamp separated HDR gains too, so telemetry cannot bypass the experiment."""
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'telemetry': ('STUDIOLIGHT_TELEMETRY',)}}
+    RETURN_TYPES = ('STUDIOLIGHT_TELEMETRY',)
+    FUNCTION = 'clamp'
+    CATEGORY = '_StudioLightReleaseTests'
+    def clamp(self, telemetry):
+        return ({key: value.clamp(0, 1) if key in ('direct_diffuse', 'direct_specular') else value
+                 for key, value in telemetry.items()},)
+
+NODE_CLASS_MAPPINGS['StudioLightTestClampTelemetry'] = StudioLightTestClampTelemetry

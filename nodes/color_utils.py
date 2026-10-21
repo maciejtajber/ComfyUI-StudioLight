@@ -66,9 +66,9 @@ def kelvin_to_mood(kelvin: float) -> str:
     elif k < 3400:
         return "warm tungsten"
     elif k < 4500:
-        return "warm studio halogen"
+        return "warm golden halogen"
     elif k < 5800:
-        return "neutral daylight strobe"
+        return "clean neutral daylight"
     elif k < 7000:
         return "cool overcast daylight"
     elif k < 9000:
@@ -79,7 +79,7 @@ def kelvin_to_mood(kelvin: float) -> str:
 
 MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
     "Octabox (Soft)": {
-        "token": "soft diffused octabox light, gentle shadow falloff",
+        "token": "wide-aperture soft diffused illumination, gentle shadow falloff",
         "geometry": "octagon",
         "radius_m": 0.70,          # 140 cm diameter
         "aspect_ratio": 1.0,
@@ -92,7 +92,7 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "falloff_exponent": 1.0,
     },
     "Beauty Dish (Silver)": {
-        "token": "punchy beauty dish lighting, crisp round catchlights",
+        "token": "punchy semi-specular directional light, crisp round catchlights",
         "geometry": "beauty_dish", # Parabolic dish with center deflector disk
         "radius_m": 0.275,         # 55 cm diameter
         "deflector_ratio": 0.36,   # Central deflector disc radius ratio
@@ -107,7 +107,7 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "falloff_exponent": 1.4,
     },
     "Fresnel Spotlight": {
-        "token": "hard optical fresnel beam, high-contrast chiaroscuro shadows",
+        "token": "collimated hard optical beam, high-contrast directional shadows",
         "geometry": "circle",
         "radius_m": 0.15,          # 30 cm optical lens
         "aspect_ratio": 1.0,
@@ -120,7 +120,7 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "falloff_exponent": 2.0,
     },
     "Hard Snoot": {
-        "token": "tight snoot spotlight, dramatic isolation pool of light",
+        "token": "narrow-beam optical spotlight, dramatic isolation pool of light",
         "geometry": "circle",
         "radius_m": 0.05,          # 10 cm pin-spot aperture
         "aspect_ratio": 1.0,
@@ -133,7 +133,7 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "falloff_exponent": 2.8,
     },
     "Direct On-Camera Flash": {
-        "token": "raw direct on-camera flash, hard snapshot micro-shadows, glossy specularity",
+        "token": "crisp frontal point-source illumination, sharp micro-shadows, glossy specularity",
         "geometry": "rectangle",
         "width_m": 0.08,           # 8 cm × 5 cm compact strobe head
         "height_m": 0.05,
@@ -147,7 +147,7 @@ MODIFIER_PRESETS: Dict[str, Dict[str, Any]] = {
         "falloff_exponent": 1.8,
     },
     "Stripbox": {
-        "token": "narrow stripbox kicker, razor edge rim separation",
+        "token": "narrow linear grazing illumination, razor edge rim separation",
         "geometry": "rectangle",
         "width_m": 0.30,           # 30 cm × 120 cm (1:4 ratio)
         "height_m": 1.20,

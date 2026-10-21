@@ -31,7 +31,7 @@ class TransportMathTests(unittest.TestCase):
   self.assertTrue(torch.allclose(combined,separate,atol=1e-7,rtol=0))
  def test_specular_disabled_does_not_leave_specular_in_diffuse_product(self):
   base=torch.full((1,1,1,3),.2,device=self.device);diff=torch.full_like(base,.2);spec=torch.full_like(base,.1)
-  actual=srgb_to_linear(StudioPhotometricComposite().composite(base,diff+spec,specular_map=spec,specular_kick=0.)[0])
+  actual=srgb_to_linear(StudioPhotometricComposite().composite(base,diff+spec,specular_map=spec,specular_kick=0.,lighting_strength=1.)[0])
   expected=srgb_to_linear(base)*diff
   self.assertTrue(torch.allclose(actual,expected,atol=1e-7,rtol=0))
  def test_point_fallback_inverse_square_over_full_supported_near_range(self):

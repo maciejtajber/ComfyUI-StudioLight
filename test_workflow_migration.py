@@ -36,7 +36,7 @@ class MigrationTests(unittest.TestCase):
         self.assertIsNone(migrate_values(self.legacy[:21])[0])
 
     def test_api_accepts_all_current_outputs(self):
-        for slot in range(4):
+        for slot in range(5):
             graph = {'1': {'class_type': 'StudioLightRig', 'inputs': dict(zip(WIDGETS, self.current))},
                      '2': {'class_type': 'StudioPhotometricComposite', 'inputs': {'specular_map': ['1', slot]}}}
             before = copy.deepcopy(graph)
@@ -44,7 +44,7 @@ class MigrationTests(unittest.TestCase):
             self.assertEqual(graph, before)
 
     def test_api_refuses_invalid_output_without_mutation(self):
-        for slot in (-1, 4, 99, '3', True):
+        for slot in (-1, 5, 99, '3', True):
             graph = {'1': {'class_type': 'StudioLightRig', 'inputs': {}},
                      '2': {'class_type': 'StudioPhotometricComposite', 'inputs': {'specular_map': ['1', slot]}}}
             before = copy.deepcopy(graph)

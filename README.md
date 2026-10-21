@@ -429,7 +429,7 @@ StudioLight implements a **physically motivated, geometrically sampled area-emit
   <tbody>
     <tr>
       <td align="left"><b><code>StudioLightRig</code></b><br><sub>3-Point Lighting Console</sub></td>
-      <td align="left">Master photographic lighting console with 3D camera-space C-stand coordinates (azimuth, elevation, distance in meters), <b>3-Zone 3D Light Pointer (<code>Upper</code> / <code>Center</code> / <code>Lower</code>)</b> with curvature-guided face auto-aim, depth relief compression (<code>depth_relief_scale</code>), physical modifier apertures (Octabox, Stripbox, Beauty Dish, Fresnel, Snoot, Flash), blackbody Kelvin temperature (2000K–10000K), and 3D shadow raymarching. Outputs the combined diffuse/specular relighting map, isolated specular pass, dual-sphere VFX probe + live Aim Target Radar HUD, and synchronized lighting prompt (renders an internal <code>1024×1024</code> 3D calibration ellipsoid at <code>Z = −2.0m</code> when <code>normals_optional</code> is unconnected). Multi-image batches (<code>B &gt; 1</code>) normalize depth quantiles and resolve 3D auto-aim <b>independently per batch item</b> (matching solo rendering within numerical tolerance on the same device/dtype and bounding transient shader allocations to one item at a time).</td>
+      <td align="left">Master photographic lighting console with 3D camera-space C-stand coordinates (azimuth, elevation, distance in meters), <b>3-Zone 3D Light Pointer (<code>Upper</code> / <code>Center</code> / <code>Lower</code>)</b> with curvature-guided face auto-aim, depth relief compression (<code>depth_relief_scale</code>), physical modifier apertures (Octabox, Stripbox, Beauty Dish, Fresnel, Snoot, Flash), blackbody Kelvin temperature (2000K–10000K), and 3D shadow raymarching. Outputs the diffuse relighting map, isolated specular pass, dual-sphere VFX probe + live Aim Target Radar HUD, and synchronized lighting prompt (renders an internal <code>1024×1024</code> 3D calibration ellipsoid at <code>Z = −2.0m</code> when <code>normals_optional</code> is unconnected). Multi-image batches (<code>B &gt; 1</code>) normalize depth quantiles and resolve 3D auto-aim <b>independently per batch item</b> (matching solo rendering within numerical tolerance on the same device/dtype and bounding transient shader allocations to one item at a time).</td>
     </tr>
     <tr></tr>
     <tr>
@@ -577,33 +577,7 @@ python test_studiolight.py
 
 * **Code & Shaders:** MIT License. Created by [Maciej Tajber](https://github.com/maciejtajber) // **METAMATERIAL** Applied VFX Systems.
 
-### HDR guidance and release validation
 
-`StudioLightRig.relighting_map` and `specular_pass` retain nonnegative float32 scene-linear values above 1.0. They are guidance fields, not display-ready sRGB images: PreviewImage/SaveImage may clip them. `StudioPhotometricComposite` modulates the base in linear space, then applies its shoulder and encodes display sRGB. `chroma_bleed` controls color transfer; `specular_kick` adds artistic catchlights. Neither restores values clipped earlier. Existing renders may change with this HDR correction; compare locked seeds before release.
+### Photometric compositor: telemetry, optional room fill and diagnostics
 
-The master workflow uses `StudioPromptSanitizer` for Pass 1 while retaining the full master prompt for Pass 2. Batches must match or use a singleton map for broadcasting; incompatible batch counts raise an explicit error.
-
-See [RTX 3090 release test plan](docs/RELEASE_VALIDATION.md).
-
-
-### Display exposure and distant backgrounds
-
-The master example now selects `Luminance HDR` tone mapping. It compresses luminance before reducing out-of-gamut chroma, instead of independently flattening RGB channels. `exposure_ev` adjusts scene-linear energy before this display transform: -1 EV halves it and -2 EV quarters it. A very close, strong light can still overexpose the image; lower exposure rather than clipping the raw lighting field. The 0.8 m / intensity 3 stress test uses -1 and -2 EV comparisons; these are explicit artistic settings, not automatic image normalization.
-
-`background_protection` blends the original draft back into the farthest part of a connected, near-is-white relative `depth_map`. At strength 1, the farthest normalized 5% is preserved, with a smooth transition ending at 15%. This can prevent sky regions with unreliable inferred geometry from receiving artificial light/shadows. It also protects distant walls in that depth range: it is **not semantic sky detection**. Set it to 0 for a fully relit studio backdrop. Constant-depth plates remain fully relit. The master example enables protection; existing workflows keep the defaults of 0 protection, 0 EV, and `Legacy per-channel` tone mapping.
-
-The companion example `workflows/StudioLight_Gentle_Editorial.json` uses a 1.8 m soft Octabox key, gentle fill and restrained catchlights. It keeps the same draft/refinement sampling as the master. The 2026-10-13 visual review preferred this gentler transformation and the low-light Noir example; bright close-light stress variants remained rejected.
-
-The HDR examples leave `SIShadowHighlight.highlight_amount` at 0. Positive values brighten the already tone-mapped display image and can clip color channels before VAE encoding. In the original close-light stress cases, the +0.15 boost raised pixels touching the display ceiling from roughly 0% to 27–35%; this is separate from the intentional 3200K warmth. Keep the boost neutral when evaluating HDR highlight detail.
-
-### Accepted reference workflows
-
-The operator selected four references on 2026-10-13: neutral close-light on two seeds, low-light Noir and Beauty. The exact configurations are saved as `StudioLight_Accepted_Neutral_Close.json`, `StudioLight_Accepted_Noir.json` and `StudioLight_Accepted_Beauty.json` under `workflows/`. Neutral close-light uses 5500K, luminance-matched key intensity 1.950249, distance 0.8 m and -2 EV. Noir/Beauty retain their respective presets at 0 EV. All use neutral darkroom highlight gain; sampling defaults remain unchanged. These are accepted references, not a guarantee for every light setting.
-
-### Release candidate verification and optional controls
-
-The master uses `Legacy per-channel` tone mapping and `background_protection = 0` (disabled). `Luminance HDR` is an optional display transform that preserves RGB ratios while compressing brightness. Background protection is an artistic blend toward the original draft in distant relative-depth regions; it requires a connected depth map and is not a lighting-physics correction. Neither option is required for normal use.
-
-Intensity is a normalized reference gain, not watts or lux. Estimated depth, emitter beams, specular lobes and cavity attenuation remain approximations. See [numerical corrections and limitations](docs/PHYSICS_AUDIT.md). The rig relighting map contains combined diffuse and specular lighting. With its isolated specular pass connected, the compositor separates that contribution to avoid counting it twice.
-
-CPU verification runs `python test_studiolight.py` and `python -m unittest test_workflow_migration test_release_candidate test_pod_harness test_visual_corrections test_transport_math -v`. These tests verify numerical and workflow contracts; they do not certify visual quality. The master and exact-input stress replay completed on runtime candidate `6502f9f`; one exposure confirmation removed near-white highlights in that stress case. See [release validation](docs/RELEASE_VALIDATION.md) for evidence and scope. Maciej accepted the final exposure-confirmation result visually on 2026-10-14.
+The rig now exposes a typed telemetry output (slot 4), and the compositor adds a labelled diagnostic contact sheet (slot 1). Existing rig output indices and the four-value Python `execute_rig` API remain intact. Separated diffuse/specular/ambient gains prevent specular double counting and preserve independent ambient when strobe strength is zero. Optional room fill and masked shadow reconstruction default off. Both supplied workflows include the new connections. See [Photometric contract and controls](docs/PHOTOMETRIC_CONTRACT.md) for assumptions, colour modes, compatibility and validation.

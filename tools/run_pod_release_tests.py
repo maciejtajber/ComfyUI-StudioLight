@@ -102,6 +102,8 @@ def build_case(template,wf,row,session):
         g['81']={'class_type':'StudioLightTestClamp','inputs':{'image':['15',3]}}
         g['17']['inputs']['lighting_map']=['80',0]
         g['17']['inputs']['specular_map']=['81',0]
+        g['82']={'class_type':'StudioLightTestClampTelemetry','inputs':{'telemetry':['15',4]}}
+        g['17']['inputs']['telemetry']=['82',0]
     prefix=f'StudioLightRelease/{session}/{row["id"]}'
     g['27']['inputs']['filename_prefix']=prefix+'/final'
     captures={'draft':['12',0],'depth':['29',0],'normals':['14',0],
@@ -142,10 +144,10 @@ def main():
     print('Running local CUDA numerical gates...',flush=True)
     env={**os.environ,'STUDIOLIGHT_TEST_DEVICE':'cuda'}
     with (a.out/'numerical-tests.log').open('w') as log:
-        subprocess.run([sys.executable,'-m','unittest','test_workflow_migration','test_release_candidate','test_pod_harness','test_visual_corrections','test_transport_math','-v'],cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
+        subprocess.run([sys.executable,'-m','unittest','test_workflow_migration','test_release_candidate','test_pod_harness','test_visual_corrections','test_transport_math','test_softlight','test_photometric_contract','-v'],cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
         subprocess.run([sys.executable,'test_studiolight.py'],cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
     info=request(a.url,'/object_info')
-    for kind in ('StudioLightTestClamp','StudioLightTestCapture'):
+    for kind in ('StudioLightTestClamp','StudioLightTestCapture','StudioLightTestClampTelemetry'):
         if kind not in info: raise SystemExit('Test helpers not loaded. Run prepare_pod_release_tests.py before starting/restarting ComfyUI.')
     stats=request(a.url,'/system_stats')
     if not any('cuda' in str(d.get('type','')).lower() for d in stats.get('devices',[])):

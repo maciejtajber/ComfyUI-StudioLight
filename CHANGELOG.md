@@ -2,25 +2,6 @@
 
 All notable changes to **ComfyUI-StudioLight** are documented in this file.
 
-## [Unreleased]
-
-- Correct perspective reflection direction, exported cavity attenuation and specular component accounting; remove artificial inverse-square attenuation caps.
-- Share the scene/probe diffuse integrator and encode the 18% grey reference correctly.
-- Keep the master at legacy tone mapping with background protection disabled; document optional controls and numerical versus visual verification scope.
-- Add analytical transport regressions and explicit master depth/specular connection checks.
-
-
-- Remove the post-tone-map +0.15 highlight boost from HDR workflow examples; retain display headroom before VAE encoding and add an end-to-end regression.
-
-- Add explicit scene-linear exposure and luminance-based HDR tone mapping with display gamut compression; preserve legacy defaults for existing workflows.
-- Add opt-in relative-depth background protection; keep it disabled in the release master. Far backgrounds are protected artistically, not classified as sky or invalid geometry.
-- Add eight CPU/CUDA correction regressions and safe float32 replay loading for fixed-draft visual comparisons.
-
-- Preserve scene-linear HDR lighting and specular radiance until compositing.
-- Wire prompt sanitizer into the master workflow without changing sampler settings.
-- Reject incompatible geometry/compositor batches; retain matched and singleton broadcast behavior.
-- Add release regression checks and an automated CUDA/ComfyUI visual comparison harness.
-
 ## [1.0.0] — 2026-10-12
 
 ### Added
@@ -39,3 +20,13 @@ All notable changes to **ComfyUI-StudioLight** are documented in this file.
 - **Verification & Documentation Suite:**
   - 22-test mathematical, geometric, and workflow schema verification suite (`test_studiolight.py`; device-parity tests run where CUDA / Apple Silicon MPS is available, while GitHub Actions CI covers CPU).
   - Complete 2-stage production workflow (`workflows/StudioLight_Master.json`) and 4 technical architecture documents in `docs/`.
+
+
+## Unreleased — Photometric transport and diagnostics (2026-10-15)
+
+- Add explicit rig telemetry without moving existing output slots or changing the four-output Python rig API.
+- Separate direct diffuse, raw specular and ambient; make strobe-off background modulation consistent.
+- Add opt-in RGB room-fill heuristic, bounded user-masked material reconstruction, and low-signal chroma gate. No fabricated metric enclosure or automatic warm-skin bias.
+- Add labelled sRGB contact sheet, HDR luminance/gamut mapping, strict tensor/scalar validation and per-image batch handling.
+- Restore legacy exposure, background-protection and Soft Light controls; preserve haze, crevice correction and cyclorama safeguards.
+- Wire telemetry/depth/preview in shipped workflows; add photometric contract regression gates and prevent telemetry bypassing the HDR clamp experiment.

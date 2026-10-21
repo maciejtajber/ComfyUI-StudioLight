@@ -34,6 +34,7 @@ class HarnessTests(unittest.TestCase):
             self.assertEqual('8' in g,row['sanitizer'])
             self.assertEqual(g['17']['inputs']['lighting_map'],['15',0] if row['hdr'] else ['80',0])
             self.assertEqual(g['17']['inputs']['specular_map'],['15',3] if row['hdr'] else ['81',0])
+            self.assertEqual(g['17']['inputs']['telemetry'], ['15',4] if row['hdr'] else ['82',0])
             self.assertEqual(sum(n['class_type']=='StudioLightTestCapture' for n in g.values()),10)
 
     def test_zip_provenance_verifies_files_and_refuses_changes(self):
@@ -55,6 +56,9 @@ class HarnessTests(unittest.TestCase):
                 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
                 a=torch.tensor([[[[2.,3.,4.]]]])
                 module.StudioLightTestCapture().capture(a,'test/lighting')
+                clamped=module.StudioLightTestClampTelemetry().clamp({'direct_diffuse':a,'d_norm':a})[0]
+                self.assertEqual(float(clamped['direct_diffuse'].max()),1.)
+                self.assertTrue(torch.equal(clamped['d_norm'],a))
                 saved=np.load(Path(tmp)/'test/lighting.npz')['image']
                 self.assertEqual(float(saved.max()),4.)
                 replay=module.StudioLightTestLoad().load('test/lighting.npz')[0]

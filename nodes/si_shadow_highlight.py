@@ -40,6 +40,15 @@ class SIShadowHighlight:
                 "shadow_tonal_width": ("FLOAT", {"default": 0.5, "min": 0.1, "max": 2.0, "step": 0.05}),
                 "highlight_tonal_width": ("FLOAT", {"default": 0.5, "min": 0.1, "max": 2.0, "step": 0.05}),
                 "midtone_contrast": ("FLOAT", {"default": 1.0, "min": 0.2, "max": 3.0, "step": 0.05}),
+            },
+            "optional": {
+                "color_vibrance": ("FLOAT", {
+                    "default": 1.0,
+                    "min": 0.0,
+                    "max": 2.0,
+                    "step": 0.05,
+                    "tooltip": "Photographic vibrance boost. Lifts subtle colors (lipstick, skin undertones, eyes, fabric) while protecting saturated regions from clipping."
+                }),
             }
         }
     
@@ -49,11 +58,20 @@ class SIShadowHighlight:
     CATEGORY = "StudioLight/Photometric"
     DESCRIPTION = (
         "Image-space tonal sculptor & photometric preconditioning stage.\n"
-        "Features Hermite C^1 smoothstep tonal isolation (zero midtone bleed) "
-        "and bounded sigmoidal S-curve contrast before VAE encoding."
+        "Features Hermite C^1 smoothstep tonal isolation (zero midtone bleed), "
+        "bounded sigmoidal S-curve contrast, and photographic color vibrance before VAE encoding."
     )
 
-    def adjust(self, image, shadow_amount, highlight_amount, shadow_tonal_width, highlight_tonal_width, midtone_contrast):
+    def adjust(
+        self,
+        image,
+        shadow_amount,
+        highlight_amount,
+        shadow_tonal_width,
+        highlight_tonal_width,
+        midtone_contrast,
+        color_vibrance: float = 1.0,
+    ):
         img = image.clone()
         # Luminance L (Rec.709) for shadows, and peak channel intensity for highlights
         lum = 0.2126 * img[..., 0:1] + 0.7152 * img[..., 1:2] + 0.0722 * img[..., 2:3]
@@ -81,6 +99,22 @@ class SIShadowHighlight:
         # 4. Bounded sigmoidal S-curve contrast (no hard linear clipping)
         if abs(float(midtone_contrast) - 1.0) > 1e-4:
             img = bounded_s_curve(img, float(midtone_contrast))
+
+        # 5. Photographic Vibrance Boost (lifts muted colors, lipstick, skin tones while protecting saturated regions
+        #    and rolling off in deep shadow crevices L < 0.08 and near-white highlights mx > 0.92)
+        if abs(float(color_vibrance) - 1.0) > 1e-4:
+            lum_v = 0.2126 * img[..., 0:1] + 0.7152 * img[..., 1:2] + 0.0722 * img[..., 2:3]
+            mx = torch.max(img, dim=-1, keepdim=True)[0]
+            mn = torch.min(img, dim=-1, keepdim=True)[0]
+            sat = mx - mn
+            v = float(color_vibrance)
+            if v > 1.0:
+                tonal_guard = smoothstep(0.05, 0.16, lum_v) * (1.0 - smoothstep(0.90, 0.99, mx))
+                boost = (v - 1.0) * (1.0 - sat) * tonal_guard
+                scale = 1.0 + boost * 1.5
+            else:
+                scale = v
+            img = lum_v + (img - lum_v) * scale
 
         img = torch.clamp(img, 0.0, 1.0)
         return (img,)
