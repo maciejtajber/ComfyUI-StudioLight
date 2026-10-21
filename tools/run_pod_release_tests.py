@@ -89,6 +89,8 @@ def build_case(template,wf,row,session):
     if not row['sanitizer']:
         g['9']['inputs']['text']=n[6]['widgets_values'][0]+n[7]['widgets_values'][0]
         g['21']['inputs']['string_a']=n[6]['widgets_values'][0]
+        if '23' in g and isinstance(g['23']['inputs'].get('text'), list) and g['23']['inputs']['text'][0] == '8':
+            g['23']['inputs']['text']=n[6]['widgets_values'][0]
         g.pop('8',None)
     g['11']['inputs']['noise_seed']=row['seed']
     g['25']['inputs']['seed']=row['seed']

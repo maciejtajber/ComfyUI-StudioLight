@@ -303,30 +303,37 @@ def test_five_domain_prompt_battery():
 
     for category, prompt, exp_exposure, exp_kw in test_cases:
         detected = detect_photometric_exposure(prompt)
-        p1_log, p2 = sanitizer.sanitize(prompt, pass1_log_acquisition=True)
-        p1_leg, _ = sanitizer.sanitize(prompt, pass1_log_acquisition=False)
+        p1_v2, p2_v2 = sanitizer.sanitize(prompt, lighting_policy="RIG_OVERRIDE")
+        p1_log, p2_raw = sanitizer.sanitize(prompt, lighting_policy="VERBATIM_RAW", pass1_log_acquisition=True)
+        p1_leg, _ = sanitizer.sanitize(prompt, lighting_policy="VERBATIM_RAW", pass1_log_acquisition=False)
 
         assert detected == exp_exposure, f"Exposure mode mismatch on '{category}': got '{detected}', expected '{exp_exposure}'"
-        assert exp_kw in p1_log and exp_kw in p1_leg, f"Missing expected albedo '{exp_kw}' in Pass 1 for '{category}':\n  p1={p1_leg}"
-        assert "logarithmic sensor capture" in p1_log.lower(), f"Missing Log-C framing in '{category}'"
-        assert p2 == prompt, f"Pass 2 corrupted for '{category}'!"
+        assert exp_kw in p1_v2 and exp_kw in p1_log and exp_kw in p1_leg, f"Missing expected albedo '{exp_kw}' in Pass 1 for '{category}':\n  p1={p1_v2}"
+        assert "neutral diffuse reference capture" in p1_v2.lower(), f"Missing Neutral Reference Capture in v2 '{category}'"
+        assert "logarithmic sensor capture" in p1_log.lower(), f"Missing Log-C framing in legacy '{category}'"
+        assert p2_raw == prompt, f"Pass 2 corrupted for VERBATIM_RAW mode in '{category}'!"
+
+        # Assert RIG_OVERRIDE removes directional lighting directives from Pass 2
+        if "rim lighting" in prompt.lower():
+            assert "rim light" not in p2_v2.lower(), f"Prohibited rim lighting leaked into Pass 2 under RIG_OVERRIDE in '{category}'!"
 
         # Assert non-studio scenes NEVER receive studio paper / cyclorama
         if exp_exposure != "studio_explicit":
-            assert "studio" not in p1_log.lower() and "cyclorama" not in p1_log.lower(), (
-                f"Studio cyclorama leaked into non-studio prompt for '{category}':\n  p1={p1_log}"
+            assert "studio" not in p1_v2.lower() and "cyclorama" not in p1_v2.lower(), (
+                f"Studio cyclorama leaked into non-studio prompt for '{category}':\n  p1={p1_v2}"
             )
             assert "studio" not in p1_leg.lower() and "cyclorama" not in p1_leg.lower(), (
                 f"Studio cyclorama leaked into non-studio prompt for '{category}':\n  p1={p1_leg}"
             )
 
-        # Assert specular tokens sanitized in Legacy Pass 1 mode and preserved in Log-C mode
+        # Assert specular tokens sanitized in Legacy Pass 1 mode and preserved in v2 and Log-C mode
         for spec_token in ["glossy", "patent", "liquid chrome"]:
             if spec_token in prompt.lower():
                 assert spec_token not in p1_leg.lower(), f"Specular token '{spec_token}' leaked into Legacy Pass 1 for '{category}'!"
+                assert spec_token in p1_v2.lower(), f"Specular token '{spec_token}' dropped in v2 Pass 1 for '{category}'!"
                 assert spec_token in p1_log.lower(), f"Specular token '{spec_token}' dropped in Log-C Pass 1 for '{category}'!"
 
-        print(f"  ✓ [{category:26}] Exposure: {detected:15} | Albedo: '{exp_kw[:28]}...' | Log-C & Legacy verified.")
+        print(f"  ✓ [{category:26}] Exposure: {detected:15} | Albedo: '{exp_kw[:28]}...' | v2, Log-C & Legacy verified.")
 
     print("  ✓ GATE 7 CLEARED: Universal Photometric Neutralizer verified with zero backdrop leakage.")
 

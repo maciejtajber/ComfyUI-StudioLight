@@ -11,6 +11,14 @@ identity, clothing, specular materials, practical emitters, and environmental ti
 
 import re
 from typing import Tuple
+from .semantic_parser import (
+    parse_scene_description,
+    build_pass1_prompt_v2,
+    build_pass2_prompt_v2,
+    LightingPolicy,
+    PASS1_NEUTRAL_DIFFUSE_CAPTURE,
+    PASS2_MINIMAL_REFINEMENT,
+)
 
 
 # ==============================================================================
@@ -419,7 +427,7 @@ class StudioPromptSanitizer:
     """
     Decouples zero-photon darkness, harsh cast shadows, and directional flash traps
     between Pass 1 (Albedo Draft) and Pass 2 (Lit Synthesis) using the Universal
-    Semantic Chess Dictionary + Stage 2A Log-C Flat Capture framing.
+    Semantic Scene Parser + Lighting Policy Resolver (RIG_OVERRIDE vs HYBRID_PRACTICAL).
     """
 
     DEFAULT_ALBEDO_SUFFIX = "auto"
@@ -439,6 +447,17 @@ class StudioPromptSanitizer:
                 }),
             },
             "optional": {
+                "lighting_policy": (["RIG_OVERRIDE", "HYBRID_PRACTICAL", "VERBATIM_RAW"], {
+                    "default": "RIG_OVERRIDE",
+                }),
+                "capture_guidance": (["Neutral Diffuse Reference", "Balanced Studio Capture", "Preserve Environmental Tone", "Legacy Log-C"], {
+                    "default": "Neutral Diffuse Reference",
+                }),
+                "minimal_refinement_pass2": ("BOOLEAN", {
+                    "default": True,
+                    "label_on": "ON (Preserve Details)",
+                    "label_off": "OFF (Pure Scene)",
+                }),
                 "albedo_suffix": ("STRING", {
                     "multiline": True,
                     "default": "auto",
@@ -465,13 +484,41 @@ class StudioPromptSanitizer:
         master_prompt: str,
         albedo_suffix: str = DEFAULT_ALBEDO_SUFFIX,
         pass1_log_acquisition: bool = True,
+        lighting_policy: str = "RIG_OVERRIDE",
+        capture_guidance: str = "Neutral Diffuse Reference",
+        minimal_refinement_pass2: bool = True,
+        **kwargs,
     ) -> Tuple[str, str]:
-        pass1_prompt = sanitize_pass1_prompt_universal(
-            master_prompt,
-            albedo_suffix=albedo_suffix,
-            pass1_log_acquisition=pass1_log_acquisition,
+        if lighting_policy == "VERBATIM_RAW":
+            pass1_prompt = sanitize_pass1_prompt_universal(
+                master_prompt,
+                albedo_suffix=albedo_suffix,
+                pass1_log_acquisition=pass1_log_acquisition,
+            )
+            pass2_prompt = master_prompt.strip()
+            return (pass1_prompt, pass2_prompt)
+
+        # Semantic Parser v2 Pipeline
+        scene = parse_scene_description(master_prompt, lighting_policy=lighting_policy)
+
+        # Determine exposure mode for photometric suffixes
+        exposure_mode = detect_photometric_exposure(master_prompt)
+        mode_suffix = PHOTOMETRIC_SUFFIXES.get(exposure_mode, "")
+
+        # Pass 1 Albedo Prompt
+        pass1_prompt = build_pass1_prompt_v2(
+            scene,
+            capture_guidance=capture_guidance,
+            albedo_suffix=f"{mode_suffix}, {albedo_suffix}" if albedo_suffix != "auto" else mode_suffix,
         )
-        pass2_prompt = master_prompt.strip()
+
+        # Pass 2 Lit Prompt
+        pass2_prompt = build_pass2_prompt_v2(
+            scene,
+            lighting_policy=lighting_policy,
+            minimal_refinement=minimal_refinement_pass2,
+        )
+
         return (pass1_prompt, pass2_prompt)
 
 

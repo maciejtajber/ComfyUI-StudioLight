@@ -443,8 +443,8 @@ StudioLight implements a **physically motivated, geometrically sampled area-emit
     </tr>
     <tr></tr>
     <tr>
-      <td align="left"><b><code>StudioPromptSanitizer</code></b><br><sub>Pass 1 Albedo Decoupler</sub></td>
-      <td align="left">Prompt-splitting utility that strips explicit directional lighting and studio fixture phrases (<code>rim light</code>, <code>backlight</code>, <code>sunlight</code>, <code>key light</code>, <code>side light</code>, <code>spotlight</code>, <code>kicker light</code>, <code>hair light</code>, <code>chiaroscuro</code>, <code>rembrandt lighting</code>, <code>split lighting</code>, <code>volumetric rays</code>, and lighting-adjective + <code>lighting</code>/<code>shadows</code> clauses) alongside high-gloss specular tokens from the Pass 1 draft prompt while preserving non-lighting subject descriptions (e.g. <code>blue dress</code>, <code>amber jewelry</code>, <code>warm glow</code>) and routing the full unedited master prompt to Pass 2.</td>
+      <td align="left"><b><code>StudioPromptSanitizer</code></b><br><sub>Semantic Scene Parser & Lighting Policy Resolver (v2.0)</sub></td>
+      <td align="left">Deterministic semantic scene parser decomposing master prompts into structured data models. Eliminates prompt clashing using explicit policies: <b><code>RIG_OVERRIDE</code></b> (default; strips directional lighting from Pass 1 and Pass 2, allowing the 3D lit proxy latent to dictate 100% of spatial lighting with zero 80-word narrative hallucinations) and <b><code>HYBRID_PRACTICAL</code></b> (preserves in-scene emissive glow of candles, screens, and neon). Features zero content destruction (100% preservation of tears, wet skin, props, clothing, and materials) and Neutral Diffuse Reference Capture.</td>
     </tr>
   </tbody>
 </table>

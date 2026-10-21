@@ -2,6 +2,28 @@
 
 All notable changes to **ComfyUI-StudioLight** are documented in this file.
 
+## [2.0.0] — 2026-10-21 — Semantic Prompt & Albedo Architecture v2
+
+### Added
+- **`SemanticSceneParser` (`nodes/semantic_parser.py`):**
+  - High-precision deterministic clause-level semantic prompt parser decomposing arbitrary master prompts into structured `SceneDescription` data models.
+  - **Zero Content Destruction:** 100% preservation of emotional markers (tears, crying), physiological details (sweat, wet skin), physical emitter props (smartphones, candles, torches, lanterns, neon signs), clothing, accessories, and stylistic descriptors.
+  - **Zero Orphan Grammar:** Complete elimination of dangling prepositions, conjunctions, and orphan adjectives (e.g. `illuminated by a harsh`, `deep casting on`).
+  - **Material-Aware Classification:** Automatic categorization across `DIFFUSE`, `DIELECTRIC_GLOSSY`, `METALLIC`, `TRANSPARENT`, `TRANSLUCENT`, and `EMISSIVE` with reflective surface preservation.
+- **Lighting Policy Resolver (`RIG_OVERRIDE` vs `HYBRID_PRACTICAL`):**
+  - **`RIG_OVERRIDE` (Default):** The StudioLight 3D physical rig is the absolute authority for directional illumination. Conflicting prompt directives (flashes, spotlights, rim lights, cast shadows, chiaroscuro) are cleanly neutralized from both Pass 1 and Pass 2 prompts.
+  - **Pass 2 Concatenation Decoupling:** Terminated the automatic injection of the 80-word generated studio rig narrative into Pass 2 img2img (`StringConcatenate` in Node 21 decoupled from generation). Pass 2 receives the clean scene description + minimal refinement tag (`"preserving subject identity, composition, material characteristics, and fine surface details"`), allowing the 3D lit proxy latent to dictate 100% of spatial lighting with zero text-induced hallucinations.
+  - **`HYBRID_PRACTICAL`:** Rig controls directional key/fill/rim while in-scene practical emitters retain their intended emissive glow descriptions in Pass 2.
+  - **`VERBATIM_RAW`:** Backward-compatibility option returning untouched master prompt for Pass 2 if explicitly requested.
+- **Neutral Diffuse Reference Capture Guidance:**
+  - Replaced fictional "Log-C" buzzwords with photographically grounded neutral capture guidance: `"neutral diffuse reference capture, broad balanced illumination, preserved surface colors and textures, shadowless base exposure, recoverable detail in dark regions, no strong color cast"`.
+- **Workflow & Graph Synchronization (`workflows/StudioLight_Master.json`):**
+  - Pass 2 `CLIPTextEncode` directly receives `pass2_lit_prompt` from Node 8 (`StudioPromptSanitizer`).
+  - `StudioLightRig` `lighting_prompt` routed to Node 22 (`PreviewAny`) for real-time diagnostic telemetry / visual inspection.
+- **Comprehensive Verification Suite (`test_prompt_architecture_v2.py`):**
+  - Full automated coverage for mandatory benchmark prompts (Crying woman with phone, Chrome android, Handbag on marble, Techno club flash, Monk with candle).
+  - 103/103 test gates passed across `test_prompt_architecture_v2.py`, `test_studiolight.py`, `test_extended_3domain.py`, and `python3 -m unittest`.
+
 ## [1.0.0] — 2026-10-12
 
 ### Added

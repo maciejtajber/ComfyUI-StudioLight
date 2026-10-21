@@ -749,41 +749,49 @@ def test_prompt_sanitizer():
     )
     p1, p2 = sanitizer.sanitize(test_prompt)
 
-    # Pass 1 checks (Stage 2A Log-C Flat Acquisition: 100% material preservation)
+    # Pass 1 checks (Architecture v2: 100% material preservation + Neutral Diffuse Capture)
     assert "patent leather" in p1.lower(), "Patent leather must NOT be destroyed into smooth leather"
     assert "liquid chrome" in p1.lower(), "Liquid chrome must NOT be downgraded into matte brushed metal"
     for forbidden in ["rim light", "hard sunlight"]:
         assert forbidden not in p1.lower(), f"Forbidden lighting trigger '{forbidden}' leaked into Pass 1: {p1}"
-    assert "logarithmic sensor capture" in p1.lower(), "Stage 2A Log-C acquisition framing must be present"
-    assert "uniform even exposure" in p1.lower(), "Stage 2A Log-C suffix must request uniform even exposure"
+    assert "neutral diffuse reference capture" in p1.lower(), "Neutral diffuse reference capture guidance must be present"
     assert "cast shadows" not in p1.lower(), "Pass 1 must never contain T5-poisoning 'cast shadows' token"
 
+    # Pass 2 checks under RIG_OVERRIDE: Conflicting directional lights must NOT reappear
+    assert "patent leather" in p2.lower()
+    assert "liquid chrome" in p2.lower()
+    for forbidden in ["rim light", "hard sunlight"]:
+        assert forbidden not in p2.lower(), f"Forbidden lighting trigger '{forbidden}' leaked into Pass 2 under RIG_OVERRIDE: {p2}"
+    assert "preserving subject identity" in p2.lower(), "Pass 2 minimal refinement tag must be present"
+
+    # Backward compatibility mode test (lighting_policy="VERBATIM_RAW")
+    p1_raw, p2_raw = sanitizer.sanitize(test_prompt, lighting_policy="VERBATIM_RAW", pass1_log_acquisition=True)
+    assert p2_raw == test_prompt, "VERBATIM_RAW mode must preserve 100% of user prompt verbatim"
+    assert "logarithmic sensor capture" in p1_raw.lower()
+
     # Legacy mode test (pass1_log_acquisition=False)
-    p1_leg, _ = sanitizer.sanitize(test_prompt, pass1_log_acquisition=False)
+    p1_leg, _ = sanitizer.sanitize(test_prompt, lighting_policy="VERBATIM_RAW", pass1_log_acquisition=False)
     assert "smooth leather" in p1_leg, "Legacy mode converts patent to smooth leather"
     assert "matte brushed metal" in p1_leg, "Legacy mode converts chrome to matte brushed metal"
 
-    # Pass 2 checks
-    assert p2 == test_prompt, "Pass 2 must preserve 100% of user prompt verbatim"
-
     # Non-Studio Semantic Isolation: Arbitrary scenes must NEVER receive studio backdrops
-    p1_cockpit_log, _ = sanitizer.sanitize("a pilot sitting in the cockpit of an airplane at cruising altitude")
+    p1_cockpit_log, _ = sanitizer.sanitize("a pilot sitting in the cockpit of an airplane at cruising altitude", lighting_policy="VERBATIM_RAW")
     assert "studio" not in p1_cockpit_log.lower() and "cyclorama" not in p1_cockpit_log.lower()
     assert "logarithmic sensor capture" in p1_cockpit_log
 
-    p1_cockpit, _ = sanitizer.sanitize("a pilot sitting in the cockpit of an airplane at cruising altitude", pass1_log_acquisition=False)
+    p1_cockpit, _ = sanitizer.sanitize("a pilot sitting in the cockpit of an airplane at cruising altitude", lighting_policy="VERBATIM_RAW", pass1_log_acquisition=False)
     assert "studio" not in p1_cockpit.lower() and "cyclorama" not in p1_cockpit.lower(), f"Studio backdrop leaked into cockpit: {p1_cockpit}"
     assert "diffuse even ambient illumination" in p1_cockpit
 
-    p1_garage, _ = sanitizer.sanitize("a mechanic repairing a vintage sports car inside a dusty garage", pass1_log_acquisition=False)
+    p1_garage, _ = sanitizer.sanitize("a mechanic repairing a vintage sports car inside a dusty garage", lighting_policy="VERBATIM_RAW", pass1_log_acquisition=False)
     assert "studio" not in p1_garage.lower() and "cyclorama" not in p1_garage.lower(), f"Studio backdrop leaked into garage: {p1_garage}"
     assert "diffuse even ambient illumination" in p1_garage
 
-    p1_club, _ = sanitizer.sanitize("a dancer in an underground techno club with neon lighting", pass1_log_acquisition=False)
+    p1_club, _ = sanitizer.sanitize("a dancer in an underground techno club with neon lighting", lighting_policy="VERBATIM_RAW", pass1_log_acquisition=False)
     assert "diffuse low-key ambient illumination" in p1_club
     assert "studio" not in p1_club.lower()
 
-    p1_studio, _ = sanitizer.sanitize("studio fashion portrait of a model against a grey paper cyclorama backdrop", pass1_log_acquisition=False)
+    p1_studio, _ = sanitizer.sanitize("studio fashion portrait of a model against a grey paper cyclorama backdrop", lighting_policy="VERBATIM_RAW", pass1_log_acquisition=False)
     assert "diffuse even studio ambient illumination" in p1_studio
     assert "no backdrop vignette" in p1_studio
 
@@ -806,7 +814,7 @@ def test_prompt_sanitizer():
     p1_bare, p2_bare = sanitizer.sanitize("editorial portrait, key light, side light, spotlight, kicker light")
     for bare_tok in ["key light", "side light", "spotlight", "kicker light"]:
         assert bare_tok not in p1_bare.lower(), f"Bare fixture token '{bare_tok}' leaked into Pass 1: {p1_bare}"
-        assert bare_tok in p2_bare.lower(), f"Bare fixture token '{bare_tok}' missing from Pass 2: {p2_bare}"
+        assert bare_tok not in p2_bare.lower(), f"Bare fixture token '{bare_tok}' leaked into Pass 2 under RIG_OVERRIDE: {p2_bare}"
 
     print("  ✓ Decoupling & F1 non-lighting preservation verified ('blue dress', 'amber jewelry', 'warm glow' preserved).")
     print("✓ StudioPromptSanitizer passed!")
