@@ -447,10 +447,10 @@ class StudioPromptSanitizer:
                 }),
             },
             "optional": {
-                "lighting_policy": (["RIG_OVERRIDE", "HYBRID_PRACTICAL", "VERBATIM_RAW"], {
+                "lighting_policy": (["RIG_OVERRIDE", "HYBRID_PRACTICAL", "VERBATIM_RAW", "auto", True, False], {
                     "default": "RIG_OVERRIDE",
                 }),
-                "capture_guidance": (["Neutral Diffuse Reference", "Balanced Studio Capture", "Preserve Environmental Tone", "Legacy Log-C"], {
+                "capture_guidance": (["Neutral Diffuse Reference", "Balanced Studio Capture", "Preserve Environmental Tone", "Legacy Log-C", True, False, "true", "false", "auto"], {
                     "default": "Neutral Diffuse Reference",
                 }),
                 "minimal_refinement_pass2": ("BOOLEAN", {
@@ -489,6 +489,13 @@ class StudioPromptSanitizer:
         minimal_refinement_pass2: bool = True,
         **kwargs,
     ) -> Tuple[str, str]:
+        if str(lighting_policy).lower() in ("auto", "true", "false", "none", "") or lighting_policy not in ("RIG_OVERRIDE", "HYBRID_PRACTICAL", "VERBATIM_RAW"):
+            lighting_policy = "RIG_OVERRIDE"
+        if isinstance(capture_guidance, bool) or str(capture_guidance).lower() in ("true", "auto", "1"):
+            capture_guidance = "Neutral Diffuse Reference"
+        elif str(capture_guidance).lower() in ("false", "0"):
+            capture_guidance = "Legacy Log-C"
+
         if lighting_policy == "VERBATIM_RAW":
             pass1_prompt = sanitize_pass1_prompt_universal(
                 master_prompt,
