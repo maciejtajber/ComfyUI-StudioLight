@@ -156,6 +156,16 @@ STANDARD_DARKNESS_ADJECTIVES = (
 
 # ==============================================================================
 PRACTICAL_EMITTER_AND_PROP_REWRITES = [
+    # Exact beta phrasing: "her face softly lit by the cool glow of a smartphone she holds in her hand".
+    # Remove the screen-emission instruction as one complete clause so later lighting cleanup cannot
+    # leave fragments such as "her face softly, a smartphone she holds in her hand".
+    (
+        r"(?:,\s*)?\b(?:(?:her|his|their|the|a)?\s*(?:face|cheeks?|eyes?|features?)\s+)?"
+        r"(?:softly|gently|brightly|dimly)\s+lit\s+by\s+(?:the\s+)?(?:cool\s+|blue\s+|warm\s+)?"
+        r"(?:light|glow|glare|illumination)\s+of\s+(?:a\s+)?(?:smartphone|phone)(?:\s+screen)?"
+        r"\s+she\s+holds?\s+in\s+her\s+hand(?:s)?\b",
+        ", holding a smartphone in her hand",
+    ),
     # "face illuminated by the cool light of a smartphone screen held in her hands" -> "holding a smartphone in her hands"
     (
         r"(?:,\s*)?\b(?:(?:her|his|their|the|a)?\s*(?:face|cheeks?|eyes?|features?)\s+)?(?:illuminated\s+by|lit\s+by|bathed\s+in)\s+(?:the\s+)?(?:cool\s+|blue\s+|warm\s+)?(?:light|glow|glare|illumination)\s+of\s+(?:a\s+)?(?:smartphone|phone)(?:\s+screen)?(?:\s+held\s+in\s+(?:her|his|their)\s+hands)\b",

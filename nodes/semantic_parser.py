@@ -108,20 +108,30 @@ MATERIAL_PATTERNS = [
 # --- PRACTICAL EMITTER CLASSIFICATION & PROP PRESERVATION ---
 
 PRACTICAL_EMITTER_REWRITES = [
+    # 0. Natural possessive action: "her face softly lit by ... a phone she holds in her hand"
+    (
+        re.compile(
+            r"(?:,\s*)?\b(?:(?:her|his|their|the|a)?\s*(?:face|cheeks?|eyes?|features?)\s+(?:(?:is|are)\s+)?)?(?:(?:softly|gently|brightly|dimly)\s+)?(?:illuminated\s+by|lit\s+by|bathed\s+in)\s+(?:the\s+)?(?:cool\s+|blue\s+|warm\s+)?(?:light|glow|glare|illumination)\s+of\s+(?:a\s+)?(?:smartphone|phone)(?:\s+screen)?\s+(?:she|he|they)\s+holds?\s+in\s+(?P<holder>her|his|their)\s+(?P<hands>hands?)\b",
+            re.IGNORECASE,
+        ),
+        r", holding a smartphone in \g<holder> \g<hands>",
+        r", holding a smartphone with a cool glowing screen in \g<holder> \g<hands>",
+        "smartphone",
+    ),
     # 1. Screen glare with held action: e.g. "illuminated by the cool light of a smartphone screen held in her hands" -> "holding a smartphone in her hands"
     (
         re.compile(
-            r"(?:,\s*)?\b(?:(?:her|his|their|the|a)?\s*(?:face|cheeks?|eyes?|features?)\s+)?(?:illuminated\s+by|lit\s+by|bathed\s+in)\s+(?:the\s+)?(?:cool\s+|blue\s+|warm\s+)?(?:light|glow|glare|illumination)\s+of\s+(?:a\s+)?(?:smartphone|phone)(?:\s+screen)?(?:\s+held\s+in\s+(?:her|his|their)\s+hands?)\b",
+            r"(?:,\s*)?\b(?:(?:her|his|their|the|a)?\s*(?:face|cheeks?|eyes?|features?)\s+(?:(?:is|are)\s+)?)?(?:(?:softly|gently|brightly|dimly)\s+)?(?:illuminated\s+by|lit\s+by|bathed\s+in)\s+(?:the\s+)?(?:cool\s+|blue\s+|warm\s+)?(?:light|glow|glare|illumination)\s+of\s+(?:a\s+)?(?:smartphone|phone)(?:\s+screen)?(?:\s+held\s+in\s+(?P<holder>her|his|their)\s+(?P<hands>hands?))?\b",
             re.IGNORECASE,
         ),
-        ", holding a smartphone in her hands",
-        ", holding a smartphone with a cool glowing screen in her hands",
+        r", holding a smartphone in \g<holder> \g<hands>",
+        r", holding a smartphone with a cool glowing screen in \g<holder> \g<hands>",
         "smartphone",
     ),
     # 2. Screen glare without explicit held phrase: e.g. "illuminated by the cool light of a smartphone screen" -> ", with a smartphone"
     (
         re.compile(
-            r"(?:,\s*)?\b(?:(?:her|his|their|the|a)?\s*(?:face|cheeks?|eyes?|features?)\s+)?(?:illuminated\s+by|lit\s+by|bathed\s+in)\s+(?:the\s+)?(?:cool\s+|blue\s+|warm\s+)?(?:light|glow|glare|illumination)\s+of\s+(?:a\s+)?(?:smartphone|phone)(?:\s+screen)?\b",
+            r"(?:,\s*)?\b(?:(?:her|his|their|the|a)?\s*(?:face|cheeks?|eyes?|features?)\s+(?:(?:is|are)\s+)?)?(?:(?:softly|gently|brightly|dimly)\s+)?(?:illuminated\s+by|lit\s+by|bathed\s+in)\s+(?:the\s+)?(?:cool\s+|blue\s+|warm\s+)?(?:light|glow|glare|illumination)\s+of\s+(?:a\s+)?(?:smartphone|phone)(?:\s+screen)?\b",
             re.IGNORECASE,
         ),
         ", with a smartphone",
@@ -142,7 +152,7 @@ PRACTICAL_EMITTER_REWRITES = [
     # 4. Fire emitters: "illuminated by the light of a torch/candle/lantern held in his hand" -> ", holding a flaming torch in hand"
     (
         re.compile(
-            r"(?:,\s*)?\b(?:(?:her|his|their|the|a)?\s*(?:face|cheeks?|eyes?|features?)\s+)?(?:illuminated\s+by|lit\s+by|bathed\s+in)\s+(?:the\s+)?(?:cool\s+|blue\s+|warm\s+|golden\s+)?(?:light|glow|glare|illumination|flames?)\s+of\s+(?:a\s+)?(?P<item>torch|lantern|candle|candlestick|campfire)(?:\s+held\s+in\s+(?:her|his|their)\s+hands?)?\b",
+            r"(?:,\s*)?\b(?:(?:her|his|their|the|a)?\s*(?:face|cheeks?|eyes?|features?)\s+(?:(?:is|are)\s+)?)?(?:illuminated\s+by|lit\s+by|bathed\s+in)\s+(?:the\s+)?(?:cool\s+|blue\s+|warm\s+|golden\s+)?(?:light|glow|glare|illumination|flames?)\s+of\s+(?:a\s+)?(?P<item>torch|lantern|candle|candlestick|campfire)(?:\s+held\s+in\s+(?:her|his|their)\s+hands?)?\b",
             re.IGNORECASE,
         ),
         r", holding a \g<item> in hand",
@@ -152,7 +162,7 @@ PRACTICAL_EMITTER_REWRITES = [
     # 5. Neon emitters: "illuminated by neon lights" -> ", with glowing neon lights"
     (
         re.compile(
-            r"(?:,\s*)?\b(?:illuminated\s+by|lit\s+by|bathed\s+in)\s+(?:the\s+)?(?:cool\s+|red\s+|blue\s+|warm\s+)?neon\s+(?:light|glow|sign)\b",
+            r"(?:,\s*)?\b(?:illuminated\s+by|lit\s+by|bathed\s+in)\s+(?:the\s+)?(?:cool\s+|red\s+|blue\s+|warm\s+)?neon\s+(?:lights?|glow|signs?)\b",
             re.IGNORECASE,
         ),
         ", with a neon sign",
@@ -180,7 +190,7 @@ DIRECTIONAL_LIGHTING_PATTERNS = [
         r"(?:,\s*)?\b(?:illuminated|lit|bathed)\s+by\s+(?:the\s+|a\s+|an\s+)?"
         r"(?:[a-zA-Z-]+\s+){0,4}"
         r"(?:light(?:ing)?|glow|glare|flash(?: photography)?|strobe|beams?|rays?|sunlight|illumination|rim|spotlight)\b"
-        r"(?:\s+(?:from|across|through|onto|in|behind)\s+[a-zA-Z-]+(?:\s+[a-zA-Z-]+){0,3})?",
+        r"(?:\s+from\s+(?:the\s+)?(?:behind|above|below|left|right|front)(?:\s+side)?)?",
         re.IGNORECASE,
     ),
     # 3. "under [descriptors] [spotlight / sunlight / strobe / flash / etc.]"
@@ -196,7 +206,7 @@ DIRECTIONAL_LIGHTING_PATTERNS = [
         rf"(?:,\s*)?\b(?:(?:and\s+|with\s+|under\s+|in\s+)?(?:a\s+|an\s+|the\s+)?)?"
         rf"(?:{_LIGHT_ADJECTIVES}\s+){{0,3}}"
         r"(?:rim[- ]?light(?:ing)?|kicker(?:\s+light)?|back[- ]?light(?:ing)?|side[- ]?light(?:ing)?|split[- ]?lighting|sunlight|sunbeams?|sun\s+rays?|midday\s+sun|direct\s+sun|key[- ]?light(?:ing)?|spot[- ]?light(?:ing)?)\b"
-        r"(?:\s+(?:from|on|across|behind|through)\s+[a-zA-Z-]+(?:\s+[a-zA-Z-]+){0,2})?",
+        r"(?:\s+from\s+(?:the\s+)?(?:behind|above|below|left|right|front)(?:\s+side)?)?",
         re.IGNORECASE,
     ),
     # 5. Casting shadows clauses: e.g. "deep dark shadows casting on the concrete wall"

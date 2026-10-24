@@ -181,8 +181,12 @@ def evaluate_fixture_aperture_footprint(
     """
     denom = torch.sum(refl_rays * w_aim.view(1, 1, 1, 3), dim=-1, keepdim=True)
     numer = torch.sum((p_light.view(1, 1, 1, 3) - surf_pos) * w_aim.view(1, 1, 1, 3), dim=-1, keepdim=True)
-    t = numer / (denom - 1e-6)
-    valid_hit = (t > 0.0) & (denom < -0.01)
+    # Invalid/back-facing rays cannot hit the emitting face. Use a finite
+    # denominator before division: multiplying a NaN by a zero mask is unsafe.
+    facing = denom < -0.01
+    safe_denom = torch.where(facing, denom - 1e-6, torch.ones_like(denom))
+    t = torch.where(facing, numer / safe_denom, torch.zeros_like(numer))
+    valid_hit = (t > 0.0) & facing
 
     p_hit = surf_pos + t * refl_rays
     diff = p_hit - p_light.view(1, 1, 1, 3)
@@ -717,6 +721,7 @@ def compute_light_shading(
             f"StudioLight shading: depth batch ({depth.shape[0]}) must be 1 or match normals batch ({normals.shape[0]})."
         )
     if depth is not None and normals.shape[0] > 1:
+        B_multi = normals.shape[0]
         diff_list, spec_list, sum_list, unocc_list, block_list, vol_list = [], [], [], [], [], []
         for b_idx in range(B_multi):
             n_b = normals[b_idx : b_idx + 1]

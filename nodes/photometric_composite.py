@@ -1145,11 +1145,35 @@ class StudioPhotometricComposite:
         return lit_srgb, sheet, appearance_repair_mask.squeeze(-1)
 
 
+class StudioPhotometricCompositeBeta(StudioPhotometricComposite):
+    """Simplified beta UI with the current Linear HDR path fixed as the default.
+
+    The original node remains registered for saved workflows that use its
+    compatibility controls. This node exposes the same image-affecting core
+    controls while leaving legacy/alternate modes at their established defaults.
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        schema = super().INPUT_TYPES()
+        schema["optional"] = {
+            name: value for name, value in schema["optional"].items()
+            if name not in {
+                "black_gate", "tone_mapping", "exposure_ev",
+                "background_protection", "lighting_map_includes_specular",
+                "compositing_mode", "blend_amount",
+            }
+        }
+        return schema
+
+
 
 NODE_CLASS_MAPPINGS = {
     "StudioPhotometricComposite": StudioPhotometricComposite,
+    "StudioPhotometricCompositeBeta": StudioPhotometricCompositeBeta,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "StudioPhotometricComposite": "Studio Photometric Composite (Linear HDR)",
+    "StudioPhotometricCompositeBeta": "Studio Photometric Composite (Beta Clean)",
 }

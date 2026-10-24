@@ -70,6 +70,17 @@ def enclosure_bounce(d_norm, foreground, sky, strobe_diffuse, strength,
     zero = torch.zeros_like(foreground)
     if d_norm is None or strobe_diffuse is None:
         return zero.expand(-1, -1, -1, 3), zero, zero
+    # These statistics describe one frame. Never pool pixels from different
+    # batch items, or one scene can change another scene's bounce estimate.
+    if foreground.shape[0] > 1:
+        per_image = [
+            enclosure_bounce(
+                d_norm[i:i + 1], foreground[i:i + 1], sky[i:i + 1],
+                strobe_diffuse[i:i + 1], strength, wall_reflectance, override,
+            )
+            for i in range(foreground.shape[0])
+        ]
+        return tuple(torch.cat([item[j] for item in per_image], dim=0) for j in range(3))
     fg = foreground[..., 0] > .8
     wall = (foreground[..., 0] < .15) & (sky[..., 0] < .25) & (d_norm[..., 0] > .05)
     min_count = max(4, math.ceil(d_norm.shape[1] * d_norm.shape[2] * .01))
@@ -98,6 +109,13 @@ def recover_masked_shadows(base, mask, amount, luminance):
     """
     if mask is None or amount <= 0:
         return base
+    # The trusted material colour is a per-image prior. A single pooled
+    # median would transfer colour between unrelated images in a batch.
+    if base.shape[0] > 1:
+        return torch.cat([
+            recover_masked_shadows(base[i:i + 1], mask[i:i + 1], amount, luminance)
+            for i in range(base.shape[0])
+        ], dim=0)
     lum = luminance(base)
     trusted = (mask[..., 0] > .5) & (lum[..., 0] >= .015) & (lum[..., 0] <= .4)
     if int(trusted.sum()) < 4:

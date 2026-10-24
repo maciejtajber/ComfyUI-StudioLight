@@ -278,6 +278,7 @@ def test_end_to_end_workflow_and_product_behavior():
     expected_nodes = {
         "StudioLightRig",
         "StudioPhotometricComposite",
+        "StudioPhotometricCompositeBeta",
         "SIShadowHighlight",
         "StudioPromptSanitizer",
         "StudioLightPostComposite",
