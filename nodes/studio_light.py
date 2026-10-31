@@ -183,7 +183,7 @@ class StudioLightRig:
                 "normals_optional": ("IMAGE",),
                 "depth_optional": ("IMAGE",),
                 "invert_normals_x": ("BOOLEAN", {
-                    "default": True,
+                    "default": False,
                     "label_on": "Invert X (DSINE / Vision)",
                     "label_off": "Standard (OpenGL / Blender)",
                 }),
@@ -256,7 +256,7 @@ class StudioLightRig:
         ao_anchoring: float = 0.65,
         normals_optional: Optional[torch.Tensor] = None,
         depth_optional: Optional[torch.Tensor] = None,
-        invert_normals_x: bool = True,
+        invert_normals_x: bool = False,
         target_engine: str = "Flux.1",
         invert_depth: bool = False,
         aim_target: str = "Upper",
