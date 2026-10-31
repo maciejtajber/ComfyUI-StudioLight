@@ -22,14 +22,14 @@
 <br>
 
 <sub>
-<a href="#1-the-hook--direct-proof">1. PROOF</a> &nbsp;·&nbsp;
-<a href="#2-one-image-multiple-lighting-decisions">2. SHOWCASE</a> &nbsp;·&nbsp;
-<a href="#3-the-photographers-console-physical-c-stands">3. RIG CONSOLE</a> &nbsp;·&nbsp;
-<a href="#4-analyze-once-adjust-preview-the-2-second-loop">4. 2-SEC LOOP</a> &nbsp;·&nbsp;
-<a href="#5-add-to-the-scene--or-relight-the-subject">5. DUAL CONTRACT</a> &nbsp;·&nbsp;
-<a href="#6-quick-start--workflows">6. QUICK START</a> &nbsp;·&nbsp;
-<a href="#7-the-engineering-behind-the-image">7. ENGINEERING</a> &nbsp;·&nbsp;
-<a href="#8-status-honest-limitations--roadmap">8. ROADMAP</a>
+<a href="#same-subject-same-prompt-different-light">1. SHOWCASE</a> &nbsp;·&nbsp;
+<a href="#one-image-multiple-lighting-decisions">2. DECISIONS</a> &nbsp;·&nbsp;
+<a href="#the-photographers-console-physical-c-stands">3. RIG CONSOLE</a> &nbsp;·&nbsp;
+<a href="#analyze-once-adjust-preview-the-2-second-loop">4. 2-SEC LOOP</a> &nbsp;·&nbsp;
+<a href="#add-to-the-scene--or-relight-the-subject">5. DUAL CONTRACT</a> &nbsp;·&nbsp;
+<a href="#quick-start--workflows">6. QUICK START</a> &nbsp;·&nbsp;
+<a href="#the-engineering-behind-the-image">7. ENGINEERING</a> &nbsp;·&nbsp;
+<a href="#status-honest-limitations--roadmap">8. ROADMAP</a>
 </sub>
 
 </div>
@@ -38,7 +38,7 @@
 
 ---
 
-## 1. The Hook & Direct Proof
+## Same Subject. Same Prompt. Different Light.
 
 Stop prompt gambling. StudioLight brings real, three-dimensional studio lighting control directly into ComfyUI. 
 
@@ -46,9 +46,7 @@ Instead of typing descriptive text and hoping the diffusion model understands yo
 
 https://github.com/user-attachments/assets/f82d96d9-08ac-4dfb-8f1a-a65432f33a32
 
-<br>
-
-> **Immediate Source → Relit Verification:** Operates on fixed 2D photographs, completed 3D renders, or newly generated drafts. The lighting proxy computes in approximately two seconds without requiring diffusion resynthesis.
+<p align="center"><sub><b>Identical Base Prompt and locked Seed: 777777</b> | FLUX.1 Krea Dev</sub></p>
 
 ---
 
@@ -58,59 +56,34 @@ The core creative problem in generative AI is that changing a lighting prompt mu
 
 StudioLight locks the image and relights the **exact same source plate** with physical precision:
 
-<table>
-  <thead>
-    <tr>
-      <th width="33.33%" align="center">High-Fashion Beauty</th>
-      <th width="33.33%" align="center">Direct On-Camera Flash</th>
-      <th width="33.33%" align="center">Golden Hour Window</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center"><img src="assets/showcase_high_fashion_beauty.png" width="100%" alt="High-Fashion Beauty" /></td>
-      <td align="center"><img src="assets/showcase_direct_flash.png" width="100%" alt="Direct On-Camera Flash" /></td>
-      <td align="center"><img src="assets/showcase_golden_hour.png" width="100%" alt="Golden Hour Window" /></td>
-    </tr>
-    <tr>
-      <td align="center"><sub>Key Beauty Dish (5500K) + Soft Fill. Sculpted cheekbones, circular catchlights, balanced wrap.</sub></td>
-      <td align="center"><sub>Hard On-Camera Flash (6500K). Micro-pinpoint glare, sharp contact drop shadows, high contrast.</sub></td>
-      <td align="center"><sub>Warm Area Light (3200K) + Cool Sky Fill. Atmospheric side wrap, sunset chiaroscuro glow.</sub></td>
-    </tr>
-  </tbody>
-</table>
+| High-Fashion Beauty | Direct On-Camera Flash | Golden Hour Window |
+| :---: | :---: | :---: |
+| ![High-Fashion Beauty](assets/showcase_high_fashion_beauty.png) | ![Direct On-Camera Flash](assets/showcase_direct_flash.png) | ![Golden Hour Window](assets/showcase_golden_hour.png) |
+| <sub>Beauty Dish (5500K) + Soft Fill.<br>Sculpted cheekbones, circular catchlight.</sub> | <sub>On-Camera Flash (6500K).<br>Pinpoint glare, hard contact drop shadows.</sub> | <sub>Warm Area Light (3200K) + Sky Fill.<br>Atmospheric wrap, sunset chiaroscuro glow.</sub> |
 
 ### Prompt Lottery vs. Spatial Control
 
-<table>
-  <thead>
-    <tr>
-      <th width="50%" align="left">Prompt-Based Lighting (Text Only)</th>
-      <th width="50%" align="left">StudioLight Spatial Control (VFX Engine)</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="left"><b>Subject Mutation:</b> Prompting for light changes anatomy, facial features, styling, and background geometry.</td>
-      <td align="left"><b>Pure Lighting Isolation:</b> Relights fixed 2D photographs or frozen drafts without altering subject geometry or identity.</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Chromatic Bleed:</b> Color words tint skin, hair, and clothing indiscriminately across the whole image.</td>
-      <td align="left"><b>Directional Lobe Isolation:</b> Key, fill, and rim colors remain strictly confined to illuminated surfaces (\(\mathbf{N} \cdot \mathbf{L} > 0\)).</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Uncalibrated Falloff:</b> Lights ignore scene depth and distance, treating all surfaces as flat planes.</td>
-      <td align="left"><b>Geometric Inverse-Square Falloff:</b> Models true \((r_{\text{ref}} / r)^2\) radiometric distance attenuation calibrated to studio C-stands.</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Diffusion Bottleneck:</b> Requires 30–50 full diffusion steps just to see if a light moved by 10 degrees.</td>
-      <td align="left"><b>Instant ~2s Feedback Loop:</b> Shader computes an inspectable physical lighting proxy in ~2 seconds on an RTX 3090.</td>
-    </tr>
-  </tbody>
-</table>
+```text
+┌───────────────────────────────────┬────────────────────────────────────────────────────────┐
+│ PROMPT LOTTERY (TEXT ONLY)        │ STUDIOLIGHT SPATIAL CONTROL (VFX ENGINE)               │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┤
+│ • Subject Mutation                │ • Pure Lighting Isolation                              │
+│   Prompting light changes facial  │   Relights fixed 2D photographs or frozen drafts       │
+│   anatomy, clothing, and shapes.  │   without altering subject geometry or identity.       │
+│                                   │                                                        │
+│ • Chromatic Bleed                 │ • Directional Lobe Isolation                           │
+│   Color words tint skin, hair,    │   Key, fill, and rim colors remain strictly            │
+│   and entire background.          │   confined to illuminated surfaces (N · L > 0).        │
+│                                   │                                                        │
+│ • Uncalibrated Falloff            │ • Geometric Inverse-Square Falloff                     │
+│   Lights ignore depth & distance, │   Models true (r_ref / r)² radiometric attenuation     │
+│   treating scene as a flat plane. │   calibrated to physical studio C-stands.              │
+│                                   │                                                        │
+│ • Diffusion Bottleneck            │ • Instant ~2s Feedback Loop                            │
+│   Requires 30–50 full diffusion   │   Shader computes an inspectable physical lighting     │
+│   steps to test moving a light.   │   proxy in ~2 seconds without waiting for diffusion.   │
+└───────────────────────────────────┴────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -137,66 +110,18 @@ Each modifier is modeled as a 3D virtual emitter with oriented tangent-space fra
   <img src="assets/01_emitter_architecture.svg" alt="StudioLight Geometric Area Emitter Architecture" width="735" />
 </div>
 
-<table>
-  <thead>
-    <tr>
-      <th width="18%" align="left">Modifier</th>
-      <th width="20%" align="center">Aperture<br>Dimensions</th>
-      <th width="14%" align="center">Beam&nbsp;Angle<br>(&theta;<sub>beam</sub>)</th>
-      <th width="26%" align="left">Optical Approximation</th>
-      <th width="22%" align="left">Catchlight Profile</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="left"><b>Direct On-Camera Flash</b></td>
-      <td align="center">0.08m&nbsp;×&nbsp;0.05m</td>
-      <td align="center">70°</td>
-      <td align="left">Near-point strobe emitter</td>
-      <td align="left">Crisp micro-pinpoint glare</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Hard Snoot</b></td>
-      <td align="center">R&nbsp;=&nbsp;0.05m<br>(10cm)</td>
-      <td align="center">18°</td>
-      <td align="left">Collimated beam cone</td>
-      <td align="left">Tight circular isolation</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Fresnel Spotlight</b></td>
-      <td align="center">R&nbsp;=&nbsp;0.15m<br>(30cm)</td>
-      <td align="center">35°</td>
-      <td align="left">Optical lens edge cutoff</td>
-      <td align="left">Compact stepped lens disc</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Stripbox</b></td>
-      <td align="center">0.30m&nbsp;×&nbsp;1.20m</td>
-      <td align="center">65°</td>
-      <td align="left">1:4 Asymmetric rectangular emitter</td>
-      <td align="left">Elongated vertical catchlight bar</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Beauty Dish (Silver)</b></td>
-      <td align="center">R&nbsp;=&nbsp;0.275m<br>(55cm)</td>
-      <td align="center">85°</td>
-      <td align="left">Parabolic dish + center deflector (36% radius ratio, 12% transmission)</td>
-      <td align="left">Sculpted facial wrap, circular donut ring</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"><b>Octabox (Soft)</b></td>
-      <td align="center">R&nbsp;=&nbsp;0.70m<br>(140cm)</td>
-      <td align="center">130°</td>
-      <td align="left">Broad Lambertian octagonal emitter</td>
-      <td align="left">Large wrap disc, soft continuous penumbra</td>
-    </tr>
-  </tbody>
-</table>
+```text
+┌───────────────────────┬──────────────┬────────────┬─────────────────────────────┬──────────────────────────┐
+│ MODIFIER              │ APERTURE     │ BEAM ANGLE │ OPTICAL BEHAVIOR            │ CATCHLIGHT PROFILE       │
+├───────────────────────┼──────────────┼────────────┼─────────────────────────────┼──────────────────────────┤
+│ Direct Flash          │ 0.08 × 0.05m │ 70°        │ Near-point strobe emitter   │ Crisp micro-pinpoint     │
+│ Hard Snoot            │ R = 0.05m    │ 18°        │ Collimated beam cone        │ Tight circular spotlight │
+│ Fresnel Spotlight     │ R = 0.15m    │ 35°        │ Optical lens edge cutoff    │ Stepped concentric disc  │
+│ Stripbox              │ 0.30 × 1.20m │ 65°        │ 1:4 Asymmetric rectangle    │ Elongated vertical slit  │
+│ Beauty Dish (Silver)  │ R = 0.275m   │ 85°        │ Parabolic dish + deflector  │ Sculpted donut ring      │
+│ Octabox (Soft)        │ R = 0.70m    │ 130°       │ Broad Lambertian octagon    │ Soft continuous wrap     │
+└───────────────────────┴──────────────┴────────────┴─────────────────────────────┴──────────────────────────┘
+```
 
 ---
 
@@ -210,80 +135,18 @@ The central workflow breakthrough of StudioLight is separating scene geometry an
 
 ### RTX 3090 Performance Benchmarks (Shader Parameter Study)
 
-<table>
-  <thead>
-    <tr>
-      <th align="left">Resolution</th>
-      <th align="left">Configuration Tier</th>
-      <th align="center">Samples&nbsp;(S)</th>
-      <th align="center">Steps</th>
-      <th align="center">Pass&nbsp;Latency (RTX&nbsp;3090)</th>
-      <th align="center">Peak&nbsp;VRAM</th>
-      <th align="center">Ray-Sample Steps&nbsp;/&nbsp;sec</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="left">512&nbsp;×&nbsp;512</td>
-      <td align="left">Fast Preview</td>
-      <td align="center">4</td>
-      <td align="center">12</td>
-      <td align="center">12.0 ms</td>
-      <td align="center">113 MB</td>
-      <td align="center">1,047 M/s</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"></td>
-      <td align="left">Balanced (Default)</td>
-      <td align="center">8</td>
-      <td align="center">16</td>
-      <td align="center">29.6 ms</td>
-      <td align="center">118 MB</td>
-      <td align="center">1,135 M/s</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left">1024&nbsp;×&nbsp;1024</td>
-      <td align="left">Fast Preview</td>
-      <td align="center">4</td>
-      <td align="center">12</td>
-      <td align="center">32.0 ms</td>
-      <td align="center">450 MB</td>
-      <td align="center">1,571 M/s</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"></td>
-      <td align="left">Balanced (Default)</td>
-      <td align="center">8</td>
-      <td align="center">16</td>
-      <td align="center">83.0 ms</td>
-      <td align="center">469 MB</td>
-      <td align="center">1,617 M/s</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left"></td>
-      <td align="left">High-End Quality</td>
-      <td align="center">16</td>
-      <td align="center">24</td>
-      <td align="center">245.3 ms</td>
-      <td align="center">469 MB</td>
-      <td align="center">1,642 M/s</td>
-    </tr>
-    <tr></tr>
-    <tr>
-      <td align="left">2048&nbsp;×&nbsp;2048 (4.2&nbsp;MP)</td>
-      <td align="left">Balanced (Default)</td>
-      <td align="center">8</td>
-      <td align="center">16</td>
-      <td align="center">311.5 ms</td>
-      <td align="center">1.87 GB</td>
-      <td align="center">1,724 M/s</td>
-    </tr>
-  </tbody>
-</table>
+```text
+┌─────────────┬────────────────────┬─────────┬───────┬──────────────┬───────────┬───────────────┐
+│ RESOLUTION  │ CONFIGURATION TIER │ SAMPLES │ STEPS │ PASS LATENCY │ PEAK VRAM │ THROUGHPUT    │
+├─────────────┼────────────────────┼─────────┼───────┼──────────────┼───────────┼───────────────┤
+│ 512 × 512   │ Fast Preview       │ 4       │ 12    │ 12.0 ms      │ 113 MB    │ 1,047 M/s     │
+│ 512 × 512   │ Balanced (Default) │ 8       │ 16    │ 29.6 ms      │ 118 MB    │ 1,135 M/s     │
+│ 1024 × 1024 │ Fast Preview       │ 4       │ 12    │ 32.0 ms      │ 450 MB    │ 1,571 M/s     │
+│ 1024 × 1024 │ Balanced (Default) │ 8       │ 16    │ 83.0 ms      │ 469 MB    │ 1,617 M/s     │
+│ 1024 × 1024 │ High-End Quality   │ 16      │ 24    │ 245.3 ms     │ 469 MB    │ 1,642 M/s     │
+│ 2048 × 2048 │ Balanced (Default) │ 8       │ 16    │ 311.5 ms     │ 1.87 GB   │ 1,724 M/s     │
+└─────────────┴────────────────────┴─────────┴───────┴──────────────┴───────────┴───────────────┘
+```
 
 ---
 
@@ -400,19 +263,23 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 
 ### Status-Based Capability Roadmap
 
-| Capability / Milestone | Engineering Status | Architectural Scope |
-| :--- | :--- | :--- |
-| **Fixed-Image 2D Relighting** | **Shipped in Consistent V1** | Relight arbitrary photographs and renders without mandatory diffusion passes. |
-| **Pure Additive Layering Contract** | **Shipped in Consistent V1** | Native practical and room-ambient preservation ($HDR = S \cdot 2^e + D + P + A$). |
-| **Controlled Subject Replacement** | **Shipped in Consistent V1** | Explicit `source_preservation` slider with BiRefNet subject isolation. |
-| **Intrinsic Albedo Pipeline** | **Shipped in Consistent V1** | Full-surface Marigold IID De-Light modulation via the DeLight Controller. |
-| **Direct Proxy / VAE Parity** | **Shipped in Consistent V1** | Preview and VAEEncode receive identical, unclipped linear HDR data in ~2s. |
-| **Optional FLUX Krea Polish** | **Shipped in Consistent V1** | Decoupled Pass 2 generative refinement stage for skin micro-textures. |
-| **Temporal Light Keyframing** | **Next Sprint (Q4 2026)** | Reproducible interpolation of C-stand coordinates and Kelvin across video frame sequences. |
-| **Video Diffusion Integration** | **Next Sprint (Q4 2026)** | Injecting 32-bit linear photometric plates into spatio-temporal video attention streams (Wan / LTX). |
-| **Temporal Geometry Deflicker** | **Next Sprint (Q4 2026)** | Depth and normal temporal filtering to eliminate multi-frame edge chatter. |
-| **Multi-View Coherent Rigging** | **Research Horizon** | Shared 3D camera-space lighting rigs across multi-camera array captures. |
-| **Integrated Three.js 3D Mesh Stage** | **Explicitly Retired** | Single-view depth raymarching supersedes the legacy Three.js mannequin stage. |
+```text
+┌──────────────────────────────────┬──────────────────────┬──────────────────────────────────────────────────┐
+│ CAPABILITY / MILESTONE           │ STATUS               │ ARCHITECTURAL SCOPE                              │
+├──────────────────────────────────┼──────────────────────┼──────────────────────────────────────────────────┤
+│ Fixed-Image 2D Relighting        │ Shipped in V1        │ Relight photographs & renders without diffusion. │
+│ Pure Additive Layering Contract  │ Shipped in V1        │ Practical & room-ambient preservation (HDR eq).  │
+│ Controlled Subject Replacement   │ Shipped in V1        │ Source preservation slider + BiRefNet isolation. │
+│ Intrinsic Albedo Pipeline        │ Shipped in V1        │ Full-surface Marigold IID DeLight modulation.    │
+│ Direct Proxy / VAE Parity        │ Shipped in V1        │ Linear HDR parity between preview & VAE in ~2s.  │
+│ Optional FLUX Krea Polish        │ Shipped in V1        │ Decoupled Pass 2 micro-texture synthesis.        │
+│ Temporal Light Keyframing        │ Next Sprint (Q4)     │ Reproducible C-stand interpolation for video.    │
+│ Video Attention Integration      │ Next Sprint (Q4)     │ 32-bit linear photometric plates into Wan / LTX. │
+│ Temporal Geometry Deflicker      │ Next Sprint (Q4)     │ Multi-frame depth & normal temporal filtering.   │
+│ Multi-View Coherent Rigging      │ Research Horizon     │ Shared 3D camera-space rigs across multi-cam.    │
+│ Integrated Three.js Mannequin    │ Explicitly Retired   │ Replaced by 2.5D camera-space depth raymarching. │
+└──────────────────────────────────┴──────────────────────┴──────────────────────────────────────────────────┘
+```
 
 ---
 
