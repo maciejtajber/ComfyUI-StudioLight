@@ -486,17 +486,30 @@ python3 -m unittest discover -s tests
 
 ---
 
-## Master Workflow
+## Master Workflow Architecture
 
-> **Flagship Production Architecture:** Complete dual-input ComfyUI pipeline supporting fixed photograph relighting, 3D shadow raymarching, physical compositing, and live VFX sphere probes.
+> **Consistent V1 Production Architecture:** Streamlined ComfyUI pipeline supporting direct fixed photograph relighting, 3D shadow raymarching, physical layer compositing, and live VFX sphere probes.
 
-<a href="assets/studiolight_master_workflow.png" target="_blank">
-  <img src="assets/studiolight_master_workflow.png" alt="StudioLight Master ComfyUI Production Workflow" width="100%" />
-</a>
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 STUDIOLIGHT ARCHITECTURE                               │
+├────────────────────────┬───────────────────────────┬───────────────────────────────────┤
+│ 1. INGESTION & DEPTH   │ 2. PHYSICAL 3D RIG        │ 3. CONSISTENT COMPOSITOR & OUTPUT │
+├────────────────────────┼───────────────────────────┼───────────────────────────────────┤
+│ • Fixed Photo / Draft  │ • Key / Fill / Rim Stands │ • Direct Relit Proxy (~2s)        │
+│ • Marigold Normals     │ • Octa / Dish / Flash     │ • Pure Additive Mode (Schema 1)   │
+│ • Depth Anything V2    │ • Kelvin Blackbody (CCT)  │ • Controlled Subject Replacement  │
+│ • Marigold IID Albedo  │ • 3D Shadow Raymarching   │ • (Optional) FLUX Refinement      │
+│ • BiRefNet Mask        │ • Full-Surface Telemetry  │   (Denoise 0.35–0.45)             │
+└────────────────────────┴───────────────────────────┴───────────────────────────────────┘
+```
 
 * **Ready-to-Run Workflows:**
-  * **Photo Relight (`workflows/StudioLight_PhotoRelight.json`):** Streamlined single-pass workflow to load any photograph and relight it in ~2 seconds.
-  * **Master Studio (`workflows/StudioLight_Master_Studio.json`):** Full flagship pipeline featuring prompt decoupling, 3D C-stands, and optional FLUX Krea Dev generative refinement.
+  * **StudioLight Relight (`workflows/StudioLight_PhotoRelight.json`):** Streamlined single-pass workflow to load any photograph or render and relight it in ~2 seconds.
+  * **StudioLight Studio (`workflows/StudioLight_Master_Studio.json`):** Flagship pipeline featuring prompt decoupling, 3D C-stands, and optional FLUX Krea Dev generative refinement.
+
+> [!TIP]
+> Drag either workflow file directly into the ComfyUI canvas to run. All nodes, models, and wiring match the Consistent V1 release specifications.
 
 ---
 
