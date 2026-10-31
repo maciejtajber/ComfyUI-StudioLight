@@ -1,53 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="265" width="735" viewBox="-12 -12 735 265" class="aasvg">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="270" width="735" viewBox="0 0 735 270" class="aasvg">
 <style>
 .aasvg { color-scheme: light dark; --aasvg-b: light-dark(#1f2328, #e6edf3); --aasvg-w: light-dark(#ffffff, #0d1117); color: var(--aasvg-b, #1f2328); }
-path, line, polyline { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
-.dashed { stroke-dasharray: 3,6; }
+path, line, polyline, rect { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.2; }
 text { font: 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: currentColor; stroke: none; }
 text.b { font-weight: 700; }
-text.i { font-style: italic; }
-polygon.arrowhead, .triangle { fill: currentColor; stroke: none; }
+polygon.arrowhead { fill: currentColor; stroke: none; }
+rect { rx: 0; ry: 0; }
 </style>
 
-<!-- Horizontal Distribution Bar with Rounded Left & Right Turns -->
-<path d="M 119,89 L 119,63 C 119,53 129,53 139,53 L 572,53 C 582,53 592,53 592,63 L 592,89" stroke-width="1.2"/>
+<!-- TOP EMITTER BOX -->
+<rect x="77" y="16" width="580" height="42" />
+<text x="367" y="42" class="b" text-anchor="middle">EMITTER [Dimensions (W, H, R) · Position · Aim Direction]</text>
 
-<!-- Center Downward Branch -->
-<path d="M 355.5,53 L 355.5,89" stroke-width="1.2"/>
+<!-- DISTRIBUTION BUS -->
+<path d="M 367,58 L 367,82" />
+<path d="M 132,82 L 602,82" />
 
-<!-- Arrowheads (Equal length, aligned at Y=96) -->
-<polygon class="arrowhead" points="119,96 124.6,84 113.4,84"/>
-<polygon class="arrowhead" points="355.5,96 361.1,84 349.9,84"/>
-<polygon class="arrowhead" points="592,96 597.6,84 586.4,84"/>
+<path d="M 132,82 L 132,100" />
+<polygon class="arrowhead" points="132,106 127,96 137,96" />
 
-<!-- Typography: Left-aligned columns with strict flush margins -->
-<g class="text">
-  <!-- Top Header -->
-  <text x="355.5" y="34" class="b" text-anchor="middle">EMITTER</text>
-  <text x="355.5" y="49" text-anchor="middle" font-size="12px">[Geometry: Dimensions (W, H, R) in meters, Position, Aim Direction]</text>
-  
-  <!-- Column 1 (X=24) -->
-  <text x="24" y="124" class="b" text-anchor="start">1. DIFFUSE EMISSION</text>
-  <text x="24" y="142" text-anchor="start">Vectorized [S, H, W, 3]</text>
-  <text x="24" y="160" text-anchor="start">• S=16 sample points</text>
-  <text x="24" y="178" text-anchor="start">• Physical 1 / r_k²</text>
-  <text x="24" y="196" text-anchor="start">• cos θ_e × cos θ_p</text>
-  <text x="24" y="214" text-anchor="start">• Radiometric area norm</text>
-  
-  <!-- Column 2 (X=254) -->
-  <text x="254" y="124" class="b" text-anchor="start">2. SHADOW / VISIBILITY</text>
-  <text x="254" y="142" text-anchor="start">Single-layer penumbra</text>
-  <text x="254" y="160" text-anchor="start">• Binary blocker test</text>
-  <text x="254" y="178" text-anchor="start">per sample point</text>
-  <text x="254" y="196" text-anchor="start">• Average across S</text>
-  <text x="254" y="214" text-anchor="start">yields natural penumbra</text>
-  
-  <!-- Column 3 (X=484) -->
-  <text x="484" y="124" class="b" text-anchor="start">3. SPECULAR REFLECTION</text>
-  <text x="484" y="142" text-anchor="start">Ray-plane intersection</text>
-  <text x="484" y="160" text-anchor="start">• Emitter 2D coordinate</text>
-  <text x="484" y="178" text-anchor="start">• Continuous aperture</text>
-  <text x="484" y="196" text-anchor="start">profile &amp; roughness</text>
-  <text x="484" y="214" text-anchor="start">• True fixture catchlights</text>
-</g>
+<path d="M 367,82 L 367,100" />
+<polygon class="arrowhead" points="367,106 362,96 372,96" />
+
+<path d="M 602,82 L 602,100" />
+<polygon class="arrowhead" points="602,106 597,96 607,96" />
+
+<!-- 1. DIFFUSE EMISSION BOX -->
+<rect x="20" y="107" width="225" height="148" />
+<text x="35" y="131" class="b">DIFFUSE EMISSION</text>
+<text x="35" y="153">Vectorized [S, H, W, 3]</text>
+<text x="35" y="173">• S=16 sample points</text>
+<text x="35" y="193">• Physical 1 / r_k²</text>
+<text x="35" y="213">• cos θ_e × cos θ_p</text>
+<text x="35" y="233">• Radiometric norm</text>
+
+<!-- 2. SHADOW / VISIBILITY BOX -->
+<rect x="255" y="107" width="225" height="148" />
+<text x="270" y="131" class="b">SHADOW / VISIBILITY</text>
+<text x="270" y="153">Single-layer penumbra</text>
+<text x="270" y="173">• Binary blocker test</text>
+<text x="270" y="193">  per sample point</text>
+<text x="270" y="213">• Average across S</text>
+<text x="270" y="233">  yields true penumbra</text>
+
+<!-- 3. SPECULAR REFLECTION BOX -->
+<rect x="490" y="107" width="225" height="148" />
+<text x="505" y="131" class="b">SPECULAR REFLECTION</text>
+<text x="505" y="153">Ray-plane intersection</text>
+<text x="505" y="173">• Emitter 2D coords</text>
+<text x="505" y="193">• Continuous aperture</text>
+<text x="505" y="213">  profile &amp; roughness</text>
+<text x="505" y="233">• Fixture catchlights</text>
+
 </svg>

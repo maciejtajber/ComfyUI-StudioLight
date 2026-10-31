@@ -1,97 +1,90 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="725" width="735" viewBox="0 0 735 725" class="aasvg">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="715" width="735" viewBox="0 0 735 715" class="aasvg">
 <style>
 .aasvg { color-scheme: light dark; --aasvg-b: light-dark(#1f2328, #e6edf3); --aasvg-w: light-dark(#ffffff, #0d1117); color: var(--aasvg-b, #1f2328); }
 path, line, polyline, rect { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.2; }
-.dashed { stroke-dasharray: 3,6; }
 text { font: 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: currentColor; stroke: none; }
 text.b { font-weight: 700; }
-text.title { font-weight: 700; font-size: 14px; }
-text.sub { font-size: 11.5px; opacity: 0.85; }
 polygon.arrowhead { fill: currentColor; stroke: none; }
-rect { rx: 4; ry: 4; }
+rect { rx: 0; ry: 0; }
 </style>
 
-<!-- HEADER -->
-<text x="367" y="32" class="title" text-anchor="middle">STUDIOLIGHT DUAL-INPUT PIPELINE</text>
-<text x="367" y="49" class="sub" text-anchor="middle">[ Consistent V1 · Physical Layer Compositing ]</text>
+<!-- TOP PIPELINE BOX -->
+<rect x="77" y="16" width="580" height="42" />
+<text x="367" y="42" class="b" text-anchor="middle">STUDIOLIGHT DUAL-INPUT PIPELINE [Consistent V1]</text>
 
 <!-- 1. DUAL INGESTION -->
-<rect x="40" y="72" width="290" height="52" />
-<text x="185" y="93" class="b" text-anchor="middle">Existing 2D Photo / Render</text>
-<text x="185" y="111" class="sub" text-anchor="middle">Fixed source pixels (Zero prompt drift)</text>
+<rect x="30" y="74" width="325" height="54" />
+<text x="192" y="96" class="b" text-anchor="middle">Existing 2D Photograph / Render</text>
+<text x="192" y="116" text-anchor="middle">Fixed pixels (Zero prompt drift)</text>
 
-<rect x="405" y="72" width="290" height="52" />
-<text x="550" y="93" class="b" text-anchor="middle">Optional Diffusion Draft</text>
-<text x="550" y="111" class="sub" text-anchor="middle">Base latent plate from FLUX / SDXL</text>
+<rect x="380" y="74" width="325" height="54" />
+<text x="542" y="96" class="b" text-anchor="middle">Optional Diffusion Draft</text>
+<text x="542" y="116" text-anchor="middle">Base latent plate from FLUX / SDXL</text>
 
-<!-- Convergence lines to Source Plate -->
-<path d="M 185,124 L 185,146 L 367,146" />
-<path d="M 550,124 L 550,146 L 367,146" />
-<path d="M 367,146 L 367,166" />
-<polygon class="arrowhead" points="367,172 362,162 372,162" />
+<!-- Bus to Source Plate -->
+<path d="M 192,128 L 192,146 L 367,146" />
+<path d="M 542,128 L 542,146 L 367,146" />
+<path d="M 367,146 L 367,164" />
+<polygon class="arrowhead" points="367,170 362,160 372,160" />
 
 <!-- 2. SOURCE PLATE -->
-<rect x="227" y="173" width="280" height="40" />
-<text x="367" y="198" class="b" text-anchor="middle">Source Plate (Linear sRGB)</text>
+<rect x="197" y="171" width="340" height="38" />
+<text x="367" y="195" class="b" text-anchor="middle">Source Plate (Linear sRGB)</text>
 
-<!-- Split into Analysis & Carrier -->
-<path d="M 367,213 L 367,243" />
-<polygon class="arrowhead" points="367,249 362,239 372,239" />
+<!-- Down to Scene Analysis -->
+<path d="M 367,209 L 367,235" />
+<polygon class="arrowhead" points="367,241 362,231 372,231" />
 
 <!-- 3. SCENE ANALYSIS -->
-<rect x="40" y="250" width="655" height="120" />
-<text x="60" y="275" class="b">STRUCTURAL SCENE ANALYSIS</text>
-<text x="470" y="275" class="sub">[ Extracted Upstream Once ]</text>
+<rect x="30" y="242" width="675" height="126" />
+<text x="50" y="266" class="b">STRUCTURAL SCENE ANALYSIS [Upstream Extraction]</text>
 
-<!-- Column 1 -->
-<text x="60" y="302">• Surface Normals: Marigold / DSINE</text>
-<text x="60" y="324">• Camera Depth: Depth Anything V2</text>
-<text x="60" y="346">• Subject Mask: BiRefNet-general</text>
+<text x="50" y="292">• Surface Normals: Marigold / DSINE</text>
+<text x="50" y="316">• Relative Depth: Depth Anything V2</text>
+<text x="50" y="340">• Subject Mask: BiRefNet-general</text>
 
-<!-- Column 2 -->
-<text x="390" y="302">• Intrinsic Albedo: Marigold IID</text>
-<text x="390" y="324">• DeLight: Linear Diffuse Blend</text>
-<text x="390" y="346">• Scene Intent: Prompt Sanitizer</text>
+<text x="385" y="292">• Intrinsic Albedo: Marigold IID</text>
+<text x="385" y="316">• DeLight: Linear Diffuse Blend</text>
+<text x="385" y="340">• Scene Intent: Prompt Sanitizer</text>
 
-<!-- Down to Rig Console & Carrier bypass -->
-<path d="M 210,370 L 210,413" />
-<polygon class="arrowhead" points="210,419 205,409 215,409" />
+<!-- Split to Rig & Compositor -->
+<path d="M 200,368 L 200,405" />
+<polygon class="arrowhead" points="200,411 195,401 205,401" />
 
-<!-- Carrier Source bypass directly to Compositor -->
-<path d="M 515,370 L 515,523" />
-<polygon class="arrowhead" points="515,529 510,519 520,519" />
+<path d="M 535,368 L 535,515" />
+<polygon class="arrowhead" points="535,521 530,511 540,511" />
 
 <!-- 4. STUDIO LIGHT RIG -->
-<rect x="40" y="420" width="340" height="96" />
-<text x="210" y="443" class="b" text-anchor="middle">StudioLight Rig Console</text>
-<text x="60" y="465" class="sub">• 3D C-Stands: Azimuth, Elevation, Dist</text>
-<text x="60" y="485" class="sub">• Modifiers: Octa, Strip, Dish, Flash</text>
-<text x="60" y="505" class="sub">• 3D Raymarching: P0 Occlusion, IGN</text>
+<rect x="30" y="412" width="340" height="96" />
+<text x="200" y="436" class="b" text-anchor="middle">StudioLight Rig Console</text>
+<text x="50" y="458">• 3D C-Stands: Azimuth, Elevation, Dist</text>
+<text x="50" y="478">• Modifiers: Octa, Strip, Dish, Flash</text>
+<text x="50" y="498">• 3D Raymarching: P0 Occlusion, IGN</text>
 
 <!-- Rig to Compositor -->
-<path d="M 380,468 L 435,468 L 435,523" />
-<polygon class="arrowhead" points="435,529 430,519 440,519" />
+<path d="M 370,460 L 430,460 L 430,515" />
+<polygon class="arrowhead" points="430,521 425,511 435,511" />
 
 <!-- 5. CONSISTENT COMPOSITOR -->
-<rect x="92" y="530" width="550" height="78" />
-<text x="367" y="554" class="b" text-anchor="middle">Consistent Compositor (Schema 1)</text>
-<text x="367" y="574" class="sub" text-anchor="middle">Additive: HDR = Source · 2^e + Diffuse + Specular + Ambient</text>
-<text x="367" y="593" class="sub" text-anchor="middle">Replacement: Subject Mask + Controlled Source Preservation</text>
+<rect x="67" y="522" width="600" height="76" />
+<text x="367" y="545" class="b" text-anchor="middle">Consistent Compositor (Schema 1)</text>
+<text x="367" y="567" text-anchor="middle">Additive: HDR = Source · 2^e + Diffuse + Specular + Ambient</text>
+<text x="367" y="587" text-anchor="middle">Replacement: Subject Mask + Controlled Source Preservation</text>
 
 <!-- Dual Outputs -->
-<path d="M 230,608 L 230,642" />
-<polygon class="arrowhead" points="230,648 225,638 235,638" />
+<path d="M 210,598 L 210,626" />
+<polygon class="arrowhead" points="210,632 205,622 215,622" />
 
-<path d="M 505,608 L 505,642" />
-<polygon class="arrowhead" points="505,648 500,638 510,638" />
+<path d="M 525,598 L 525,626" />
+<polygon class="arrowhead" points="525,632 520,622 530,622" />
 
 <!-- 6. OUTPUTS -->
-<rect x="65" y="649" width="330" height="54" />
-<text x="230" y="671" class="b" text-anchor="middle">Direct Relit Proxy (~2s)</text>
-<text x="230" y="690" class="sub" text-anchor="middle">Instant Physically Coherent VFX Plate</text>
+<rect x="45" y="633" width="330" height="56" />
+<text x="210" y="655" class="b" text-anchor="middle">Direct Relit Proxy (~2s)</text>
+<text x="210" y="675" text-anchor="middle">Instant Physically Coherent VFX Plate</text>
 
-<rect x="415" y="649" width="255" height="54" />
-<text x="542" y="671" class="b" text-anchor="middle">Optional FLUX Polish</text>
-<text x="542" y="690" class="sub" text-anchor="middle">VAE Encode · Denoise 0.35–0.45</text>
+<rect x="390" y="633" width="300" height="56" />
+<text x="540" y="655" class="b" text-anchor="middle">Optional FLUX Polish</text>
+<text x="540" y="675" text-anchor="middle">VAE Encode · Denoise 0.35–0.45</text>
 
 </svg>

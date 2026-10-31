@@ -215,7 +215,7 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 ### Dual-Input Architecture
 
 <div align="center">
-  <img src="assets/02_studiolight_relighting_pipeline.svg" alt="StudioLight Dual-Input Pipeline" width="700" />
+  <img src="assets/02_studiolight_relighting_pipeline.svg" alt="StudioLight Dual-Input Pipeline" width="735" />
 </div>
 
 ### 6-Stage Technical Layer Dissection
