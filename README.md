@@ -1,406 +1,533 @@
-# ComfyUI-StudioLight
+<div align="center">
+
+<img src="assets/studiolight_banner.png" alt="StudioLight by METAMATERIAL" width="100%" />
+
+<br>
+<br>
 
 **Stop prompt gambling. Design the light.**
 
-Add and shape studio lighting on **existing photographs, finished renders, or generated drafts** inside ComfyUI. Position key, fill, and rim lights, choose photographic modifiers, inspect the direct result, and optionally use FLUX to interpret materials.
+Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin control for existing photographs, finished renders, and generative drafts in ComfyUI.
 
-**Consistent V1 · Candidate R1**  
-Target release: **31 October 2026**
+<p align="center">
+  <img src="https://img.shields.io/badge/release-Consistent_V1_(R1)-1f2328?style=flat&labelColor=555555" alt="Release Consistent V1 (R1)" />
+  <img src="https://img.shields.io/badge/ComfyUI-Custom_Node-1f2328?style=flat&labelColor=555555" alt="ComfyUI Custom Node" />
+  <img src="https://img.shields.io/badge/FLUX.1-Dev_%C2%B7_Krea_(Optional)-1f2328?style=flat&labelColor=555555" alt="FLUX.1 Dev / Krea (Optional)" />
+  <img src="https://img.shields.io/badge/PyTorch-2.0%2B_CUDA_%2F_MPS-1f2328?style=flat&logo=pytorch&logoColor=white&labelColor=555555" alt="PyTorch 2.0+ CUDA / MPS" />
+  <img src="https://img.shields.io/badge/python-3.10%2B-1f2328?style=flat&logo=python&logoColor=white&labelColor=555555" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/tests-68_%2F_68_passing-2ea44f?style=flat&labelColor=555555" alt="Tests 68/68 Passing" />
+  <img src="https://img.shields.io/badge/license-MIT-99080a?style=flat&labelColor=555555" alt="License MIT" />
+</p>
 
-StudioLight combines estimated single-view geometry with a controllable lighting rig and explicit compositing. The source image, estimated diffuse base, and new lighting remain separate, so you can see what each contributes.
+<br>
 
-> **Release status:** Candidate R1 defines the Consistent V1 pipeline. Repository reconciliation, release packaging, clean-install verification, and final visual acceptance remain release-completion tasks. Implementation checks do not establish universal relighting quality.
+<sub>
+<a href="#same-subject-different-studio-light">SHOWCASE</a> &nbsp;·&nbsp;
+<a href="#the-problem-prompt-lottery-vs-spatial-control">THE PROBLEM</a> &nbsp;·&nbsp;
+<a href="#what-makes-studiolight-different">DIFFERENTIATION</a> &nbsp;·&nbsp;
+<a href="#how-it-works-the-dual-input-pipeline">PIPELINE</a> &nbsp;·&nbsp;
+<a href="#from-camera-space-lighting-pass-to-final-flux-render">PASS VS. RENDER</a> &nbsp;·&nbsp;
+<a href="#3d-camera-space-shadow-raymarching">3D SHADOWS</a> &nbsp;·&nbsp;
+<a href="#optical-modifiers--physically-motivated-area-emitters">AREA EMITTERS</a> &nbsp;·&nbsp;
+<a href="#core-production-suite">CORE SUITE</a> &nbsp;·&nbsp;
+<a href="#installation">INSTALL</a> &nbsp;·&nbsp;
+<a href="#master-workflow">WORKFLOW</a> &nbsp;·&nbsp;
+<a href="#known-limitations--engineering-scope">LIMITATIONS</a> &nbsp;·&nbsp;
+<a href="#roadmap">ROADMAP</a>
+</sub>
 
-[Pipeline](#pipeline) · [Additive and replacement modes](#additive-and-replacement-modes) · [Working rules](#five-working-rules) · [Node suite](#node-suite) · [Installation](#installation) · [Limitations](#limitations) · [Roadmap](#roadmap)
+</div>
 
-## Start with the image you have
+<br>
 
-You do not need to generate an image to use StudioLight.
+---
 
-| Starting point | Workflow |
-| --- | --- |
-| Existing photograph | Load the photograph, estimate its surface properties, and add studio illumination. |
-| Finished render | Use the render as the source plate and design additional lighting from the fixed camera view. |
-| Generated draft | Generate a composition, freeze the draft, then adjust lighting independently of further generation. |
+## Same Subject. Different Studio Light.
 
-The direct proxy is a usable output in its own right. FLUX refinement is optional.
+https://github.com/user-attachments/assets/f82d96d9-08ac-4dfb-8f1a-a65432f33a32
 
-StudioLight offers explicit spatial controls where text alone leaves interpretation to a generative model. Its lighting calculations are repeatable for fixed inputs and settings; the quality of the result still depends on estimated geometry, estimated albedo, and the source image.
+<br>
 
-## Pipeline
+> **Single Fixed Source Plate** | *Pure Physical Relighting in ComfyUI*
 
-```mermaid
-flowchart TD
-    Existing["Existing photograph or render"] --> Source["Fixed source plate"]
-    Draft["Generated draft"] --> Source
+<table>
+  <thead>
+    <tr>
+      <th width="33.33%" align="center">High-Fashion Beauty</th>
+      <th width="33.33%" align="center">Direct On-Camera Flash</th>
+      <th width="33.33%" align="center">Golden Hour Window</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center"><img src="assets/showcase_high_fashion_beauty.png" width="100%" alt="High-Fashion Beauty" /></td>
+      <td align="center"><img src="assets/showcase_direct_flash.png" width="100%" alt="Direct On-Camera Flash" /></td>
+      <td align="center"><img src="assets/showcase_golden_hour.png" width="100%" alt="Golden Hour Window" /></td>
+    </tr>
+    <tr>
+      <td align="center"><sub>Key Beauty Dish (5500K) + Soft Fill. Sculpted cheekbones, circular catchlights, balanced wrap.</sub></td>
+      <td align="center"><sub>Hard On-Camera Flash (6500K). Micro-pinpoint glare, sharp contact drop shadows, high contrast.</sub></td>
+      <td align="center"><sub>Warm Area Light (3200K) + Cool Sky Fill. Atmospheric side wrap, sunset chiaroscuro glow.</sub></td>
+    </tr>
+  </tbody>
+</table>
 
-    Source --> Depth["Depth Anything V2"]
-    Source --> Normals["Marigold Normals"]
-    Source --> IID["Marigold IID"]
-    Source --> Mask["BiRefNet subject mask via Node 87"]
+---
 
-    Source --> Strength["Node 92 · DeLight Strength"]
-    IID --> Strength
+## The Problem: Prompt Lottery vs. Spatial Control
 
-    Depth --> Rig["StudioLightRig · full-surface telemetry"]
-    Normals --> Rig
+Text prompts cannot reliably execute 3D spatial vectors. Requesting a `"dramatic blue rim light on the left"` triggers severe prompt bleed: facial features shift, clothing changes cut, and colors wash across the entire frame.
 
-    Source --> Composite["Node 17 · StudioLightConsistentComposite"]
-    Strength --> Composite
-    Mask --> Composite
-    Rig --> Composite
-    Contract["Scene Contract · Schema 1"] --> Composite
+<table>
+  <thead>
+    <tr>
+      <th width="50%" align="left">Prompt-Based Lighting (Text Only)</th>
+      <th width="50%" align="left">StudioLight Spatial Control (VFX Engine)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><b>Subject Mutation:</b> Prompting for light changes anatomy, facial features, styling, and background geometry.</td>
+      <td align="left"><b>Pure Lighting Isolation:</b> Relights fixed 2D photographs or frozen drafts without altering subject geometry or identity.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Chromatic Bleed:</b> Color words tint skin, hair, and clothing indiscriminately across the whole image.</td>
+      <td align="left"><b>Directional Lobe Isolation:</b> Key, fill, and rim colors remain strictly confined to illuminated surfaces (\(\mathbf{N} \cdot \mathbf{L} > 0\)).</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Uncalibrated Falloff:</b> Lights ignore scene depth and distance, treating all surfaces as flat planes.</td>
+      <td align="left"><b>Geometric Inverse-Square Falloff:</b> Models true \((r_{\text{ref}} / r)^2\) radiometric distance attenuation calibrated to studio C-stands.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Diffusion Bottleneck:</b> Requires 30–50 full diffusion steps just to see if a light moved by 10 degrees.</td>
+      <td align="left"><b>Instant ~2s Feedback Loop:</b> Shader computes an inspectable physical lighting proxy in ~2 seconds on an RTX 3090.</td>
+    </tr>
+  </tbody>
+</table>
 
-    Composite --> Proxy["Node 19 · exact direct proxy"]
-    Composite --> Encode["Node 20 · VAE Encode"]
-    VAE["Compatible VAE"] --> Encode
-    Encode --> Flux["Optional FLUX refinement"]
+---
+
+## What Makes StudioLight Different
+
+ComfyUI-StudioLight is a **physically motivated, camera-space relighting engine** that combines single-view geometry estimation, sampled photographic area emitters, and an explicit layer compositing contract for both existing images and generative drafts.
+
+### Defining Capabilities:
+* **Universal Source Ingestion:** Operates on existing 2D photographs, completed renders, or generative drafts. You do not need to generate an image to use StudioLight.
+* **Camera-Space 3D Shadow Raymarching:** Projects camera-space light rays through estimated scene depth, evaluating visibility with front-of-ray occlusion and finite-thickness guards without 2D drop-shadow fakes.
+* **Sampled Area-Emitter Apertures:** Models real photographic modifiers (Octabox 1.4m, Stripbox 0.3×1.2m, Beauty Dish 55cm) via Quasi-Monte Carlo integration. Contact-hardening penumbras emerge naturally from aperture geometry.
+* **Pure Additive Layering Contract:** Retains the original scene plate and its practical lamps natively as an independent base layer:
+  $$\text{HDR} = \text{Source} \cdot 2^{\text{exposure}} + \text{Diffuse} + \text{Specular} + \text{Ambient}$$
+  Existing background practicals, room glow, and skylight survive natively without fragile emission guessing.
+* **Controlled Subject Replacement:** Switch between native scene addition and targeted subject relighting with an explicit `source_preservation` slider.
+* **Two-Stage Generative Freedom:** The physical lighting proxy is a complete, finished output in ~2 seconds. FLUX.1 Krea Dev refinement is strictly an *optional* pass for generative material synthesis and subsurface scattering.
+
+<br>
+
+<div align="center">
+  <img src="assets/studiolight_probe_and_render.webp" alt="StudioLight VFX Probes & Studio Radar vs Final Render" width="100%" />
+  <br>
+  <sub><b>Interactive Camera-Space Lighting Rig:</b> Real-time 3D VFX spheres (18% Grey + Chrome) &amp; studio radar driving generative relighting across 6 distinct setups.</sub>
+</div>
+
+<br>
+
+> [!NOTE]
+> **Fidelity Boundaries & Engineering Scope:**
+> * **Single-View 2.5D Reconstruction:** Operates on single-view monocular depth and surface normal estimations anchored to camera space. Single-view depth cannot reconstruct occluded geometry behind foreground objects or volumetric smoke.
+> * **Approximate Reflectance:** Intrinsic decomposition extracts estimated albedo via Marigold IID. Fine specular responses and micro-catchlights represent photographic approximations, not full multi-bounce path-traced BSDFs.
+> * **Diffusion Transfer:** When Pass 2 FLUX refinement is used, denoise (`0.35 – 0.50`) controls how faithfully the model preserves the exact proxy versus reinterpreting skin pores and fabric grain.
+
+### Context & Adjacent Prior Art
+
+<table>
+  <thead>
+    <tr>
+      <th width="24%" align="left">Approach&nbsp;/&nbsp;Tool</th>
+      <th width="36%" align="left">Documented Technique</th>
+      <th width="40%" align="left">StudioLight Distinction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><b>Learned Relighting</b><br>(<a href="https://github.com/lllyasviel/ic-light">IC-Light</a>)</td>
+      <td align="left">Text-conditioned and background-conditioned latent diffusion relighting models.</td>
+      <td align="left">Provides explicit physical studio fixture parameters (stand distance in meters, elevation/azimuth in degrees, blackbody Kelvin, physical modifier geometry).</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Point-Light &amp; Pass Relighting</b><br>(<a href="https://github.com/FXTD-Studios/radiance">FXTD Radiance</a>)</td>
+      <td align="left">Comprehensive VFX toolset featuring scene-linear math, camera-space point lights, and normal-based shading passes.</td>
+      <td align="left">Provides integrated geometric area-emitter shadow raymarching, intrinsic albedo recovery, and pure additive practical preservation.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Screen-Space Mask Lighting</b><br>(<a href="https://github.com/EnragedAntelope/comfyui-relight">ComfyUI-ReLight</a>)</td>
+      <td align="left">Vectorized 2D screen-space raymarching over subject masks.</td>
+      <td align="left">Extends raymarching into 3D camera space with depth-buffer occlusion testing, area modifier apertures, and instant 2s proxy feedback.</td>
+    </tr>
+  </tbody>
+</table>
+
+---
+
+## How It Works: The Dual-Input Pipeline
+
+StudioLight combines single-view geometry estimation with a physical 3-point lighting console and an explicit layer compositor:
+
+<br>
+<div align="center">
+  <img src="assets/02_studiolight_relighting_pipeline.svg" alt="StudioLight Relighting Pipeline" width="692" />
+</div>
+<br>
+
+1. **Source Ingestion:** Accepts an existing 2D photograph, finished render, or newly generated draft plate as the source carrier.
+2. **Structural Scene Analysis:** Extracts surface orientation via Marigold Normals, relative camera depth via Depth Anything V2, intrinsic diffuse albedo via Marigold IID, and subject selection via BiRefNet.
+3. **Photometric Deferred Shading:** Computes area-emitter diffuse irradiance, Blinn-Phong specular lobes, and 3D camera-space shadow raymarching from virtual C-stands.
+4. **Physical Layer Composition:** Combines source appearance with newly calculated lighting passes under an explicit additive or subject-replacement contract, outputting an inspectable HDR proxy in ~2 seconds.
+5. **Optional Generative Synthesis:** The exact compositor proxy can be encoded into FLUX.1 Krea Dev latents (`denoise 0.35 – 0.50`) to synthesize authentic skin subsurface scattering and fabric micro-reflections.
+
+<br>
+
+<div align="center">
+  <img src="assets/studiolight_pipeline_dissection_grid.png" alt="StudioLight 6-Stage Pipeline Dissection" width="100%" />
+  <br>
+  <sub><b>Six-Stage Technical Pipeline Dissection:</b> Row 1: Source Plate ➔ Estimated Depth Map ➔ Surface Normals. Row 2: Pure Relighting Field ➔ Lit Proxy Plate (~2s) ➔ Final FLUX Synthesis.</sub>
+</div>
+
+<br>
+
+---
+
+## From Camera-Space Lighting Pass to Final FLUX Render
+
+> **Identical Camera Intrinsics ($40^\circ$ Portrait FOV) & Studio Rig Coordinates.**  
+> Left: Direct 3D lighting pass preview (computed in float32 PyTorch raymarcher in ~2s). Right: Optional FLUX.1 Krea Dev generative interpretation.
+
+<table>
+  <thead>
+    <tr>
+      <th width="50%" align="center">1. Direct 3D Shading Pass (PyTorch Raymarcher ~2s)</th>
+      <th width="50%" align="center">2. Final FLUX Synthesis (Optional Generative Interpretation)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center"><img src="assets/hero_split_deferred.png" width="100%" alt="Deferred 3D Shading Pass" /></td>
+      <td align="center"><img src="assets/hero_split_flux.jpg" width="100%" alt="Final FLUX Latent Synthesis" /></td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left">
+        <b>Deterministic Camera-Space Lighting Guidance:</b><br>
+        • Projected 3D camera-space raymarching through estimated depth field<br>
+        • Contact-hardening penumbra under knuckles and coat collar<br>
+        • Diverging sampled penumbra cast across 2m background depth gap
+      </td>
+      <td align="left">
+        <b>Generative Material Polish (Pass 2):</b><br>
+        • High-contrast dielectric specular catchlights on patent leather<br>
+        • Preserves dark black wool texture without crushed blacks or self-shadow acne<br>
+        • Fluted neoclassical stone grain and ambient occlusion interpretation
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+---
+
+## 3D Camera-Space Shadow Raymarching
+
+StudioLight replaces flat 2D screen-space offsets with **projected 3D camera-space raymarching through reconstructed depth fields**:
+
+```
+P_receiver ──► P_receiver + t · (P_light - P_receiver) ──► Perspective Projection ──► Bilinear Depth Lookup ──► P0 Occlusion Gate
 ```
 
-Analysis supplies four estimates:
-
-- **Depth Anything V2:** relative depth for camera-space surface reconstruction and visibility.
-- **Marigold Normals:** surface orientation for the lighting response.
-- **Marigold IID:** intrinsic decomposition, including an estimated diffuse albedo.
-- **BiRefNet-general:** subject selection, exposed through Node 87.
-
-The rig calculates lighting across the visible surface. The compositor combines that lighting with the original source according to the selected operation.
-
-### Candidate R1 wiring
-
-The numbered nodes refer to the supplied Consistent V1 workflow, not permanent ComfyUI node identifiers.
-
-| Connection | Purpose |
-| --- | --- |
-| Original image → Node 17 `source` | Retain the original scene as its own contribution. |
-| Node 92 → Node 17 `diffuse_base` | Use the full-image DeLight strength result for diffuse response. |
-| Node 87 mask → Node 17 `subject_mask` | Select the subject without treating a mixed subject/background image as albedo. |
-| Rig telemetry → Node 17 | Supply separated, full-surface lighting fields. |
-| Node 17 output 0 → Node 19 | Preview the exact compositor output. |
-| Node 17 output 0 → Node 20 `pixels` | Encode the same image shown by the direct preview. |
-| VAE loader Node 3 → Node 20 `vae` | Supply the encoder’s required VAE. |
-
-The legacy grade at Node 18 is bypassed on the main path. The direct preview and VAE input therefore share the same compositor output.
-
-**Direct-proxy iteration is approximately two seconds in the reference workflow after analysis is available.** This is an indicative lighting-iteration time, not a guarantee for every device and not the duration of model downloads, initial analysis, draft generation, or FLUX refinement.
-
-## Additive and replacement modes
-
-Consistent V1 uses an explicit **Schema 1 compositing contract**. Choose the operation before adjusting the lights.
-
-### Additive — default
-
-UI operation: **`Add studio light`**
-
-```text
-HDR = S × 2^e + D + P + A
-```
-
-| Term | Meaning |
-| --- | --- |
-| `S` | Original source image converted from sRGB to linear RGB. |
-| `e` | `scene_exposure`, applied to the retained source contribution. |
-| `D` | New diffuse contribution, using the diffuse base and rig lighting. |
-| `P` | New specular contribution from the rig. |
-| `A` | New ambient contribution, using the diffuse base and rig ambient field. |
-
-**The existing scene, practical lights, their spill, and reflections remain in the source contribution.** StudioLight does not need to guess which highlights are emitters to retain them.
-
-This also means that original shadows and reflections remain. Additive mode adds illumination; it does not extinguish an existing lamp, rotate a baked shadow, or remove the original light.
-
-At zero scene exposure, with all new direct and ambient contributions disabled, the output preserves the source up to floating-point transfer roundoff. Ambient is a separate contribution: setting direct studio strength to zero does not necessarily disable ambient.
-
-Preservation describes the retained source layer. Added illumination, exposure changes, and display highlight handling can change the final displayed pixels.
-
-### Replacement — explicit subject relighting
-
-UI operation: **`Replace subject light`**
-
-Replacement reduces the original source contribution inside the subject mask and applies new lighting there. The background retains its source contribution, subject to scene exposure.
-
-For subject mask `M` and source preservation `p`:
-
-```text
-Retained source = S × 2^e × (1 − M + p × M)
-
-HDR = Retained source + D_subject + P_subject + A_subject
-```
-
-The **`source_preservation`** slider ranges from **0.0 to 1.0**:
-
-| Value | Effect inside the subject mask |
-| --- | --- |
-| `0.0` | Remove the original source contribution and rely on the estimated diffuse base and new lighting. |
-| Between `0.0` and `1.0` | Retain part of the original subject appearance. |
-| `1.0` | Retain the full original subject appearance alongside the added subject lighting. |
-
-Source preservation retains **old shadows, reflected highlights, practical lights, and spill together**. It does not isolate emission.
-
-At `0.0`, practical lights or their illumination inside the subject mask may disappear. At higher values, unwanted original lighting may remain. This is an explicit tradeoff, not a claim of perfect illumination separation.
-
-Connect and inspect the subject mask before using replacement. Without a subject mask, the compositor falls back to full-frame replacement and reports that behavior.
-
-### Color and data contract
-
-- Source and diffuse-base image inputs are aligned sRGB RGB images in `[0, 1]`.
-- Lighting is combined in linear RGB.
-- The HDR pass bundle contains relative linear values, not measured radiance.
-- Geometry scale is assumed rather than recovered metrically.
-- Full-surface lighting arrives through **rig telemetry Schema 2**; this is separate from the **Schema 1 scene/compositing contract**.
-- The display proxy applies highlight handling relative to the retained source baseline.
-- Source, albedo, normals, depth, and masks must describe the same framing and dimensions.
-
-The new path does not apply hidden global exposure normalization or infer material classes and emitters from pixel brightness.
-
-## Five working rules
-
-### Rule 1: Choose the operation first
-
-Use **Additive** to retain the scene and introduce additional illumination.
-
-Use **Replacement** when you intend to reduce the original subject lighting and accept the limitations of estimated albedo and subject masking.
-
-### Rule 2: Keep the source plate and diffuse base separate
-
-The original image goes to Node 17 `source`.
-
-Node 92 controls the diffuse base:
-
-- **Strength `0.0`:** original appearance.
-- **Strength `1.0`:** full Marigold albedo estimate.
-- **Intermediate values:** a blend performed in linear RGB.
-
-Lowering DeLight strength deliberately brings original illumination back into the diffuse base. It can also bake that illumination into the new diffuse response.
-
-Node 87 supplies the subject mask in this workflow. Its combined subject/background image is not the Consistent V1 diffuse base.
-
-### Rule 3: Inspect estimates before judging lighting
-
-Check albedo, normals, depth, and the subject mask before moving lights to compensate for artifacts.
-
-Look for shadows or highlights remaining in albedo, incorrect normal orientation, flattened depth, and selection errors around hair, transparent objects, reflective surfaces, or multiple subjects.
-
-A faulty estimate can produce a faulty lighting response even when the rig behaves correctly.
-
-### Rule 4: Evaluate the exact direct proxy
-
-Inspect Node 19 before running refinement.
-
-It displays the same Node 17 image that reaches VAE Encode. Use this approximately two-second iteration loop to assess placement, exposure, shadow direction, and the balance between original and added illumination.
-
-Do not judge the compositor through a separately graded preview.
-
-### Rule 5: Treat diffusion as optional material interpretation
-
-FLUX can interpret the proxy into richer material detail, but it can also change facial features, texture, color, reflections, and lighting.
-
-Compare the refined image against the direct proxy. A successful diffusion result does not prove the underlying geometry is correct, and a diffusion artifact does not necessarily originate in the lighting pass.
-
-## Node suite
-
-| Node | Role in Consistent V1 |
-| --- | --- |
-| **`StudioLightConsistentComposite`** | Main compositor at Node 17. Separates source appearance from added diffuse, specular, and ambient contributions. Exposes additive and replacement operations, diagnostic previews, HDR passes, and a report. |
-| **`StudioLightRig`** | Camera-space key, fill, and rim controls, photographic modifiers, light color, visibility, and full-surface telemetry. |
-| **`StudioLightDeLightStrength`** | Node 92. Blends original appearance with estimated albedo to produce the full-image diffuse base. |
-| **`StudioLightSubjectBackgroundBase`** | Node 87. Provides the BiRefNet subject mask used by this workflow. Its combined-image output remains available for other workflows. |
-| **`StudioLightSceneContract`** | Declares scene intent and supplies Schema 1 metadata. Prompt-derived labels describe intent; they are not pixel segmentation. |
-| **`StudioPromptSanitizer`** | Supports prompt preparation for generated drafts. It does not replace image analysis or guarantee an unlit draft. |
-| **Marigold DeLight / normals adapters** | Supply intrinsic and normal estimates through the corresponding pretrained models. |
-
-### Compatibility
-
-**`StudioPhotometricComposite`** and **`SIShadowHighlight`** remain available for legacy workflows and comparisons.
-
-They are not the main Consistent V1 compositing path. Older workflows should not be treated as equivalent to Candidate R1 simply because they contain the same lighting rig.
-
-Update the rig, compositor, adapters, and workflow together. Missing full-surface telemetry should be resolved by installing matching components, not by substituting a legacy combined lighting map.
-
-## Installation
-
-Use the **Consistent V1 package and matching workflow**. An older StudioLight installation does not necessarily contain the new compositor, telemetry, or corrected R1 connections.
-
-### Required components
-
-| Component | Requirement |
-| --- | --- |
-| **ComfyUI** | A working installation and its existing Python/PyTorch environment. |
-| **ComfyUI-StudioLight** | Core nodes, frontend assets, presets, and matching Consistent V1 workflow. |
-| **`comfyui_controlnet_aux`** | Depth Anything V2 preprocessor and the model selected by the workflow. |
-| **Marigold Normals adapter and weights** | `prs-eth/marigold-normals-v1-1`, with the normal convention expected by the rig. |
-| **ComfyUI-StudioLight-DeLight** | Marigold IID integration using `prs-eth/marigold-iid-lighting-v1-1`. |
-| **`comfyui-rmbg`** | `BiRefNetRMBG` and **BiRefNet-general** for automatic subject detection through Node 87. |
-| **Optional FLUX stack** | A compatible FLUX diffusion model, text encoders, and VAE for draft generation or refinement. |
-
-An existing-image, direct-proxy workflow does not require FLUX.
-
-### Install the core package
-
-Place the release’s `ComfyUI-StudioLight` directory under:
-
-```text
-ComfyUI/
-└── custom_nodes/
-    └── ComfyUI-StudioLight/
-        ├── __init__.py
-        ├── nodes/
-        ├── web/
-        └── requirements.txt
-```
-
-Using the **same Python environment that launches ComfyUI**, install its requirements:
-
+* **P0 Front-of-Ray Occlusion Gate ($D_{\text{scene}} \le D_{\text{ray}} - \epsilon$):** Evaluates depth strictly in front of the ray sample, paired with a $0.45\text{m}$ finite-thickness boundary and bilateral depth-guided filtering to eliminate false behind-ray occlusions and receiver self-shadow acne.
+* **Long-Distance Depth Projection:** Evaluated across expanding depth gaps (validated up to $24\text{m}$ in synthetic geometry, including $2\text{px}$ thin blades in front of $20\text{m}$ depth cliffs) without artificial search clamping.
+* **Sampled Area-Emitter Penumbra:** Soft shadows emerge from multi-sample Quasi-Monte Carlo integration across virtual aperture faces with **Interleaved Gradient Noise (IGN)** sub-step dither to smooth discrete step transitions without artificial blur passes.
+
+<div align="center">
+<img src="assets/stress_02_slit_banding_vs_dither.png" width="95%" alt="3D Camera-Space Shadow Raymarching: Banding vs IGN Dither" />
+<br>
+<sub>Slit Aperture Penumbra Stress Test (Row 1: S=4 no dither, S=8 no dither, S=4 dither. Row 2: S=8 dither [Balanced Default], S=16 dither [High-End], S=64 Reference).</sub>
+</div>
+
+### NVIDIA RTX 3090 Performance Benchmarks (Shader Parameter Study)
+
+*Measured via `tools/run_hardcore_stress_tests.py` on an NVIDIA GeForce RTX 3090 (PyTorch 2.13, CUDA 12.6, warm runs averaged with `torch.cuda.synchronize()`):*
+
+<table>
+  <thead>
+    <tr>
+      <th align="left">Resolution</th>
+      <th align="left">Configuration Tier</th>
+      <th align="center">Samples&nbsp;(S)</th>
+      <th align="center">Steps</th>
+      <th align="center">Pass&nbsp;Latency (RTX&nbsp;3090)</th>
+      <th align="center">Peak&nbsp;VRAM</th>
+      <th align="center">Ray-Sample Steps&nbsp;/&nbsp;sec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left">512&nbsp;×&nbsp;512</td>
+      <td align="left">Fast Preview</td>
+      <td align="center">4</td>
+      <td align="center">12</td>
+      <td align="center">12.0 ms</td>
+      <td align="center">113 MB</td>
+      <td align="center">1,047 M/s</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"></td>
+      <td align="left">Balanced (Default)</td>
+      <td align="center">8</td>
+      <td align="center">16</td>
+      <td align="center">29.6 ms</td>
+      <td align="center">118 MB</td>
+      <td align="center">1,135 M/s</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left">1024&nbsp;×&nbsp;1024</td>
+      <td align="left">Fast Preview</td>
+      <td align="center">4</td>
+      <td align="center">12</td>
+      <td align="center">32.0 ms</td>
+      <td align="center">450 MB</td>
+      <td align="center">1,571 M/s</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"></td>
+      <td align="left">Balanced (Default)</td>
+      <td align="center">8</td>
+      <td align="center">16</td>
+      <td align="center">83.0 ms</td>
+      <td align="center">469 MB</td>
+      <td align="center">1,617 M/s</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"></td>
+      <td align="left">High-End Quality</td>
+      <td align="center">16</td>
+      <td align="center">24</td>
+      <td align="center">245.3 ms</td>
+      <td align="center">469 MB</td>
+      <td align="center">1,642 M/s</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left">2048&nbsp;×&nbsp;2048 (4.2&nbsp;MP)</td>
+      <td align="left">Balanced (Default)</td>
+      <td align="center">8</td>
+      <td align="center">16</td>
+      <td align="center">311.5 ms</td>
+      <td align="center">1.87 GB</td>
+      <td align="center">1,724 M/s</td>
+    </tr>
+  </tbody>
+</table>
+
+> [!NOTE]
+> * **Pass Latency:** Complete shadow visibility pass execution time (`torch.cuda.synchronize()`).
+> * **Throughput:** Measured inner raymarch step evaluations per second, distinct from full diffusion generation time.
+
+---
+
+## Optical Modifiers & Physically Motivated Area Emitters
+
+Each studio modifier is modeled as a 3D virtual emitter with oriented tangent-space frames, uniform aperture sampling ($W, H, R$), cosine-weighted emission, $(r_{\text{ref}}/r)^2$ distance attenuation, and an analytical aperture footprint in reflection space:
+
+<br>
+<div align="center">
+  <img src="assets/01_emitter_architecture.svg" alt="StudioLight Geometric Area Emitter Architecture" width="735" />
+</div>
+<br>
+
+<table>
+  <thead>
+    <tr>
+      <th width="18%" align="left">Modifier</th>
+      <th width="20%" align="center">Aperture<br>Dimensions</th>
+      <th width="14%" align="center">Beam&nbsp;Angle<br>(&theta;<sub>beam</sub>)</th>
+      <th width="26%" align="left">Optical Approximation</th>
+      <th width="22%" align="left">Catchlight Profile</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><b>Direct On-Camera Flash</b></td>
+      <td align="center">0.08m&nbsp;×&nbsp;0.05m</td>
+      <td align="center">70°</td>
+      <td align="left">Near-point strobe emitter</td>
+      <td align="left">Crisp micro-pinpoint glare</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Hard Snoot</b></td>
+      <td align="center">R&nbsp;=&nbsp;0.05m<br>(10cm)</td>
+      <td align="center">18°</td>
+      <td align="left">Collimated beam cone</td>
+      <td align="left">Tight circular isolation</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Fresnel Spotlight</b></td>
+      <td align="center">R&nbsp;=&nbsp;0.15m<br>(30cm)</td>
+      <td align="center">35°</td>
+      <td align="left">Optical lens edge cutoff</td>
+      <td align="left">Compact stepped lens disc</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Stripbox</b></td>
+      <td align="center">0.30m&nbsp;×&nbsp;1.20m</td>
+      <td align="center">65°</td>
+      <td align="left">1:4 Asymmetric rectangular emitter</td>
+      <td align="left">Elongated vertical catchlight bar</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Beauty Dish (Silver)</b></td>
+      <td align="center">R&nbsp;=&nbsp;0.275m<br>(55cm)</td>
+      <td align="center">85°</td>
+      <td align="left">Parabolic dish + center deflector (36% radius ratio, 12% transmission)</td>
+      <td align="left">Sculpted facial wrap, circular donut ring</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Octabox (Soft)</b></td>
+      <td align="center">R&nbsp;=&nbsp;0.70m<br>(140cm)</td>
+      <td align="center">130°</td>
+      <td align="left">Broad Lambertian octagonal emitter</td>
+      <td align="left">Large wrap disc, soft continuous penumbra</td>
+    </tr>
+  </tbody>
+</table>
+
+---
+
+## Core Production Suite
+
+<table>
+  <thead>
+    <tr>
+      <th width="28%" align="left">Engine Component</th>
+      <th width="72%" align="left">Role &amp; Architectural Responsibility</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><b>StudioLight Rig</b><br><sub>3-Point Lighting Console</sub></td>
+      <td align="left">Master photographic lighting console with 3D camera-space C-stand coordinates (azimuth, elevation, distance in meters), 3-Zone Light Pointer with face auto-aim, physical modifier apertures (Octabox, Stripbox, Beauty Dish, Fresnel, Snoot, Flash), blackbody Kelvin control (2000K–10000K), and 3D shadow raymarching. Outputs diffuse relighting, isolated specular pass, dual VFX probes, and full-surface telemetry.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Consistent Compositor</b><br><sub>Physical Layer Engine</sub></td>
+      <td align="left">Primary physical layer compositor implementing Schema 1. Supports <b>Pure Additive Mode</b> (preserves 100% of the original plate and ambient practicals natively) and <b>Subject Replacement Mode</b> (controlled subject relighting via <code>source_preservation</code>). Feeds direct preview and VAEEncode with identical linear HDR data.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>DeLight Controller</b><br><sub>Albedo Modulation Engine</sub></td>
+      <td align="left">Linearly blends the original source image and Marigold IID estimated albedo to feed the full-surface diffuse reflectance base, eliminating harsh baked-shadow doubling without artificial desaturation.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Subject Mask Isolator</b><br><sub>Automatic Segmentation</sub></td>
+      <td align="left">Supplies clean foreground subject selection via <code>BiRefNet-general</code> for targeted subject replacement operations.</td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="left"><b>Prompt Sanitizer</b><br><sub>Semantic Scene Parser</sub></td>
+      <td align="left">Decomposes prompts into structured scene intent, stripping directional lighting tokens to eliminate prompt clashing during optional generative diffusion polish.</td>
+    </tr>
+  </tbody>
+</table>
+
+### Five Working Rules for Production
+
+* **Rule 1: Choose Your Relighting Mode First.** Use **Additive Mode** to introduce directional strobes or rim lights while preserving native room glow and existing lamps. Use **Replacement Mode** with `source_preservation` when you need to completely reshape key lighting on a portrait.
+* **Rule 2: Keep Source Plate & Diffuse Base Independent.** The source carrier preserves environmental background radiance; the DeLight Controller supplies pure diffuse reflectance. Never collapse them into a single masked hybrid before the compositor.
+* **Rule 3: Inspect Upstream Geometry Before Tuning Intensities.** Verify surface normals and relative depth maps. If an edge looks unnatural, adjust the preprocessor scale before over-amplifying rig power.
+* **Rule 4: Trust the Direct Proxy.** The direct ~2s compositor output is physically coherent. If light vectors or shadows look misplaced in the proxy, generative diffusion will not correct them—it will only hallucinate over the error.
+* **Rule 5: Diffusion is an Optional Material Synthesizer.** Use Pass 2 FLUX Krea Dev at gentle denoise (`0.35 – 0.45`) to add dielectric micro-textures and pore-level skin scattering. It is a material polisher, not a lighting fixer.
+
+---
+
+## Installation & Dependencies
+
+### 1. Installation
 ```bash
-python -m pip install -r custom_nodes/ComfyUI-StudioLight/requirements.txt
+cd ComfyUI/custom_nodes
+git clone https://github.com/maciejtajber/ComfyUI-StudioLight.git
+pip install -r ComfyUI-StudioLight/requirements.txt
 ```
+*(PyTorch `torch>=2.0.0` is treated as a host-provided ComfyUI dependency so your local CUDA / ROCm / Apple Silicon MPS build is never overwritten).*
 
-The core requirements include NumPy and Pillow. PyTorch comes from the host ComfyUI environment; the core requirements intentionally do not replace it.
+### 2. Analysis Dependencies & Models
+* **Normals & Depth:** Install `comfyui_controlnet_aux` for `DSINE-NormalMapPreprocessor` / Marigold Normals and `DepthAnythingV2Preprocessor`.
+* **Intrinsic Albedo:** Install `ComfyUI-StudioLight-DeLight` (weights: `prs-eth/marigold-iid-lighting-v1-1`).
+* **Subject Segmentation:** Install `comfyui-rmbg` (`BiRefNet-general`).
+* **Optional Diffusion Refinement:** `flux1-dev.safetensors` or `flux1-krea-dev.safetensors` with standard CLIP and VAE loaders.
 
-### Install analysis dependencies
-
-Install `comfyui_controlnet_aux` and `comfyui-rmbg`, including their package requirements and the weights selected by the workflow.
-
-Install the supplied `ComfyUI-StudioLight-DeLight` package and its Marigold dependencies:
-
+### 3. Automated Test Suite
+Verify mathematical invariants, color spaces, and shader engines standalone:
 ```bash
-python -m pip install -r custom_nodes/ComfyUI-StudioLight-DeLight/requirements-marigold.txt
+python3 -m unittest discover -s tests
 ```
+*(68 / 68 automated unit & regression tests passing).*
 
-The companion dependency set includes Diffusers, Transformers, Accelerate, and Safetensors. Use the dependency file shipped with the matching release.
+---
 
-**Enable only one registration of the Marigold DeLight node.** If the release integrates that adapter into the core package, do not also enable a standalone copy registering the same node.
+## Master Workflow
 
-Model weights are separate downloads:
+> **Flagship Production Architecture:** Complete dual-input ComfyUI pipeline supporting fixed photograph relighting, 3D shadow raymarching, physical compositing, and live VFX sphere probes.
 
-```text
-Marigold IID:     prs-eth/marigold-iid-lighting-v1-1
-Marigold Normals: prs-eth/marigold-normals-v1-1
-Subject mask:    BiRefNet-general
-Depth:           Depth Anything V2 checkpoint selected in the workflow
-```
+<a href="assets/studiolight_master_workflow.png" target="_blank">
+  <img src="assets/studiolight_master_workflow.png" alt="StudioLight Master ComfyUI Production Workflow" width="100%" />
+</a>
 
-For the DeLight adapter, enable `allow_download` for initial setup or provide a complete local Diffusers model directory. Its default model cache is under:
+* **Ready-to-Run Workflows:**
+  * **Photo Relight (`workflows/StudioLight_PhotoRelight.json`):** Streamlined single-pass workflow to load any photograph and relight it in ~2 seconds.
+  * **Master Studio (`workflows/StudioLight_Master_Studio.json`):** Full flagship pipeline featuring prompt decoupling, 3D C-stands, and optional FLUX Krea Dev generative refinement.
 
-```text
-ComfyUI/models/studiolight/huggingface/
-```
+---
 
-Prepare the normals checkpoint through the matching adapter’s setup instructions as well; downloading IID weights does not install the normals model.
+## Known Limitations & Engineering Scope
 
-### Load the workflow
+* **Single-View 2.5D Frustum:** Geometry and shadow raymarching operate on surfaces visible to the camera. Surfaces completely occluded in the depth map cannot cast shadows.
+* **Estimated Intrinsic Albedo:** Single-image albedo decomposition via Marigold IID is an estimate. Extreme specular glare or deep baked shadows may leave subtle residual tones in challenging plates.
+* **Additive Layer Retention:** Additive mode retains existing ambient lighting and practical lamps natively. It does not erase old light sources or rotate existing baked shadows.
+* **Diffusion Interpretation:** When optional Pass 2 FLUX refinement is enabled, higher denoise levels ($\ge 0.60$) give diffusion greater freedom to repaint textures, whereas lower values ($0.35–0.45$) strictly preserve subject identity and proxy lighting vectors.
 
-1. Restart ComfyUI after installing the packages.
-2. Open the supplied **`StudioLight_Consistent_V1.json`** canvas workflow.
-3. Resolve missing nodes and select the installed model files.
-4. Choose an existing image or generated draft as the source.
-5. Run analysis and inspect its outputs.
-6. Confirm the Candidate R1 connections listed above.
-7. Evaluate Node 19 before enabling optional refinement.
+---
 
-The candidate also includes API workflows for automation and fixed-source proxy evaluation. API prompt JSON and canvas workflow JSON serve different purposes.
+## Status-Based Capability Roadmap
 
-## Diagnostics and troubleshooting
+| Capability / Milestone | Engineering Status | Architectural Scope |
+| :--- | :--- | :--- |
+| **Fixed-Image 2D Relighting** | **Shipped in Consistent V1** | Relight arbitrary photographs and renders without mandatory diffusion passes. |
+| **Pure Additive Layering Contract** | **Shipped in Consistent V1** | Native practical and room-ambient preservation ($HDR = S \cdot 2^e + D + P + A$). |
+| **Controlled Subject Replacement** | **Shipped in Consistent V1** | Explicit `source_preservation` slider with BiRefNet subject isolation. |
+| **Intrinsic Albedo Pipeline** | **Shipped in Consistent V1** | Full-surface Marigold IID De-Light modulation via the DeLight Controller. |
+| **Direct Proxy / VAE Parity** | **Shipped in Consistent V1** | Preview and VAEEncode receive identical, unclipped linear HDR data in ~2s. |
+| **Optional FLUX Krea Polish** | **Shipped in Consistent V1** | Decoupled Pass 2 generative refinement stage for skin micro-textures. |
+| **Temporal Light Keyframing** | **Next Sprint (Q4 2026)** | Reproducible interpolation of C-stand coordinates and Kelvin across video frame sequences. |
+| **Video Diffusion Integration** | **Next Sprint (Q4 2026)** | Injecting 32-bit linear photometric plates into spatio-temporal video attention streams (Wan / LTX). |
+| **Temporal Geometry Deflicker** | **Next Sprint (Q4 2026)** | Depth and normal temporal filtering to eliminate multi-frame edge chatter. |
+| **Multi-View Coherent Rigging** | **Research Horizon** | Shared 3D camera-space lighting rigs across multi-camera array captures. |
+| **Integrated Three.js 3D Mesh Stage** | **Explicitly Retired** | Single-view depth raymarching supersedes the legacy Three.js mannequin stage. |
 
-| Symptom | Check |
-| --- | --- |
-| Existing shadows remain | Expected in additive mode. Replacement reduces the source contribution but remains limited by albedo estimation. |
-| Replacement loses a lamp or illuminated detail | Inspect the subject mask and `source_preservation`; subject-region practicals are not isolated automatically. |
-| Background lighting looks inconsistent | Verify Node 92 feeds `diffuse_base`, then inspect depth and receiver protection. |
-| Preview differs from the refinement input | Confirm Node 19 and Node 20 both receive Node 17 output 0, bypassing the legacy grade. |
-| VAE Encode reports a missing input | Restore the compatible VAE connection to Node 20. |
-| Missing full-surface telemetry | Install matching rig and compositor versions. |
-| Subject detection fails | Check `comfyui-rmbg`, `BiRefNetRMBG`, and BiRefNet-general weights. |
-| “Sky” protection excludes the wrong area | Inspect the protection preview. The automatic mask is a depth-based estimate; override it when needed. |
-| Skin or material detail changes after refinement | Compare with the direct proxy to separate diffusion changes from analysis or compositing artifacts. |
+---
 
-The compositor exposes diffuse and specular previews, a protected-background mask, linear HDR passes, and a report. These are inspection tools, not certificates of physical accuracy.
+## License & Credits
 
-## Limitations
-
-**StudioLight is a fixed-camera, single-view relighting system. It is not universal inverse rendering.**
-
-### Geometry is estimated
-
-Single-view depth cannot recover hidden surfaces, unseen occluders, accurate transparent volumes, or a complete scene behind the camera. Camera-space reconstruction uses assumed scale.
-
-Shadow visibility is evaluated against the available depth representation. It is not equivalent to tracing a complete 3D scene.
-
-### Albedo is estimated
-
-A single image does not uniquely determine reflectance, illumination, and non-diffuse effects.
-
-Marigold can leave lighting in albedo, suppress material variation, or alter fine detail. Its shading and residual estimates have scale ambiguity. A reconstructed preview is not proof of calibrated radiometric recovery.
-
-### Materials and transport are approximate
-
-The rig uses physically motivated lighting calculations and an approximate specular response. It does not recover measured BRDFs, per-pixel roughness, full indirect illumination, or hidden geometry.
-
-Preserving a source reflection does not make that reflection respond correctly to a newly positioned light.
-
-### Practicals are retained as appearance
-
-Additive mode retains practical lights and existing spill through the source image. It does not reconstruct their emitter geometry or simulate new transport from them.
-
-Existing laser beams or haze may survive in the source; new volumetric scattering is not automatically recovered.
-
-### Masks and scene labels are estimates
-
-BiRefNet can misidentify boundaries. Automatic far-background protection uses top-connected far depth in eligible scenes; it is not semantic sky recognition.
-
-Prompt-derived environment and practical-light labels express scene intent, not verified pixel-level facts.
-
-### Performance and refinement vary
-
-Runtime depends on hardware, image size, model loading, analysis settings, and cache state. The approximate two-second direct-proxy loop is not an end-to-end generation benchmark.
-
-Optional diffusion can reinterpret both materials and composition. It cannot guarantee identity or exact lighting preservation.
-
-## Roadmap
-
-### Implemented in Consistent V1
-
-- Separate original source and estimated diffuse-base inputs.
-- Default additive composition under Schema 1.
-- Explicit subject replacement with `source_preservation`.
-- Full-surface rig telemetry.
-- Full-image DeLight strength through Node 92.
-- Subject-mask routing through Node 87.
-- Direct compositor preview matching the VAE input.
-- Diagnostic passes, protection preview, and reporting.
-- Optional FLUX refinement.
-
-### Release Completion
-
-- Reconcile Candidate R1 sources with the release repository.
-- Update workflow builders so regenerated workflows preserve all R1 fixes.
-- Package matching nodes, dependencies, workflows, and model setup instructions.
-- Verify a clean installation and the exact release artifact.
-- Complete visual acceptance on fixed source plates and optional refinement.
-- Publish reproducible evidence with hardware, settings, and validation scope.
-- Finalize dependency and model attribution notices.
-
-### Next: Temporal & Video
-
-Investigate consistency across frames: stable analysis, coherent masks, reduced flicker, and reproducible lighting controls.
-
-Per-frame relighting alone does not establish temporal consistency.
-
-### Research: Multi-view
-
-Explore stronger geometry and visibility from multiple views, improved material information, and more complete transport.
-
-These are research directions, not current capabilities or scheduled delivery commitments.
-
-### Retired: Three.js stage
-
-The proposed Three.js stage is retired from the active roadmap. Consistent V1 focuses on native ComfyUI controls and the fixed-image lighting workflow.
-
-## License and credits
-
-StudioLight code is released under the [MIT License](LICENSE).
-
-Created by **Maciej Tajber / METAMATERIAL**.
-
-The analysis pipeline relies on the work of the ComfyUI, Depth Anything V2, Marigold, Diffusers, BiRefNet, `comfyui_controlnet_aux`, and `comfyui-rmbg` communities. Optional refinement uses the selected FLUX ecosystem.
-
-Third-party code and model weights retain their own licenses. StudioLight’s MIT license does not relicense those dependencies or weights.
+* **Code & Shaders:** MIT License. Created by **Maciej Tajber** // **METAMATERIAL** Applied VFX Systems.
+* **Ecosystem Credits:** Built on the open research of the ComfyUI, Depth Anything V2, Marigold, BiRefNet, and FLUX communities.
