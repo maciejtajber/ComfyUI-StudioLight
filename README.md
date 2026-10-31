@@ -238,18 +238,19 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 
 ### Core Engine Components (Clean Names)
 
-* **StudioLight Rig:** 3-point C-stand console calculating area diffuse, specular microfacets, and 3D shadow raymarching.
+* **StudioLight Rig:** 3-point C-stand console calculating area diffuse, analytical specular, and 3D shadow raymarching.
 * **Consistent Compositor:** Physical layer engine executing Schema 1 Additive and Replacement modes, directly driving the ~2s preview.
 * **DeLight Controller:** Blends source appearance with estimated Marigold albedo to eliminate harsh baked-shadow doubling.
 * **Subject Mask Isolator:** Automatic BiRefNet foreground segmentation for clean subject isolation.
 * **Prompt Sanitizer:** Strips conflicting lighting tokens to eliminate prompt clashing during optional Pass 2 diffusion.
 
-### Five Working Rules for Production
+### Core Working Rules for Production
 1. **Choose Your Relighting Mode First:** Use **Additive Mode** to add key/rim strobes while keeping natural environmental lighting. Use **Replacement Mode** with `source_preservation` when you need to completely reshape key lighting on a portrait.
 2. **Keep Source Plate & Diffuse Base Independent:** The source carrier preserves environmental background radiance; the DeLight Controller supplies pure diffuse reflectance.
 3. **Inspect Upstream Geometry Before Tuning Intensities:** Verify surface normals and relative depth maps before over-amplifying rig power.
 4. **Trust the Direct Proxy:** The direct ~2s compositor output is physically coherent. If light vectors or shadows look misplaced in the proxy, generative diffusion will not correct them.
 5. **Diffusion is an Optional Material Synthesizer:** Use Pass 2 FLUX Krea Dev at gentle denoise (`0.35 – 0.45`) to add dielectric micro-textures and pore-level skin scattering.
+6. **Keep Analytical Specular at Default (`0.0 – 0.05`):** Analytical `specular_strength` defaults to `0.0`. Testing confirms values $\ge 0.10$ can introduce synthetic specular streaks on dark, low-albedo matte textiles (wool, cotton, velvet). Keeping it at `0.0` (or $\le 0.05$) leaves matte fabrics pristine while FLUX Pass 2 naturally synthesizes material-correct micro-sheen from the 3D directional diffuse field ($N \cdot L$). Increase above $0.1$ only when specifically relighting wet surfaces, polished metals, or synthetic gloss.
 
 ---
 
@@ -257,6 +258,7 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 
 ### Honest Engineering Boundaries
 * **Single-View 2.5D Frustum:** Geometry and shadow raymarching operate on surfaces visible to the camera. Surfaces completely occluded in the depth map cannot cast shadows.
+* **Uniform Specular Roughness (V1):** Analytical specular evaluates a global modifier reflection profile without per-pixel roughness or material classification. Because it can overpower low diffuse albedo on dark fabrics, its compositor contribution defaults to `0.0` (safe range `0.0–0.05`).
 * **Estimated Intrinsic Albedo:** Single-image albedo decomposition via Marigold IID is an estimate. Extreme specular glare or deep baked shadows may leave subtle residual tones in challenging plates.
 * **Additive Layer Retention:** Additive mode retains existing ambient lighting and practical lamps natively. It does not erase old light sources or rotate existing baked shadows.
 * **Diffusion Interpretation:** Higher Pass 2 denoise levels ($\ge 0.60$) give diffusion greater freedom to repaint textures, whereas lower values ($0.35–0.45$) strictly preserve subject identity and proxy lighting vectors.
@@ -276,6 +278,8 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 │ Temporal Light Keyframing        │ Next Sprint (Q4)     │ Reproducible C-stand interpolation for video.    │
 │ Video Attention Integration      │ Next Sprint (Q4)     │ 32-bit linear photometric plates into Wan / LTX. │
 │ Temporal Geometry Deflicker      │ Next Sprint (Q4)     │ Multi-frame depth & normal temporal filtering.   │
+│ Material-Aware PBR Roughness     │ Research Horizon     │ Semantic material segmentation + per-pixel       │
+│ & Microfacet GGX Shading         │                      │ roughness/metallic maps for artifact-free PBR.   │
 │ Multi-View Coherent Rigging      │ Research Horizon     │ Shared 3D camera-space rigs across multi-cam.    │
 │ Integrated Three.js Mannequin    │ Explicitly Retired   │ Replaced by 2.5D camera-space depth raymarching. │
 └──────────────────────────────────┴──────────────────────┴──────────────────────────────────────────────────┘
