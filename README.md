@@ -183,6 +183,12 @@ $$S_{\text{retained}} = \text{Source} \cdot 2^{\text{exposure}} \cdot \left((1 -
 * **Targeted Portrait Relighting:** Isolates the subject with a high-precision mask ($M$) and applies new studio illumination over pure albedo.
 * **Controlled Source Preservation ($p$):** Dial the `source_preservation` slider ($0.0$ to $1.0$) to choose how much original subject texture and existing reflected illumination to retain.
 
+> [!WARNING]
+> **Troubleshooting Persistent Shadow Artifacts (Chin, Neck & Crevices):**
+> * **Why shadows stay in "Add Studio Light":** `Add studio light` keeps the original input plate as an immutable base layer. If the input image already has a harsh baked shadow under the chin, collar, or cheek, setting DeLight to 100% will never erase it in this mode because the original dark pixels remain underneath.
+> * **The Solution:** If you see stubborn remaining shadows you are unable to remove by rotating light azimuth, switch the operation to `Replace subject light` and set `source_preservation: 0.00 – 0.05`. This completely wipes the original photo's baked shadows from the subject and rebuilds their lighting 100% from clean, de-lighted albedo.
+> * **3D Chin Occlusion:** Light elevation $>30^\circ$ causes the physical chin geometry in the depth map to cast a real 3D raymarched shadow down onto the neck. To illuminate the throat, add a clamshell fill from below (`fill_elevation: -10° to 0°`), lower key elevation to eye level ($10^\circ\text{–}15^\circ$), or reduce `ao_anchoring` to `0.20 – 0.30`.
+
 ---
 
 ## 6. Quick Start & Workflows
@@ -208,8 +214,8 @@ python3 -m unittest discover -s tests
 *(68 / 68 automated unit & regression tests passing).*
 
 ### 4. Ready-to-Run Workflows
-* **StudioLight Relight (`workflows/StudioLight_PhotoRelight.json`):** Single-pass workflow to load any photograph or render and relight it in ~2 seconds.
-* **StudioLight Studio (`workflows/StudioLight_Master_Studio.json`):** Flagship pipeline featuring prompt decoupling, 3D C-stands, and optional FLUX Krea Dev generative refinement.
+* **StudioLight Relight (`workflows/StudioLight_Relight.json`):** Single-pass workflow to load any photograph or render and relight it in ~2 seconds.
+* **StudioLight Create (`workflows/StudioLight_Create.json`):** Flagship generative studio featuring prompt decoupling, 3D C-stands, and optional FLUX Krea Dev refinement.
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -265,7 +271,7 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 * **Photometric Environment Meter & Sky Gate:** Evaluates 60th-percentile background luminance, estimates spatially-varying ambient chromaticity fields, and gates sky spill using depth, luminance, and saturation thresholds.
 
 ### Core Working Rules for Production
-1. **Choose Your Relighting Mode First:** Use **Additive Mode** to add key/rim strobes while keeping natural environmental lighting. Use **Replacement Mode** with `source_preservation` when you need to completely reshape key lighting on a portrait.
+1. **Choose Your Relighting Mode First (Erase vs Splash):** Use **Add Studio Light** to splash key/rim strobes across an entire room while preserving practical lamps and ambient mood. Use **Replace Subject Light** (with `source_preservation: 0.00 – 0.05`) whenever you need to completely erase harsh existing shadows (such as baked chin/neck shadows or hard directional sunlight) and rebuild portrait lighting from scratch.
 2. **Keep Source Plate & Diffuse Base Independent:** The source carrier preserves environmental background radiance; the DeLight Controller supplies pure diffuse reflectance.
 3. **Inspect Upstream Geometry Before Tuning Intensities:** Verify surface normals and relative depth maps before over-amplifying rig power.
 4. **Trust the Direct Proxy:** The direct ~2s compositor output is physically coherent. If light vectors or shadows look misplaced in the proxy, generative diffusion will not correct them.
