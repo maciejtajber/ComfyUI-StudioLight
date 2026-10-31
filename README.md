@@ -75,9 +75,9 @@ StudioLight locks the image and relights the **exact same source plate** with ph
 │   Color words tint skin, hair,    │   Key, fill, and rim colors remain strictly            │
 │   and entire background.          │   confined to illuminated surfaces (N · L > 0).        │
 │                                   │                                                        │
-│ • Uncalibrated Falloff            │ • Geometric Inverse-Square Falloff                     │
-│   Lights ignore depth & distance, │   Models true (r_ref / r)² radiometric attenuation     │
-│   treating scene as a flat plane. │   calibrated to physical studio C-stands.              │
+│ • Uncalibrated Falloff            │ • Inverse-Square & Enclosure Bounce                    │
+│   Lights ignore depth & context,  │   Models true (r_ref / r)² falloff with enclosure-     │
+│   treating scene as a flat plane. │   aware ambient bounce & nocturnal black-level anchor. │
 │                                   │                                                        │
 │ • Diffusion Bottleneck            │ • Instant ~2s Feedback Loop                            │
 │   Requires 30–50 full diffusion   │   Shader computes an inspectable physical lighting     │
@@ -153,6 +153,25 @@ The central workflow breakthrough of StudioLight is separating scene geometry an
 ## 5. Add to the Scene — Or Relight the Subject
 
 StudioLight features an explicit **Schema 1 Compositing Contract**, allowing you to choose how the new light integrates with the existing image:
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        BATTLE-TESTED SCENE & AMBIENT INTELLIGENCE                      │
+├───────────────────────┬────────────────────────────────────────────────────────────────┤
+│ NIGHT & NOCTURNAL     │ 60th-percentile background luminance metering anchors dark     │
+│ (Clubs, Caves, Noir)  │ floors so studio strobes don't wash out scenes into grey fog.  │
+├───────────────────────┼────────────────────────────────────────────────────────────────┤
+│ OPEN SKY & EXTERIOR   │ Multi-factor gate (depth + brightness + saturation) protects   │
+│ (Daylight, Horizons)  │ daylight horizons and clouds from artificial strobe spill.     │
+├───────────────────────┼────────────────────────────────────────────────────────────────┤
+│ ENCLOSED INTERIOR     │ Models ambient boundary bounce for rooms, studios, and stages, │
+│ (Rooms, Soundstages)  │ supplementing direct key lighting with natural fill.           │
+├───────────────────────┼────────────────────────────────────────────────────────────────┤
+│ SPATIALLY-VARYING     │ Samples perimeter background colors (e.g. left neon sign,      │
+│ CHROMATICITY WRAP     │ right tungsten lamp) to wrap contextual ambient light.         │
+└───────────────────────┴────────────────────────────────────────────────────────────────┘
+```
+<p align="center"><sub><b>Battle-Tested Scene Intelligence:</b> Refined through weeks of pod stress-testing across dark clubs, exterior daylight, enclosed interior sets, and multi-color practicals.</sub></p>
 
 ### Operation A: Add Studio Light (Default)
 $$\text{HDR} = \text{Source} \cdot 2^{\text{exposure}} + \text{Diffuse} + \text{Specular} + \text{Ambient}$$
@@ -243,6 +262,7 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 * **DeLight Controller:** Blends source appearance with estimated Marigold albedo to eliminate harsh baked-shadow doubling.
 * **Subject Mask Isolator:** Automatic BiRefNet foreground segmentation for clean subject isolation.
 * **Prompt Sanitizer:** Strips conflicting lighting tokens to eliminate prompt clashing during optional Pass 2 diffusion.
+* **Photometric Environment Meter & Sky Gate:** Evaluates 60th-percentile background luminance, estimates spatially-varying ambient chromaticity fields, and gates sky spill using depth, luminance, and saturation thresholds.
 
 ### Core Working Rules for Production
 1. **Choose Your Relighting Mode First:** Use **Additive Mode** to add key/rim strobes while keeping natural environmental lighting. Use **Replacement Mode** with `source_preservation` when you need to completely reshape key lighting on a portrait.
