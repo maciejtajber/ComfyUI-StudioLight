@@ -63,7 +63,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(comp.composite(base,torch.ones(1,4,4,3,device=self.device))[0].shape,base.shape)
 
     def test_master_compositor_defaults_and_optional_connections(self):
-        wf=json.loads((Path(__file__).parent/'workflows/StudioLight_Master.json').read_text())
+        wf=json.loads((Path(__file__).parent.parent/'workflows/StudioLight_Master.json').read_text())
         nodes={n['id']:n for n in wf['nodes']}; edges={l[0]:l for l in wf['links']}
         compositor=nodes[17]
         schema = StudioPhotometricComposite.INPUT_TYPES()
@@ -82,7 +82,7 @@ class ReleaseTests(unittest.TestCase):
             self.assertEqual(edge[1:5],[source,slot,17,index])
 
     def test_master_graph_routes_both_sanitizer_outputs(self):
-        wf=json.loads((Path(__file__).parent/'workflows/StudioLight_Master.json').read_text())
+        wf=json.loads((Path(__file__).parent.parent/'workflows/StudioLight_Master.json').read_text())
         nodes={n['id']:n for n in wf['nodes']}
         sanitizer=nodes[8]
         self.assertEqual(sanitizer['type'],'StudioPromptSanitizer')

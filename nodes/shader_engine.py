@@ -657,7 +657,7 @@ def resolve_aim_target(
     return default_center
 
 
-def integrate_area_diffuse(normals, surface_xyz, light_pos, aim_point, preset, num_samples=16):
+def integrate_area_diffuse(normals, surface_xyz, light_pos, aim_point, preset, num_samples=16, return_lambertian=False):
     """Normalized area-emitter irradiance used by scene and calibration probe."""
     device, dtype = normals.device, normals.dtype
     p_light = light_pos.reshape(1, 1, 1, 3)
@@ -678,7 +678,11 @@ def integrate_area_diffuse(normals, surface_xyz, light_pos, aim_point, preset, n
     receiver_cos = torch.pow(torch.clamp((n_dot_l + wrap) / (1.0 + wrap), 0.0, 1.0), 1.35)
     emitter_cos = torch.clamp(torch.sum(forward.view(1, 1, 1, 1, 3) * -direction, dim=-1, keepdim=True), 0.0, 1.0)
     beam = evaluate_beam_profile(emitter_cos, preset)
-    return torch.mean(receiver_cos * beam * (1.8 / distance) ** 2.0, dim=1)
+    legacy = torch.mean(receiver_cos * beam * (1.8 / distance) ** 2.0, dim=1)
+    if return_lambertian:
+        strict = torch.mean(n_dot_l.clamp(0, 1) * beam * (1.8 / distance) ** 2.0, dim=1)
+        return legacy, strict
+    return legacy
 
 
 def compute_light_shading(
@@ -808,7 +812,8 @@ def compute_light_shading(
         beam_axis_vec = beam_axis_vec / (torch.norm(beam_axis_vec, dim=-1, keepdim=True) + 1e-7)
         u_tangent, v_tangent, w_aim = generate_emitter_tangent_frame(-beam_axis_vec.view(3))
 
-        raw_diffuse = integrate_area_diffuse(normals, p_surf, p_light, aim_point_13, preset)
+        raw_diffuse, strict_diffuse = integrate_area_diffuse(
+            normals, p_surf, p_light, aim_point_13, preset, return_lambertian=True)
 
         aim_point = aim_point_13.expand(B, 3)
         cast_sh_map = screen_space_directional_shadow_metric(
@@ -867,6 +872,7 @@ def compute_light_shading(
         n_dot_l = torch.sum(normals * l_vec, dim=-1, keepdim=True)
         wrap = 0.22
         raw_diffuse = torch.pow(torch.clamp((n_dot_l + wrap) / (1.0 + wrap), 0.0, 1.0), 1.35) * attenuation
+        strict_diffuse = n_dot_l.clamp(0, 1) * attenuation
 
         h_vec = l_vec + v_vec
         h_vec = h_vec / (torch.norm(h_vec, dim=-1, keepdim=True) + 1e-7)
@@ -881,6 +887,9 @@ def compute_light_shading(
 
     diffuse_rgb = raw_diffuse * float(intensity) * c_tensor * diffuse_cast_sh
     specular_rgb = specular * float(intensity) * c_tensor
+    # New contract: Lambertian cosine and actual visibility, without the
+    # legacy 0.22 diffuse-wrap or 22% shadow-side artistic floor.
+    diffuse_rgb._studiolight_surface_diffuse = strict_diffuse * float(intensity) * c_tensor * cast_sh
 
     if return_separate and return_shadow_telemetry:
         return (diffuse_rgb, specular_rgb, unocc_irradiance, blocked_irradiance, vol_beam)
@@ -1058,7 +1067,8 @@ def render_studio_lighting(
             merged = {"schema_version": 2, "depth_convention": "relative_near_one",
                       "geometry_scale": "assumed", "ambient_intensity": float(ambient_intensity)}
             for name in ("d_norm", "fg_envelope", "fg_confidence", "shadow_occlusion", "volumetric_beam",
-                         "direct_diffuse", "direct_specular", "ambient_rgb"):
+                         "direct_diffuse", "direct_specular", "ambient_rgb",
+                         "surface_direct_diffuse", "surface_direct_specular", "surface_ambient_rgb"):
                 if all(name in t for t in telemetry_list):
                     merged[name] = torch.cat([t[name] for t in telemetry_list], dim=0)
             if all("d_split" in t for t in telemetry_list):
@@ -1163,6 +1173,7 @@ def render_studio_lighting(
                 dtype=norm_unit.dtype,
             )
 
+    total_surface_diffuse = torch.zeros_like(total_diffuse)
     for p_dict, p_vec, p_col in [
         (key_params, key_vec, key_col),
         (fill_params, fill_vec, fill_col),
@@ -1186,11 +1197,13 @@ def render_studio_lighting(
                 return_shadow_telemetry=True,
             )
             total_diffuse = total_diffuse + d_rgb
+            total_surface_diffuse = total_surface_diffuse + d_rgb._studiolight_surface_diffuse
             total_specular = total_specular + s_rgb
             total_unocc_irr = total_unocc_irr + unocc_irr
             total_blocked_irr = total_blocked_irr + block_irr
             total_vol_beam = total_vol_beam + vol_b
 
+    surface_specular = total_specular
     if float(ao_anchoring) > 0.0:
         cavity_ao = compute_cavity_ao_map(norm_unit, strength=float(ao_anchoring) * 2.5)
         total_diffuse = total_diffuse * cavity_ao
@@ -1212,6 +1225,11 @@ def render_studio_lighting(
         "direct_specular": (total_specular * subject_mask).detach().cpu(),
         "ambient_rgb": (float(ambient_intensity) * subject_mask + bg_backdrop * (1 - subject_mask)).detach().cpu(),
         "ambient_intensity": float(ambient_intensity),
+        # Full visible-surface passes for the explicit relighting contract.
+        # Legacy subject-gated fields and IMAGE outputs above remain unchanged.
+        "surface_direct_diffuse": total_surface_diffuse.detach().cpu(),
+        "surface_direct_specular": surface_specular.detach().cpu(),
+        "surface_ambient_rgb": torch.full_like(total_diffuse, float(ambient_intensity)).detach().cpu(),
     }
 
     # Attach 3D Volumetric Subject Envelope & Gated Cast-Shadow Telemetry

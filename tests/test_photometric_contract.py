@@ -48,7 +48,8 @@ class PhotometricContractTests(unittest.TestCase):
         image=self.image.clone();image[:,10:14,10:14]=torch.tensor([1.,.25,.01],device=self.device)
         tele={**self.tele, 'fg_confidence':torch.zeros_like(self.fg),
               'd_norm':torch.full_like(self.fg,.2), 'shadow_occlusion':torch.ones_like(self.fg)}
-        result,_=self.compose(image=image,telemetry=tele,lighting_strength=1.,wall_shadow_density=.95)
+        mask=torch.zeros_like(self.fg);mask[:,10:14,10:14]=1.
+        result,_=self.compose(image=image,telemetry=tele,lighting_strength=1.,wall_shadow_density=.95,emission_mask=mask)
         # Protection occurs before the intentionally compressive highlight shoulder.
         from nodes.photometric_composite import filmic_reinhard_tonemap
         expected=linear_to_srgb(filmic_reinhard_tonemap(srgb_to_linear(image)))
@@ -196,7 +197,7 @@ class PhotometricContractTests(unittest.TestCase):
         self.assertEqual(len(result),len(rig.RETURN_TYPES));self.assertIs(result[4],self.tele)
 
     def test_workflow_diagnostic_link_is_reachable(self):
-        workflow=json.loads((Path(__file__).parent/'workflows/StudioLight_Master.json').read_text())
+        workflow=json.loads((Path(__file__).parent.parent/'workflows/StudioLight_Master.json').read_text())
         nodes={n['id']:n for n in workflow['nodes']}
         diagnostics=[l for l in workflow['links'] if l[1:3]==[17,1]]
         self.assertEqual(len(diagnostics),1)

@@ -20,36 +20,16 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "master_prompt",
           "name": "master_prompt",
           "type": "STRING",
           "widget": {
             "name": "master_prompt"
           },
           "link": 128
-        },
-        {
-          "localized_name": "environment",
-          "name": "environment",
-          "type": "COMBO",
-          "widget": {
-            "name": "environment"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "ambient_intent",
-          "name": "ambient_intent",
-          "type": "COMBO",
-          "widget": {
-            "name": "ambient_intent"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "scene_contract",
           "name": "scene_contract",
           "type": "STUDIOLIGHT_SCENE_CONTRACT",
           "links": [
@@ -57,7 +37,6 @@
           ]
         },
         {
-          "localized_name": "pass1_capture_prompt",
           "name": "pass1_capture_prompt",
           "type": "STRING",
           "links": [
@@ -65,7 +44,6 @@
           ]
         },
         {
-          "localized_name": "pass2_scene_prompt",
           "name": "pass2_scene_prompt",
           "type": "STRING",
           "links": [
@@ -74,7 +52,6 @@
           ]
         },
         {
-          "localized_name": "report",
           "name": "report",
           "type": "STRING",
           "links": []
@@ -95,61 +72,6 @@
       }
     },
     {
-      "id": 9,
-      "type": "CLIPTextEncode",
-      "pos": [
-        -3280,
-        360
-      ],
-      "size": [
-        380,
-        100
-      ],
-      "flags": {},
-      "order": 14,
-      "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "clip",
-          "name": "clip",
-          "type": "CLIP",
-          "link": 2
-        },
-        {
-          "localized_name": "text",
-          "name": "text",
-          "type": "STRING",
-          "widget": {
-            "name": "text"
-          },
-          "link": 6
-        }
-      ],
-      "outputs": [
-        {
-          "localized_name": "CONDITIONING",
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "slot_index": 0,
-          "links": [
-            7
-          ]
-        }
-      ],
-      "title": "CLIP Text Encode (Pass 1 Albedo)",
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0",
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": [
-        ""
-      ],
-      "widgets_values_named": {
-        "text": ""
-      }
-    },
-    {
       "id": 1,
       "type": "UNETLoader",
       "pos": [
@@ -163,34 +85,13 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "unet_name",
-          "name": "unet_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "unet_name"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "weight_dtype",
-          "name": "weight_dtype",
-          "type": "COMBO",
-          "widget": {
-            "name": "weight_dtype"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
-          "localized_name": "MODEL",
           "name": "MODEL",
           "type": "MODEL",
           "slot_index": 0,
           "links": [
-            8,
             85
           ]
         }
@@ -226,54 +127,14 @@
       "flags": {},
       "order": 1,
       "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "clip_name1",
-          "name": "clip_name1",
-          "type": "COMBO",
-          "widget": {
-            "name": "clip_name1"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "clip_name2",
-          "name": "clip_name2",
-          "type": "COMBO",
-          "widget": {
-            "name": "clip_name2"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "type",
-          "name": "type",
-          "type": "COMBO",
-          "widget": {
-            "name": "type"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "device",
-          "name": "device",
-          "shape": 7,
-          "type": "COMBO",
-          "widget": {
-            "name": "device"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
-          "localized_name": "CLIP",
           "name": "CLIP",
           "type": "CLIP",
           "slot_index": 0,
           "links": [
             1,
-            2,
             3
           ]
         }
@@ -313,25 +174,13 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "vae_name",
-          "name": "vae_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
-          "localized_name": "VAE",
           "name": "VAE",
           "type": "VAE",
           "slot_index": 0,
           "links": [
-            13,
             39,
             140
           ]
@@ -353,131 +202,6 @@
       "bgcolor": "#3f5159"
     },
     {
-      "id": 4,
-      "type": "EmptyLatentImage",
-      "pos": [
-        -3680,
-        80
-      ],
-      "size": [
-        380,
-        120
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "width",
-          "name": "width",
-          "type": "INT",
-          "widget": {
-            "name": "width"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "height",
-          "name": "height",
-          "type": "INT",
-          "widget": {
-            "name": "height"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "batch_size",
-          "name": "batch_size",
-          "type": "INT",
-          "widget": {
-            "name": "batch_size"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "localized_name": "LATENT",
-          "name": "LATENT",
-          "type": "LATENT",
-          "slot_index": 0,
-          "links": [
-            11
-          ]
-        }
-      ],
-      "title": "Empty Latent (1024x1024)",
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0",
-        "Node name for S&R": "EmptyLatentImage"
-      },
-      "widgets_values": [
-        1024,
-        1024,
-        1
-      ],
-      "widgets_values_named": {
-        "width": 1024,
-        "height": 1024,
-        "batch_size": 1
-      },
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 12,
-      "type": "VAEDecode",
-      "pos": [
-        -2820,
-        360
-      ],
-      "size": [
-        380,
-        60
-      ],
-      "flags": {},
-      "order": 20,
-      "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "samples",
-          "name": "samples",
-          "type": "LATENT",
-          "link": 12
-        },
-        {
-          "localized_name": "vae",
-          "name": "vae",
-          "type": "VAE",
-          "link": 13
-        }
-      ],
-      "outputs": [
-        {
-          "localized_name": "IMAGE",
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "slot_index": 0,
-          "links": [
-            14,
-            15,
-            18,
-            74,
-            121,
-            123,
-            129
-          ]
-        }
-      ],
-      "title": "Decode Pass 1 Draft",
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0",
-        "Node name for S&R": "VAEDecode"
-      }
-    },
-    {
       "id": 5,
       "type": "CLIPTextEncode",
       "pos": [
@@ -495,24 +219,13 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "clip",
           "name": "clip",
           "type": "CLIP",
           "link": 1
-        },
-        {
-          "localized_name": "text",
-          "name": "text",
-          "type": "STRING",
-          "widget": {
-            "name": "text"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "CONDITIONING",
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "slot_index": 0,
@@ -538,45 +251,6 @@
       "bgcolor": "#602929"
     },
     {
-      "id": 13,
-      "type": "PreviewImage",
-      "pos": [
-        -2820,
-        460
-      ],
-      "size": [
-        380,
-        340
-      ],
-      "flags": {},
-      "order": 21,
-      "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "images",
-          "name": "images",
-          "type": "IMAGE",
-          "link": 14
-        }
-      ],
-      "outputs": [
-        {
-          "localized_name": "images",
-          "name": "images",
-          "type": "IMAGE",
-          "links": []
-        }
-      ],
-      "title": "Preview: Pass 1 Neutral Draft (Step 10)",
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0",
-        "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
-    },
-    {
       "id": 6,
       "type": "PrimitiveStringMultiline",
       "pos": [
@@ -590,20 +264,9 @@
       "flags": {},
       "order": 4,
       "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "value",
-          "name": "value",
-          "type": "STRING",
-          "widget": {
-            "name": "value"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
-          "localized_name": "STRING",
           "name": "STRING",
           "type": "STRING",
           "slot_index": 0,
@@ -636,14 +299,13 @@
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 28,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 69
@@ -651,7 +313,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -662,27 +323,24 @@
         "cnr_id": "comfy-core",
         "ver": "0.35.0",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 61,
       "type": "PreviewImage",
       "pos": [
         -1960,
-        60
+        110
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 30,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 70
@@ -690,7 +348,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -701,9 +358,7 @@
         "cnr_id": "comfy-core",
         "ver": "0.35.0",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 63,
@@ -714,14 +369,13 @@
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 31,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 72
@@ -729,7 +383,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -740,27 +393,24 @@
         "cnr_id": "comfy-core",
         "ver": "0.35.0",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 64,
       "type": "PreviewImage",
       "pos": [
         -1560,
-        60
+        110
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 32,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 73
@@ -768,7 +418,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -779,9 +428,7 @@
         "cnr_id": "comfy-core",
         "ver": "0.35.0",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 89,
@@ -799,7 +446,6 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "mask",
           "name": "mask",
           "type": "MASK",
           "link": 118
@@ -807,7 +453,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "IMAGE",
           "name": "IMAGE",
           "type": "IMAGE",
           "slot_index": 0,
@@ -831,14 +476,13 @@
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 40,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 119
@@ -846,7 +490,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -856,9 +499,7 @@
         "cnr_id": "comfy-core",
         "ver": "0.42.1",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 31,
@@ -869,14 +510,13 @@
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 25,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 16
@@ -884,7 +524,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -895,55 +534,31 @@
         "cnr_id": "comfy-core",
         "ver": "0.30.0",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 29,
       "type": "DepthAnythingV2Preprocessor",
       "pos": [
         -1100,
-        320
+        370
       ],
       "size": [
         380,
-        120
+        90
       ],
       "flags": {},
       "order": 23,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "image",
           "name": "image",
           "type": "IMAGE",
           "link": 18
-        },
-        {
-          "localized_name": "ckpt_name",
-          "name": "ckpt_name",
-          "shape": 7,
-          "type": "COMBO",
-          "widget": {
-            "name": "ckpt_name"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "resolution",
-          "name": "resolution",
-          "shape": 7,
-          "type": "INT",
-          "widget": {
-            "name": "resolution"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "IMAGE",
           "name": "IMAGE",
           "type": "IMAGE",
           "slot_index": 0,
@@ -971,18 +586,17 @@
       "type": "PreviewImage",
       "pos": [
         -1100,
-        480
+        500
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 26,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 19
@@ -990,7 +604,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -1001,33 +614,29 @@
         "cnr_id": "comfy-core",
         "ver": "0.30.0",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 20,
       "type": "VAEEncode",
       "pos": [
         -1100,
-        860
+        930
       ],
       "size": [
         380,
-        80
+        60
       ],
       "flags": {},
       "order": 42,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "pixels",
           "name": "pixels",
           "type": "IMAGE",
           "link": 134
         },
         {
-          "localized_name": "vae",
           "name": "vae",
           "type": "VAE",
           "link": 140
@@ -1035,7 +644,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "LATENT",
           "name": "LATENT",
           "type": "LATENT",
           "slot_index": 0,
@@ -1056,18 +664,17 @@
       "type": "PreviewImage",
       "pos": [
         -300,
-        60
+        110
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 33,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 21
@@ -1075,7 +682,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -1086,27 +692,24 @@
         "cnr_id": "comfy-core",
         "ver": "0.30.0",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 19,
       "type": "PreviewImage",
       "pos": [
         -300,
-        440
+        540
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 41,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 26
@@ -1114,7 +717,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -1125,9 +727,7 @@
         "cnr_id": "comfy-core",
         "ver": "0.30.0",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 16,
@@ -1138,14 +738,13 @@
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 34,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 22
@@ -1153,7 +752,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -1165,8 +763,6 @@
         "ver": "0.30.0",
         "Node name for S&R": "PreviewImage"
       },
-      "widgets_values": [],
-      "widgets_values_named": {},
       "color": "#222",
       "bgcolor": "#000"
     },
@@ -1175,18 +771,17 @@
       "type": "PreviewImage",
       "pos": [
         100,
-        440
+        540
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 43,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 135
@@ -1194,7 +789,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": null
@@ -1205,9 +799,7 @@
         "cnr_id": "comfy-core",
         "ver": "0.42.1",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 22,
@@ -1218,14 +810,13 @@
       ],
       "size": [
         380,
-        250
+        320
       ],
       "flags": {},
       "order": 15,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "source",
           "name": "source",
           "type": "*",
           "link": 31
@@ -1233,7 +824,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "STRING",
           "name": "STRING",
           "type": "STRING",
           "slot_index": 0,
@@ -1256,7 +846,7 @@
       "type": "CLIPTextEncode",
       "pos": [
         160,
-        -30
+        40
       ],
       "size": [
         380,
@@ -1267,13 +857,11 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "clip",
           "name": "clip",
           "type": "CLIP",
           "link": 3
         },
         {
-          "localized_name": "text",
           "name": "text",
           "type": "STRING",
           "widget": {
@@ -1284,7 +872,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "CONDITIONING",
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "slot_index": 0,
@@ -1311,7 +898,7 @@
       "type": "FluxGuidance",
       "pos": [
         160,
-        100
+        170
       ],
       "size": [
         380,
@@ -1322,24 +909,13 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "conditioning",
           "name": "conditioning",
           "type": "CONDITIONING",
           "link": 33
-        },
-        {
-          "localized_name": "guidance",
-          "name": "guidance",
-          "type": "FLOAT",
-          "widget": {
-            "name": "guidance"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "CONDITIONING",
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "slot_index": 0,
@@ -1384,233 +960,13 @@
       "title": "INFO",
       "properties": {},
       "widgets_values": [
-        "# StudioLight v1.0\n## Professional 3-Point Photometric Lighting Console & Studio Rig\n\n### Required Model Downloads (Direct Links)\n\n* Diffusion UNET: [flux1-krea-dev_fp8_scaled.safetensors](https://huggingface.co/KreaAI/flux1-krea-dev-fp8-scaled/blob/main/flux1-krea-dev_fp8_scaled.safetensors) (or standard flux1-dev / GGUF quants)\n* Text Encoders: [clip_l.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/clip_l.safetensors) + [t5xxl_fp16.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/t5xxl_fp16.safetensors) (or t5xxl_fp8)\n* VAE: [ae.safetensors](https://huggingface.co/black-forest-labs/FLUX.1-dev/blob/main/ae.safetensors)\n* Surface Normals: [prs-eth/marigold-normals-v1-1](https://huggingface.co/prs-eth/marigold-normals-v1-1) (Auto-downloaded on first run)\n* Albedo De-Light: [prs-eth/marigold-iid-lighting-v1-1](https://huggingface.co/prs-eth/marigold-iid-lighting-v1-1) (Auto-downloaded on first run)\n* Depth & Masking: [Depth Anything V2 ViT-L](https://huggingface.co/depth-anything/Depth-Anything-V2-Large) + [BiRefNet-general](https://huggingface.co/ZhengPeng7/BiRefNet)\n\n### Quick Start\n\n1. Prompt: Enter subject description in Base Subject Prompt (Green Box). Flux works best with an empty Negative prompt. If adding negative terms, raise CFG to 2.5 - 3.5.\n2. Light Rig: Dial light coordinates and Kelvin colors on StudioLightRig. Check the 2D Studio Radar and Chrome Ball for real-time aim feedback.\n3. Queue: Pass 1 generates the base subject; Pass 2 synthesizes physical 3D shadows and specular reflections into skin and clothing.\n\n### Calibration Rules\n\n* Pass 2 Denoise (KSampler): 0.48 - 0.55 is the calibrated artist sweet spot for rich skin textures and soft shadow wrapping. Use 0.35 - 0.42 when flipping light direction 180\u00b0 for strict directional shadow enforcement. Values above 0.60 allow AI diffusion to override 3D lighting.\n\n* DeLight Strength (DeLight Strength): Use 1.00 when changing light direction 180\u00b0 to completely wipe old shadows from the base plate. Use 0.70 - 0.85 to preserve subtle natural skin ambient occlusion during softer relighting.\n\n* Operating Mode (Consistent Relighting): Use Replace subject light for studio portraits to light the person while keeping the background scenery untouched. Use Add studio light for environmental scenes (caveman, dark rooms, street lamps) to splash physical light onto walls, ceiling, and floor with inverse-square falloff.\n\n* Scene Contract (StudioLight Scene Contract): Auto detects outdoor vs indoor prompts. Set to Open manually to guarantee sky and cloud protection from studio flashes. Set to Enclosed for interior light bounce.\n\nCreated by METAMATERIAL / Maciej Tajber (MIT License)"
+        "# StudioLight v1.0\n## Relight Studio (Portrait Relighting Pipeline)\n\n### Required Model Downloads (Direct Links)\n\n* Diffusion UNET: [flux1-krea-dev_fp8_scaled.safetensors](https://huggingface.co/KreaAI/flux1-krea-dev-fp8-scaled/blob/main/flux1-krea-dev_fp8_scaled.safetensors) (or standard flux1-dev / GGUF quants)\n* Text Encoders: [clip_l.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/clip_l.safetensors) + [t5xxl_fp16.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/t5xxl_fp16.safetensors) (or t5xxl_fp8)\n* VAE: [ae.safetensors](https://huggingface.co/black-forest-labs/FLUX.1-dev/blob/main/ae.safetensors)\n* Surface Normals: [prs-eth/marigold-normals-v1-1](https://huggingface.co/prs-eth/marigold-normals-v1-1) (Auto-downloaded on first run)\n* Albedo De-Light: [prs-eth/marigold-iid-lighting-v1-1](https://huggingface.co/prs-eth/marigold-iid-lighting-v1-1) (Auto-downloaded on first run)\n* Depth & Masking: [Depth Anything V2 ViT-L](https://huggingface.co/depth-anything/Depth-Anything-V2-Large) + [BiRefNet-general](https://huggingface.co/ZhengPeng7/BiRefNet)\n\n### Quick Start\n\n1. Upload: Drop your portrait into INPUT PORTRAIT PHOTO.\n2. Describe: Type a brief description of the person in Base Subject Prompt (Green Box), for example: \"portrait of a young woman with sleek dark hair\".\n3. Light Rig: Dial your 3D lights on StudioLightRig (Key, Fill, Rim coordinates and Kelvin color).\n4. Queue: Click Run for a single-pass photorealistic relight in ~40 seconds.\n\n### Calibration Rules\n\n* Pass 2 Denoise (KSampler): 0.48 - 0.55 is the calibrated artist sweet spot for rich skin textures and soft shadow wrapping. Use 0.35 - 0.42 when flipping light direction 180\u00b0 for strict directional shadow enforcement. Values above 0.60 allow AI diffusion to override 3D lighting.\n\n* DeLight Strength (DeLight Strength): Use 1.00 when changing light direction 180\u00b0 to completely wipe old shadows from the base plate. Use 0.70 - 0.85 to preserve subtle natural skin ambient occlusion during softer relighting.\n\n* Operating Mode (Consistent Relighting): Use Replace subject light for studio portraits to light the person while keeping the background scenery untouched. Use Add studio light for environmental scenes (caveman, dark rooms, street lamps) to splash physical light onto walls, ceiling, and floor with inverse-square falloff.\n\n* Scene Contract (StudioLight Scene Contract): Auto detects outdoor vs indoor prompts. Set to Open manually to guarantee sky and cloud protection from studio flashes. Set to Enclosed for interior light bounce.\n\nCreated by METAMATERIAL // Maciej Tajber (MIT License)"
       ],
       "widgets_values_named": {
         "text": "# StudioLight v1.0\n## Professional 3-Point Photometric Lighting Console & Studio Rig\n\n### Required Model Downloads (Direct Links)\n\n* Diffusion UNET: [flux1-krea-dev_fp8_scaled.safetensors](https://huggingface.co/KreaAI/flux1-krea-dev-fp8-scaled/blob/main/flux1-krea-dev_fp8_scaled.safetensors) (or standard flux1-dev / GGUF quants)\n* Text Encoders: [clip_l.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/clip_l.safetensors) + [t5xxl_fp16.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/t5xxl_fp16.safetensors) (or t5xxl_fp8)\n* VAE: [ae.safetensors](https://huggingface.co/black-forest-labs/FLUX.1-dev/blob/main/ae.safetensors)\n* Surface Normals: [prs-eth/marigold-normals-v1-1](https://huggingface.co/prs-eth/marigold-normals-v1-1) (Auto-downloaded on first run)\n* Albedo De-Light: [prs-eth/marigold-iid-lighting-v1-1](https://huggingface.co/prs-eth/marigold-iid-lighting-v1-1) (Auto-downloaded on first run)\n* Depth & Masking: [Depth Anything V2 ViT-L](https://huggingface.co/depth-anything/Depth-Anything-V2-Large) + [BiRefNet-general](https://huggingface.co/ZhengPeng7/BiRefNet)\n\n### Quick Start\n\n1. Prompt: Enter subject description in Base Subject Prompt (Green Box). Flux works best with an empty Negative prompt. If adding negative terms, raise CFG to 2.5 - 3.5.\n2. Light Rig: Dial light coordinates and Kelvin colors on StudioLightRig. Check the 2D Studio Radar and Chrome Ball for real-time aim feedback.\n3. Queue: Pass 1 generates the base subject; Pass 2 synthesizes physical 3D shadows and specular reflections into skin and clothing.\n\n### Calibration Rules\n\n* Pass 2 Denoise (KSampler): 0.48 - 0.55 is the calibrated artist sweet spot for rich skin textures and soft shadow wrapping. Use 0.35 - 0.42 when flipping light direction 180\u00b0 for strict directional shadow enforcement. Values above 0.60 allow AI diffusion to override 3D lighting.\n\n* DeLight Strength (DeLight Strength): Use 1.00 when changing light direction 180\u00b0 to completely wipe old shadows from the base plate. Use 0.70 - 0.85 to preserve subtle natural skin ambient occlusion during softer relighting.\n\n* Operating Mode (Consistent Relighting): Use Replace subject light for studio portraits to light the person while keeping the background scenery untouched. Use Add studio light for environmental scenes (caveman, dark rooms, street lamps) to splash physical light onto walls, ceiling, and floor with inverse-square falloff.\n\n* Scene Contract (StudioLight Scene Contract): Auto detects outdoor vs indoor prompts. Set to Open manually to guarantee sky and cloud protection from studio flashes. Set to Enclosed for interior light bounce.\n\nCreated by METAMATERIAL / Maciej Tajber (MIT License)"
       },
       "color": "#df691a",
       "bgcolor": "#cb5506"
-    },
-    {
-      "id": 10,
-      "type": "FluxGuidance",
-      "pos": [
-        -3280,
-        500
-      ],
-      "size": [
-        380,
-        60
-      ],
-      "flags": {},
-      "order": 17,
-      "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "conditioning",
-          "name": "conditioning",
-          "type": "CONDITIONING",
-          "link": 7
-        },
-        {
-          "localized_name": "guidance",
-          "name": "guidance",
-          "type": "FLOAT",
-          "widget": {
-            "name": "guidance"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "localized_name": "CONDITIONING",
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "slot_index": 0,
-          "links": [
-            9
-          ]
-        }
-      ],
-      "title": "Flux Guidance Pass 1 (2.8)",
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0",
-        "Node name for S&R": "FluxGuidance"
-      },
-      "widgets_values": [
-        2.8
-      ],
-      "widgets_values_named": {
-        "guidance": 2.8
-      }
-    },
-    {
-      "id": 11,
-      "type": "KSamplerAdvanced",
-      "pos": [
-        -2820,
-        -320
-      ],
-      "size": [
-        380,
-        640
-      ],
-      "flags": {},
-      "order": 19,
-      "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "model",
-          "name": "model",
-          "type": "MODEL",
-          "link": 8
-        },
-        {
-          "localized_name": "positive",
-          "name": "positive",
-          "type": "CONDITIONING",
-          "link": 9
-        },
-        {
-          "localized_name": "negative",
-          "name": "negative",
-          "type": "CONDITIONING",
-          "link": 10
-        },
-        {
-          "localized_name": "latent_image",
-          "name": "latent_image",
-          "type": "LATENT",
-          "link": 11
-        },
-        {
-          "localized_name": "add_noise",
-          "name": "add_noise",
-          "type": "COMBO",
-          "widget": {
-            "name": "add_noise"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "noise_seed",
-          "name": "noise_seed",
-          "type": "INT",
-          "widget": {
-            "name": "noise_seed"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "steps",
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "cfg",
-          "name": "cfg",
-          "type": "FLOAT",
-          "widget": {
-            "name": "cfg"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "sampler_name",
-          "name": "sampler_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "sampler_name"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "scheduler",
-          "name": "scheduler",
-          "type": "COMBO",
-          "widget": {
-            "name": "scheduler"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "start_at_step",
-          "name": "start_at_step",
-          "type": "INT",
-          "widget": {
-            "name": "start_at_step"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "end_at_step",
-          "name": "end_at_step",
-          "type": "INT",
-          "widget": {
-            "name": "end_at_step"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "return_with_leftover_noise",
-          "name": "return_with_leftover_noise",
-          "type": "COMBO",
-          "widget": {
-            "name": "return_with_leftover_noise"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "localized_name": "LATENT",
-          "name": "LATENT",
-          "type": "LATENT",
-          "slot_index": 0,
-          "links": [
-            12
-          ]
-        }
-      ],
-      "title": "Pass 1 Draft Sampler",
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0",
-        "Node name for S&R": "KSamplerAdvanced"
-      },
-      "widgets_values": [
-        "enable",
-        149509485130222,
-        "randomize",
-        30,
-        1,
-        "euler",
-        "simple",
-        0,
-        20,
-        "disable"
-      ],
-      "widgets_values_named": {
-        "add_noise": "enable",
-        "noise_seed": 149509485130222,
-        "control_after_generate": "randomize",
-        "steps": 30,
-        "cfg": 1,
-        "sampler_name": "euler",
-        "scheduler": "simple",
-        "start_at_step": 0,
-        "end_at_step": 20,
-        "return_with_leftover_noise": "disable"
-      },
-      "color": "#1b3447",
-      "bgcolor": "#10202c"
     },
     {
       "id": 88,
@@ -1621,14 +977,13 @@
       ],
       "size": [
         380,
-        340
+        390
       ],
       "flags": {},
       "order": 37,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 117
@@ -1636,7 +991,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -1646,9 +1000,7 @@
         "cnr_id": "comfy-core",
         "ver": "0.42.1",
         "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": [],
-      "widgets_values_named": {}
+      }
     },
     {
       "id": 58,
@@ -1659,100 +1011,25 @@
       ],
       "size": [
         380,
-        360
+        350
       ],
       "flags": {},
       "order": 24,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "image",
           "name": "image",
           "type": "IMAGE",
           "link": 74
-        },
-        {
-          "localized_name": "seed",
-          "name": "seed",
-          "type": "INT",
-          "widget": {
-            "name": "seed"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "steps",
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "processing_resolution",
-          "name": "processing_resolution",
-          "type": "INT",
-          "widget": {
-            "name": "processing_resolution"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "ensemble_size",
-          "name": "ensemble_size",
-          "type": "INT",
-          "widget": {
-            "name": "ensemble_size"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "device",
-          "name": "device",
-          "type": "COMBO",
-          "widget": {
-            "name": "device"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "allow_download",
-          "name": "allow_download",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "allow_download"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "offload_after_run",
-          "name": "offload_after_run",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "offload_after_run"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "local_model_path",
-          "name": "local_model_path",
-          "type": "STRING",
-          "widget": {
-            "name": "local_model_path"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "intrinsics_linear",
           "name": "intrinsics_linear",
           "type": "STUDIOLIGHT_INTRINSICS",
           "links": []
         },
         {
-          "localized_name": "albedo_srgb",
           "name": "albedo_srgb",
           "type": "IMAGE",
           "slot_index": 1,
@@ -1763,7 +1040,6 @@
           ]
         },
         {
-          "localized_name": "shading_preview_srgb",
           "name": "shading_preview_srgb",
           "type": "IMAGE",
           "slot_index": 2,
@@ -1772,7 +1048,6 @@
           ]
         },
         {
-          "localized_name": "residual_preview_srgb",
           "name": "residual_preview_srgb",
           "type": "IMAGE",
           "slot_index": 3,
@@ -1781,7 +1056,6 @@
           ]
         },
         {
-          "localized_name": "uncalibrated_reconstruction_srgb",
           "name": "uncalibrated_reconstruction_srgb",
           "type": "IMAGE",
           "slot_index": 4,
@@ -1790,7 +1064,6 @@
           ]
         },
         {
-          "localized_name": "report",
           "name": "report",
           "type": "STRING",
           "slot_index": 5,
@@ -1841,45 +1114,30 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "subject_base",
           "name": "subject_base",
           "type": "IMAGE",
           "link": 125
         },
         {
-          "localized_name": "background",
           "name": "background",
           "type": "IMAGE",
           "link": 121
         },
         {
-          "localized_name": "reference_image",
           "name": "reference_image",
           "shape": 7,
           "type": "IMAGE",
           "link": 126
         },
         {
-          "localized_name": "subject_mask",
           "name": "subject_mask",
           "shape": 7,
           "type": "MASK",
-          "link": null
-        },
-        {
-          "localized_name": "edge_softness",
-          "name": "edge_softness",
-          "shape": 7,
-          "type": "INT",
-          "widget": {
-            "name": "edge_softness"
-          },
           "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "combined_base",
           "name": "combined_base",
           "type": "IMAGE",
           "slot_index": 0,
@@ -1888,7 +1146,6 @@
           ]
         },
         {
-          "localized_name": "subject_mask",
           "name": "subject_mask",
           "type": "MASK",
           "slot_index": 1,
@@ -1898,7 +1155,6 @@
           ]
         },
         {
-          "localized_name": "report",
           "name": "report",
           "type": "STRING",
           "slot_index": 2,
@@ -1923,7 +1179,7 @@
       "type": "StudioLightDeLightStrength",
       "pos": [
         -2360,
-        80
+        70
       ],
       "size": [
         380,
@@ -1934,30 +1190,18 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "original",
           "name": "original",
           "type": "IMAGE",
           "link": 123
         },
         {
-          "localized_name": "albedo",
           "name": "albedo",
           "type": "IMAGE",
           "link": 124
-        },
-        {
-          "localized_name": "strength",
-          "name": "strength",
-          "type": "FLOAT",
-          "widget": {
-            "name": "strength"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "delight_base",
           "name": "delight_base",
           "type": "IMAGE",
           "links": [
@@ -1980,40 +1224,11 @@
       "bgcolor": "#335"
     },
     {
-      "id": 38,
-      "type": "MarkdownNote",
-      "pos": [
-        -2820,
-        870
-      ],
-      "size": [
-        380,
-        150
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 6,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "Pass 1  KSampler",
-      "properties": {},
-      "widgets_values": [
-        "### Pass 1 Draft Steps\n\nStep 10 / 30: Fast preview. Overall geometry is still soft; best for rapid lighting experiments.\n\nStep 15 / 30: Structural shape locked. Surface volumes are stable, but fine facial details may retain slight noise.\n\nStep 20 / 30 (Calibrated Default): Full convergence. Facial anatomy and skin textures are crisp and noise-free, providing optimal surface normals for Marigold."
-      ],
-      "widgets_values_named": {
-        "text": "### Pass 1 Draft Steps\n\nStep 10 / 30: Fast preview. Overall geometry is still soft; best for rapid lighting experiments.\n\nStep 15 / 30: Structural shape locked. Surface volumes are stable, but fine facial details may retain slight noise.\n\nStep 20 / 30 (Calibrated Default): Full convergence. Facial anatomy and skin textures are crisp and noise-free, providing optimal surface normals for Marigold."
-      },
-      "color": "#243440",
-      "bgcolor": "#10202c"
-    },
-    {
       "id": 99,
       "type": "MarkdownNote",
       "pos": [
         -2360,
-        1010
+        1060
       ],
       "size": [
         380,
@@ -2026,7 +1241,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "DE-LIGHT (Marigold)",
+      "title": "DE-LIGHT - Marigold",
       "properties": {},
       "widgets_values": [
         "De-Light Engine\n\nPurpose: Decomposes the draft image into a pure diffuse albedo base plate, stripping out old baked shadows and specular glares so new 3D lights don't create dirty double-shadows.\n\nDeLight Strength: Set to 1.00 when changing light direction 180\u00b0 for full shadow wipeout. Set to 0.70 - 0.85 to preserve subtle natural skin ambient occlusion for gentle lighting enhancements.\n\nDiagnostic Grid: The 4 inspection cards display estimated Albedo, Original Shading, Non-diffuse Residual, and the physical reconstruction check (A*S+R)."
@@ -2041,8 +1256,8 @@
       "id": 100,
       "type": "MarkdownNote",
       "pos": [
-        -1950,
-        1010
+        -1960,
+        1060
       ],
       "size": [
         380,
@@ -2082,60 +1297,13 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "image",
           "name": "image",
           "type": "IMAGE",
           "link": 15
-        },
-        {
-          "localized_name": "seed",
-          "name": "seed",
-          "type": "INT",
-          "widget": {
-            "name": "seed"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "steps",
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "processing_resolution",
-          "name": "processing_resolution",
-          "type": "INT",
-          "widget": {
-            "name": "processing_resolution"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "ensemble_size",
-          "name": "ensemble_size",
-          "type": "INT",
-          "widget": {
-            "name": "ensemble_size"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "output_convention",
-          "name": "output_convention",
-          "type": "COMBO",
-          "widget": {
-            "name": "output_convention"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "normals",
           "name": "normals",
           "type": "IMAGE",
           "slot_index": 0,
@@ -2145,14 +1313,12 @@
           ]
         },
         {
-          "localized_name": "native_preview",
           "name": "native_preview",
           "type": "IMAGE",
           "slot_index": 1,
           "links": []
         },
         {
-          "localized_name": "report",
           "name": "report",
           "type": "STRING",
           "slot_index": 2,
@@ -2190,314 +1356,27 @@
       ],
       "size": [
         380,
-        920
+        930
       ],
       "flags": {},
       "order": 27,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "normals_optional",
           "name": "normals_optional",
           "shape": 7,
           "type": "IMAGE",
           "link": 17
         },
         {
-          "localized_name": "depth_optional",
           "name": "depth_optional",
           "shape": 7,
           "type": "IMAGE",
           "link": 20
-        },
-        {
-          "localized_name": "preset",
-          "name": "preset",
-          "type": "COMBO",
-          "widget": {
-            "name": "preset"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "ambient_intensity",
-          "name": "ambient_intensity",
-          "type": "FLOAT",
-          "widget": {
-            "name": "ambient_intensity"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "invert_normals_y",
-          "name": "invert_normals_y",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "invert_normals_y"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "key_enabled",
-          "name": "key_enabled",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "key_enabled"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "key_azimuth",
-          "name": "key_azimuth",
-          "type": "FLOAT",
-          "widget": {
-            "name": "key_azimuth"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "key_elevation",
-          "name": "key_elevation",
-          "type": "FLOAT",
-          "widget": {
-            "name": "key_elevation"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "key_distance",
-          "name": "key_distance",
-          "type": "FLOAT",
-          "widget": {
-            "name": "key_distance"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "key_intensity",
-          "name": "key_intensity",
-          "type": "FLOAT",
-          "widget": {
-            "name": "key_intensity"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "key_kelvin",
-          "name": "key_kelvin",
-          "type": "INT",
-          "widget": {
-            "name": "key_kelvin"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "key_modifier",
-          "name": "key_modifier",
-          "type": "COMBO",
-          "widget": {
-            "name": "key_modifier"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "fill_enabled",
-          "name": "fill_enabled",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "fill_enabled"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "fill_azimuth",
-          "name": "fill_azimuth",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fill_azimuth"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "fill_elevation",
-          "name": "fill_elevation",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fill_elevation"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "fill_distance",
-          "name": "fill_distance",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fill_distance"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "fill_intensity",
-          "name": "fill_intensity",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fill_intensity"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "fill_kelvin",
-          "name": "fill_kelvin",
-          "type": "INT",
-          "widget": {
-            "name": "fill_kelvin"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "fill_modifier",
-          "name": "fill_modifier",
-          "type": "COMBO",
-          "widget": {
-            "name": "fill_modifier"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "rim_enabled",
-          "name": "rim_enabled",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "rim_enabled"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "rim_azimuth",
-          "name": "rim_azimuth",
-          "type": "FLOAT",
-          "widget": {
-            "name": "rim_azimuth"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "rim_elevation",
-          "name": "rim_elevation",
-          "type": "FLOAT",
-          "widget": {
-            "name": "rim_elevation"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "rim_distance",
-          "name": "rim_distance",
-          "type": "FLOAT",
-          "widget": {
-            "name": "rim_distance"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "rim_intensity",
-          "name": "rim_intensity",
-          "type": "FLOAT",
-          "widget": {
-            "name": "rim_intensity"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "rim_kelvin",
-          "name": "rim_kelvin",
-          "type": "INT",
-          "widget": {
-            "name": "rim_kelvin"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "rim_modifier",
-          "name": "rim_modifier",
-          "type": "COMBO",
-          "widget": {
-            "name": "rim_modifier"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "normal_boost",
-          "name": "normal_boost",
-          "type": "FLOAT",
-          "widget": {
-            "name": "normal_boost"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "ao_anchoring",
-          "name": "ao_anchoring",
-          "type": "FLOAT",
-          "widget": {
-            "name": "ao_anchoring"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "invert_normals_x",
-          "name": "invert_normals_x",
-          "shape": 7,
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "invert_normals_x"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "target_engine",
-          "name": "target_engine",
-          "shape": 7,
-          "type": "COMBO",
-          "widget": {
-            "name": "target_engine"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "invert_depth",
-          "name": "invert_depth",
-          "shape": 7,
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "invert_depth"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "aim_target",
-          "name": "aim_target",
-          "shape": 7,
-          "type": "COMBO",
-          "widget": {
-            "name": "aim_target"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "depth_relief_scale",
-          "name": "depth_relief_scale",
-          "shape": 7,
-          "type": "FLOAT",
-          "widget": {
-            "name": "depth_relief_scale"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "relighting_map",
           "name": "relighting_map",
           "type": "IMAGE",
           "slot_index": 0,
@@ -2506,7 +1385,6 @@
           ]
         },
         {
-          "localized_name": "probe_preview",
           "name": "probe_preview",
           "type": "IMAGE",
           "slot_index": 1,
@@ -2515,21 +1393,18 @@
           ]
         },
         {
-          "localized_name": "lighting_prompt",
           "name": "lighting_prompt",
           "type": "STRING",
           "slot_index": 2,
           "links": []
         },
         {
-          "localized_name": "specular_pass",
           "name": "specular_pass",
           "type": "IMAGE",
           "slot_index": 3,
           "links": []
         },
         {
-          "localized_name": "telemetry",
           "name": "telemetry",
           "type": "STUDIOLIGHT_TELEMETRY",
           "slot_index": 4,
@@ -2543,7 +1418,7 @@
         "Node name for S&R": "StudioLightRig"
       },
       "widgets_values": [
-        "Cinematic Film Noir",
+        "Custom",
         0.01,
         false,
         true,
@@ -2576,7 +1451,7 @@
         0.3
       ],
       "widgets_values_named": {
-        "preset": "Cinematic Film Noir",
+        "preset": "Custom",
         "ambient_intensity": 0.01,
         "invert_normals_y": false,
         "key_enabled": true,
@@ -2616,119 +1491,57 @@
       "type": "StudioLightConsistentComposite",
       "pos": [
         -700,
-        640
+        650
       ],
       "size": [
         380,
-        300
+        310
       ],
       "flags": {},
       "order": 39,
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "source",
           "name": "source",
           "type": "IMAGE",
           "link": 129
         },
         {
-          "localized_name": "diffuse_base",
           "name": "diffuse_base",
           "type": "IMAGE",
           "link": 130
         },
         {
-          "localized_name": "telemetry",
           "name": "telemetry",
           "type": "STUDIOLIGHT_TELEMETRY",
           "link": 131
         },
         {
-          "localized_name": "scene_contract",
           "name": "scene_contract",
           "type": "STUDIOLIGHT_SCENE_CONTRACT",
           "link": 132
         },
         {
-          "localized_name": "subject_mask",
           "name": "subject_mask",
           "shape": 7,
           "type": "MASK",
           "link": 133
         },
         {
-          "localized_name": "sky_mask",
           "name": "sky_mask",
           "shape": 7,
           "type": "MASK",
           "link": null
         },
         {
-          "localized_name": "receiver_mask",
           "name": "receiver_mask",
           "shape": 7,
           "type": "MASK",
-          "link": null
-        },
-        {
-          "localized_name": "operation",
-          "name": "operation",
-          "type": "COMBO",
-          "widget": {
-            "name": "operation"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "studio_strength",
-          "name": "studio_strength",
-          "type": "FLOAT",
-          "widget": {
-            "name": "studio_strength"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "specular_strength",
-          "name": "specular_strength",
-          "type": "FLOAT",
-          "widget": {
-            "name": "specular_strength"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "scene_exposure",
-          "name": "scene_exposure",
-          "type": "FLOAT",
-          "widget": {
-            "name": "scene_exposure"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "source_preservation",
-          "name": "source_preservation",
-          "type": "FLOAT",
-          "widget": {
-            "name": "source_preservation"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "protect_far_background",
-          "name": "protect_far_background",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "protect_far_background"
-          },
           "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "lit_proxy",
           "name": "lit_proxy",
           "type": "IMAGE",
           "links": [
@@ -2737,7 +1550,6 @@
           ]
         },
         {
-          "localized_name": "new_diffuse_preview",
           "name": "new_diffuse_preview",
           "type": "IMAGE",
           "links": [
@@ -2745,25 +1557,21 @@
           ]
         },
         {
-          "localized_name": "new_specular_preview",
           "name": "new_specular_preview",
           "type": "IMAGE",
           "links": []
         },
         {
-          "localized_name": "protected_background",
           "name": "protected_background",
           "type": "MASK",
           "links": []
         },
         {
-          "localized_name": "linear_HDR_passes",
           "name": "linear_HDR_passes",
           "type": "STUDIOLIGHT_PASSES",
           "links": []
         },
         {
-          "localized_name": "report",
           "name": "report",
           "type": "STRING",
           "links": []
@@ -2775,7 +1583,7 @@
       "widgets_values": [
         "Add studio light",
         1,
-        0.2,
+        0.0,
         0,
         1,
         true
@@ -2796,7 +1604,7 @@
       "type": "MarkdownNote",
       "pos": [
         -1100,
-        1010
+        1060
       ],
       "size": [
         380,
@@ -2824,8 +1632,8 @@
       "id": 37,
       "type": "MarkdownNote",
       "pos": [
-        160,
-        230
+        160.357337591495,
+        300.12048682800895
       ],
       "size": [
         380,
@@ -2865,87 +1673,28 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "model",
           "name": "model",
           "type": "MODEL",
           "link": 85
         },
         {
-          "localized_name": "positive",
           "name": "positive",
           "type": "CONDITIONING",
           "link": 84
         },
         {
-          "localized_name": "negative",
           "name": "negative",
           "type": "CONDITIONING",
           "link": 83
         },
         {
-          "localized_name": "latent_image",
           "name": "latent_image",
           "type": "LATENT",
           "link": 82
-        },
-        {
-          "localized_name": "seed",
-          "name": "seed",
-          "type": "INT",
-          "widget": {
-            "name": "seed"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "steps",
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "cfg",
-          "name": "cfg",
-          "type": "FLOAT",
-          "widget": {
-            "name": "cfg"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "sampler_name",
-          "name": "sampler_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "sampler_name"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "scheduler",
-          "name": "scheduler",
-          "type": "COMBO",
-          "widget": {
-            "name": "scheduler"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "denoise",
-          "name": "denoise",
-          "type": "FLOAT",
-          "widget": {
-            "name": "denoise"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "LATENT",
           "name": "LATENT",
           "type": "LATENT",
           "slot_index": 0,
@@ -2996,13 +1745,11 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "samples",
           "name": "samples",
           "type": "LATENT",
           "link": 86
         },
         {
-          "localized_name": "vae",
           "name": "vae",
           "type": "VAE",
           "link": 39
@@ -3010,7 +1757,6 @@
       ],
       "outputs": [
         {
-          "localized_name": "IMAGE",
           "name": "IMAGE",
           "type": "IMAGE",
           "slot_index": 0,
@@ -3071,24 +1817,13 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 40
-        },
-        {
-          "localized_name": "filename_prefix",
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
         }
       ],
       "outputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "links": []
@@ -3108,6 +1843,75 @@
       },
       "color": "#222",
       "bgcolor": "#000"
+    },
+    {
+      "id": 105,
+      "type": "LoadImage",
+      "pos": [
+        -2820,
+        -100
+      ],
+      "size": [
+        380,
+        460
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "choose file to upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            15,
+            18,
+            74,
+            121,
+            123,
+            129
+          ]
+        },
+        {
+          "localized_name": "MASK",
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "\ud83d\udcf7 INPUT PORTRAIT PHOTO",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "StudioLight_Test_Source.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "StudioLight_Test_Source.png",
+        "upload": "image"
+      }
     }
   ],
   "links": [
@@ -3120,14 +1924,6 @@
       "CLIP"
     ],
     [
-      2,
-      2,
-      0,
-      9,
-      0,
-      "CLIP"
-    ],
-    [
       3,
       2,
       0,
@@ -3136,80 +1932,8 @@
       "CLIP"
     ],
     [
-      6,
-      8,
-      1,
-      9,
-      1,
-      "STRING"
-    ],
-    [
-      7,
-      9,
-      0,
-      10,
-      0,
-      "CONDITIONING"
-    ],
-    [
-      8,
-      1,
-      0,
-      11,
-      0,
-      "MODEL"
-    ],
-    [
-      9,
-      10,
-      0,
-      11,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      10,
-      5,
-      0,
-      11,
-      2,
-      "CONDITIONING"
-    ],
-    [
-      11,
-      4,
-      0,
-      11,
-      3,
-      "LATENT"
-    ],
-    [
-      12,
-      11,
-      0,
-      12,
-      0,
-      "LATENT"
-    ],
-    [
-      13,
-      3,
-      0,
-      12,
-      1,
-      "VAE"
-    ],
-    [
-      14,
-      12,
-      0,
-      13,
-      0,
-      "IMAGE"
-    ],
-    [
       15,
-      12,
+      105,
       0,
       14,
       0,
@@ -3233,7 +1957,7 @@
     ],
     [
       18,
-      12,
+      105,
       0,
       29,
       0,
@@ -3353,7 +2077,7 @@
     ],
     [
       74,
-      12,
+      105,
       0,
       58,
       0,
@@ -3425,7 +2149,7 @@
     ],
     [
       121,
-      12,
+      105,
       0,
       87,
       1,
@@ -3433,7 +2157,7 @@
     ],
     [
       123,
-      12,
+      105,
       0,
       92,
       0,
@@ -3473,7 +2197,7 @@
     ],
     [
       129,
-      12,
+      105,
       0,
       17,
       0,
@@ -3551,12 +2275,12 @@
     },
     {
       "id": 2,
-      "title": "DRAFT PASS",
+      "title": "INPUT PORTRAIT",
       "bounding": [
         -2840,
         -400,
         420,
-        1220
+        820
       ],
       "color": "#182836",
       "flags": {}
@@ -3568,7 +2292,7 @@
         -1120,
         -400,
         1220,
-        1360
+        1410
       ],
       "color": "#444",
       "flags": {}
@@ -3580,9 +2304,8 @@
         140,
         -400,
         420,
-        580
+        650
       ],
-      "color": "#444",
       "flags": {}
     },
     {
@@ -3604,7 +2327,7 @@
         -2380,
         520,
         1220,
-        440
+        490
       ],
       "color": "#4a2840",
       "flags": {}
@@ -3616,7 +2339,7 @@
         -2380,
         -400,
         1220,
-        900
+        920
       ],
       "flags": {}
     }
@@ -3624,10 +2347,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.8215662795613184,
+      "scale": 0.49568479251591335,
       "offset": [
-        4216.068621950682,
-        348.111282785498
+        3086.778190862036,
+        804.4235753827757
       ]
     },
     "frontendVersion": "1.55.18",

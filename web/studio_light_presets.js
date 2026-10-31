@@ -274,12 +274,27 @@ function cleanObsoleteSlots(node) {
     }
 }
 
+function cleanCompositeNormalsInput(node) {
+    const kind = node.comfyClass || node.type;
+    if (!["StudioPhotometricComposite", "StudioPhotometricCompositeBeta"].includes(kind)) return;
+    let changed = false;
+    for (let i = (node.inputs?.length || 0) - 1; i >= 0; i--) {
+        if (node.inputs[i].name === "normals") {
+            // LiteGraph updates links and shifted target slots when an input is removed.
+            node.removeInput(i);
+            changed = true;
+        }
+    }
+    if (changed) node.setDirtyCanvas(true, true);
+}
+
 app.registerExtension({
     name: "ComfyUI.StudioLight.UI",
 
     async setup() {
         if (app.graph && app.graph._nodes) {
             for (const n of app.graph._nodes) {
+                cleanCompositeNormalsInput(n);
                 if (["StudioLightRig", "StudioLightConsole"].includes(n.comfyClass || n.type)) {
                     cleanObsoleteSlots(n);
                     hookNodePresets(n);
@@ -289,6 +304,7 @@ app.registerExtension({
     },
 
     nodeCreated(node) {
+        cleanCompositeNormalsInput(node);
         if (["StudioLightRig", "StudioLightConsole"].includes(node.comfyClass || node.type)) {
             cleanObsoleteSlots(node);
             hookNodePresets(node);
@@ -296,6 +312,7 @@ app.registerExtension({
     },
 
     loadedGraphNode(node) {
+        cleanCompositeNormalsInput(node);
         if (["StudioLightRig", "StudioLightConsole"].includes(node.comfyClass || node.type)) {
             cleanObsoleteSlots(node);
             hookNodePresets(node);

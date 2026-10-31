@@ -10,7 +10,7 @@ import unittest
 import torch
 from tools.run_pod_release_tests import arms,build_case,to_api,candidate_commit
 
-ROOT=Path(__file__).parent
+ROOT=Path(__file__).parent.parent
 class HarnessTests(unittest.TestCase):
     def test_all_28_cases_have_valid_edges_and_independent_controls(self):
         wf=json.loads((ROOT/'workflows/StudioLight_Master.json').read_text())

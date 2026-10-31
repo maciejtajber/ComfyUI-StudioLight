@@ -23,6 +23,35 @@ from .prompt_sanitizer import NODE_CLASS_MAPPINGS as _ps_map, NODE_DISPLAY_NAME_
 NODE_CLASS_MAPPINGS.update(_ps_map)
 NODE_DISPLAY_NAME_MAPPINGS.update(_ps_disp)
 
+from .subject_background_base import NODE_CLASS_MAPPINGS as _sb_map, NODE_DISPLAY_NAME_MAPPINGS as _sb_disp
+NODE_CLASS_MAPPINGS.update(_sb_map)
+NODE_DISPLAY_NAME_MAPPINGS.update(_sb_disp)
+
+from .consistent_relighting import NODE_CLASS_MAPPINGS as _cr_map, NODE_DISPLAY_NAME_MAPPINGS as _cr_disp
+NODE_CLASS_MAPPINGS.update(_cr_map)
+NODE_DISPLAY_NAME_MAPPINGS.update(_cr_disp)
+
+try:
+    from .marigold_delight import NODE_CLASS_MAPPINGS as _md_map, NODE_DISPLAY_NAME_MAPPINGS as _md_disp
+    NODE_CLASS_MAPPINGS.update(_md_map)
+    NODE_DISPLAY_NAME_MAPPINGS.update(_md_disp)
+except Exception as e:
+    logger.warning("Marigold De-Light node skipped: %s", e)
+
+try:
+    from .marigold_normals import NODE_CLASS_MAPPINGS as _mn_map, NODE_DISPLAY_NAME_MAPPINGS as _mn_disp
+    NODE_CLASS_MAPPINGS.update(_mn_map)
+    NODE_DISPLAY_NAME_MAPPINGS.update(_mn_disp)
+except Exception as e:
+    logger.warning("Marigold Normals node skipped: %s", e)
+
+try:
+    from .delight_strength import NODE_CLASS_MAPPINGS as _ds_map, NODE_DISPLAY_NAME_MAPPINGS as _ds_disp
+    NODE_CLASS_MAPPINGS.update(_ds_map)
+    NODE_DISPLAY_NAME_MAPPINGS.update(_ds_disp)
+except Exception as e:
+    logger.warning("DeLight Strength node skipped: %s", e)
+
 try:
     from .post_composite import NODE_CLASS_MAPPINGS as _post_map, NODE_DISPLAY_NAME_MAPPINGS as _post_disp
     NODE_CLASS_MAPPINGS.update(_post_map)

@@ -513,7 +513,7 @@ class StudioPhotometricComposite:
                 "enclosure_override": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 1.0, "step": 0.05,
                     "tooltip": "-1: relative-depth estimate; 0: open; 1: enclosed. Still requires visible wall samples."}),
                 "recovery_mask": ("MASK",),
-                "emission_mask": ("MASK",),
+                "emission_mask": ("MASK", {"tooltip": "Optional explicit light-source mask: white preserves source emission. Unconnected disables emission preservation. Skin and reflective highlights are not light sources."}),
                 "shadow_recovery": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.05,
                     "tooltip": "Optional bounded reconstruction from exposed pixels of ONE material selected by recovery_mask. No automatic skin colour."}),
                 "black_gate": (["Legacy material protection", "Low-signal chroma preservation"],),
@@ -523,7 +523,6 @@ class StudioPhotometricComposite:
                 "lighting_map_includes_specular": ("BOOLEAN", {"default": True}),
                 "compositing_mode": (["Linear HDR", "Soft Light"],),
                 "blend_amount": ("FLOAT", {"default": 0.35, "min": 0.0, "max": 1.0, "step": 0.05}),
-                "normals": ("IMAGE", {"tooltip": "Surface normals for geometry-aware shadow removal and specular lobes"}),
             },
         }
 
@@ -726,12 +725,10 @@ class StudioPhotometricComposite:
                 base_linear = base_linear * (1.0 + lift_curve)
 
         if emission_mask is None:
-            # A coloured flame can have a saturated channel but modest luminance.
-            # Use local contrast across the whole plate, not its guessed FG mask.
-            source_lum = rgb_to_luminance(base_linear)
-            local_lum = _box_filter_bchw(source_lum.permute(0, 3, 1, 2), max(2, round(min(H, W) * .025))).permute(0, 2, 3, 1)
-            peak = base_linear.amax(dim=-1, keepdim=True)
-            emission_mask = _smoothstep(.35, .70, peak) * _smoothstep(1.6, 2.8, peak / local_lum.clamp_min(.04))
+            # Brightness/local contrast cannot distinguish a light source from
+            # reflected light on skin. Preserve source emission only when the
+            # caller supplies an explicit mask; never infer it from highlights.
+            emission_mask = torch.zeros_like(base_linear[..., :1])
         # A current rig supplies separated components. Legacy combined maps can
         # subtract their matching raw specular pass before diffuse multiplication.
         strobe = telemetry.get("direct_diffuse")
@@ -1130,7 +1127,7 @@ class StudioPhotometricComposite:
             lit_hdr = lit_diffuse
 
         # Preserve source emission independently of foreground segmentation.
-        # An explicit emission_mask overrides this conservative image heuristic.
+        # Only explicitly marked light sources may bypass studio attenuation.
         source_linear = srgb_to_linear(img)
         lit_hdr = lit_hdr + emission_mask * (source_linear - lit_hdr).clamp_min(0)
         lit_hdr = lit_hdr * (2.0 ** exposure_ev)

@@ -18,7 +18,7 @@ WORKFLOWS_DIR = Path(__file__).resolve().parent.parent / "workflows"
 
 def test_workflow_coordinate_invariants():
     """Verify serialized settings in shipped workflow JSONs."""
-    workflows = ["StudioLight_Master_Studio.json", "StudioLight_PhotoRelight.json"]
+    workflows = ["StudioLight_Create.json", "StudioLight_Relight.json"]
     for wf_name in workflows:
         wf_path = WORKFLOWS_DIR / wf_name
         assert wf_path.is_file(), f"Workflow {wf_name} missing from {WORKFLOWS_DIR}"
