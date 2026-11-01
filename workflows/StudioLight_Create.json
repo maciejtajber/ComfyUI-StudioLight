@@ -13,7 +13,7 @@
       ],
       "size": [
         380,
-        200
+        320
       ],
       "flags": {},
       "order": 13,
@@ -63,12 +63,16 @@
       "widgets_values": [
         "Auto",
         "Auto",
-        "Auto"
+        "Auto",
+        "Auto",
+        ""
       ],
       "widgets_values_named": {
         "master_prompt": "Auto",
         "environment": "Auto",
-        "ambient_intent": "Auto"
+        "ambient_intent": "Auto",
+        "refinement_mode": "Auto",
+        "custom_pass2_prompt": ""
       }
     },
     {

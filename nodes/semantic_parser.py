@@ -59,8 +59,7 @@ PASS1_PRESERVE_MOOD_CAPTURE = (
 )
 
 PASS2_MINIMAL_REFINEMENT = (
-    "preserving subject identity, composition, material characteristics, "
-    "and fine surface details"
+    "preserving subject identity, composition, and material characteristics"
 )
 
 

@@ -184,17 +184,36 @@ def render_consistent(source, diffuse_base, telemetry, scene_contract,
 class StudioLightSceneContract:
     @classmethod
     def INPUT_TYPES(cls):
-        return {'required': {'master_prompt': ('STRING', {'multiline': True}),
-                             'environment': (['Auto', 'Open', 'Enclosed', 'Mixed'],),
-                             'ambient_intent': (['Auto', 'Bright', 'Dark'],)}}
+        return {
+            'required': {
+                'master_prompt': ('STRING', {'multiline': True}),
+                'environment': (['Auto', 'Open', 'Enclosed', 'Mixed'],),
+                'ambient_intent': (['Auto', 'Bright', 'Dark'],),
+            },
+            'optional': {
+                'refinement_mode': (['Auto', 'Custom Override'], {'default': 'Auto'}),
+                'custom_pass2_prompt': ('STRING', {'multiline': True, 'default': '', 'dynamicPrompts': False}),
+            }
+        }
     RETURN_TYPES = ('STUDIOLIGHT_SCENE_CONTRACT', 'STRING', 'STRING', 'STRING')
     RETURN_NAMES = ('scene_contract', 'pass1_capture_prompt', 'pass2_scene_prompt', 'report')
     FUNCTION = 'build'
     CATEGORY = 'StudioLight/Consistent'
 
-    def build(self, master_prompt, environment, ambient_intent):
+    def build(self, master_prompt, environment, ambient_intent, refinement_mode='Auto', custom_pass2_prompt=''):
         contract, p1, p2 = scene_profile(master_prompt, environment, ambient_intent)
-        return contract, p1, p2, json.dumps(contract, indent=2)
+        if refinement_mode == 'Custom Override':
+            effective_p2 = custom_pass2_prompt.strip()
+            if not effective_p2:
+                raise ValueError("Custom Override selected, but custom_pass2_prompt is empty. Please enter your custom prompt or switch to Auto.")
+        elif refinement_mode == 'Auto':
+            effective_p2 = p2
+        else:
+            raise ValueError(f"Unknown refinement_mode: {refinement_mode}")
+
+        contract['refinement_mode'] = refinement_mode
+        contract['effective_pass2_prompt'] = effective_p2
+        return contract, p1, effective_p2, json.dumps(contract, indent=2)
 
 
 class StudioLightConsistentComposite:

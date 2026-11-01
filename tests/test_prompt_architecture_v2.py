@@ -17,6 +17,8 @@ from nodes.semantic_parser import (
     PASS2_MINIMAL_REFINEMENT,
 )
 from nodes.prompt_sanitizer import StudioPromptSanitizer
+from nodes.consistent_relighting import StudioLightSceneContract
+import json
 
 
 class TestPromptArchitectureV2(unittest.TestCase):
@@ -144,6 +146,83 @@ class TestPromptArchitectureV2(unittest.TestCase):
         p1, p2 = self.sanitizer.sanitize(raw, lighting_policy="VERBATIM_RAW")
         self.assertEqual(p2, raw)
         self.assertNotIn("spotlight", p1.lower())
+
+    def test_pass2_refinement_clause_does_not_contain_fine_surface_details(self):
+        """
+        PASS2_MINIMAL_REFINEMENT must not contain 'fine surface details' (the FLUX pimple trigger).
+        """
+        self.assertNotIn("fine surface details", PASS2_MINIMAL_REFINEMENT.lower())
+        self.assertIn("preserving subject identity, composition, and material characteristics", PASS2_MINIMAL_REFINEMENT)
+
+    def test_scene_contract_auto_mode(self):
+        """
+        In Auto mode, StudioLightSceneContract builds clean prompts without 'fine surface details'.
+        """
+        node = StudioLightSceneContract()
+        contract, p1, p2, report = node.build(
+            master_prompt="portrait of a model",
+            environment="Auto",
+            ambient_intent="Auto",
+            refinement_mode="Auto",
+            custom_pass2_prompt="",
+        )
+        self.assertNotIn("fine surface details", p2.lower())
+        self.assertIn("preserving subject identity", p2.lower())
+        self.assertEqual(contract["refinement_mode"], "Auto")
+        self.assertEqual(contract["effective_pass2_prompt"], p2)
+
+        rep = json.loads(report)
+        self.assertEqual(rep["refinement_mode"], "Auto")
+        self.assertEqual(rep["effective_pass2_prompt"], p2)
+
+    def test_scene_contract_custom_override_mode(self):
+        """
+        In Custom Override mode, custom_pass2_prompt is delivered verbatim without auto injection.
+        """
+        node = StudioLightSceneContract()
+        custom_text = "portrait of an elegant woman, clean porcelain skin, high fashion editorial"
+        contract, p1, p2, report = node.build(
+            master_prompt="portrait of a model",
+            environment="Auto",
+            ambient_intent="Auto",
+            refinement_mode="Custom Override",
+            custom_pass2_prompt=f"  {custom_text}  ",
+        )
+        self.assertEqual(p2, custom_text)
+        self.assertNotIn("preserving subject identity", p2)
+        self.assertEqual(contract["refinement_mode"], "Custom Override")
+        self.assertEqual(contract["effective_pass2_prompt"], custom_text)
+
+        rep = json.loads(report)
+        self.assertEqual(rep["refinement_mode"], "Custom Override")
+        self.assertEqual(rep["effective_pass2_prompt"], custom_text)
+
+    def test_scene_contract_custom_override_blank_raises_error(self):
+        """
+        Custom Override with empty text must raise ValueError (no silent fallback to Auto).
+        """
+        node = StudioLightSceneContract()
+        with self.assertRaises(ValueError):
+            node.build(
+                master_prompt="portrait of a model",
+                environment="Auto",
+                ambient_intent="Auto",
+                refinement_mode="Custom Override",
+                custom_pass2_prompt="   ",
+            )
+
+    def test_scene_contract_legacy_invocation_backward_compatible(self):
+        """
+        Calling build() with only the 3 legacy arguments must default to Auto without error.
+        """
+        node = StudioLightSceneContract()
+        contract, p1, p2, report = node.build(
+            master_prompt="portrait of a model",
+            environment="Auto",
+            ambient_intent="Auto",
+        )
+        self.assertEqual(contract["refinement_mode"], "Auto")
+        self.assertEqual(contract["effective_pass2_prompt"], p2)
 
 
 if __name__ == "__main__":

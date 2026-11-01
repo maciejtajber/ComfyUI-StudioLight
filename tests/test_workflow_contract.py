@@ -28,6 +28,7 @@ def test_workflow_coordinate_invariants():
 
         found_normals = False
         found_rig = False
+        found_contract = False
 
         for n in data.get("nodes", []):
             if n.get("type") == "StudioLightMarigoldNormalsTest":
@@ -49,8 +50,19 @@ def test_workflow_coordinate_invariants():
                     f"In {wf_name}, StudioLightRig invert_normals_y must be False, got {inv_y}"
                 )
 
+            if n.get("type") == "StudioLightSceneContract":
+                found_contract = True
+                wv = n.get("widgets_values", [])
+                assert len(wv) >= 5, (
+                    f"In {wf_name}, StudioLightSceneContract must have at least 5 widget values, got {len(wv)}"
+                )
+                assert wv[3] == "Auto", (
+                    f"In {wf_name}, StudioLightSceneContract refinement_mode must default to 'Auto', got {wv[3]}"
+                )
+
         assert found_normals, f"Node #14 missing in {wf_name}"
         assert found_rig, f"Node #15 missing in {wf_name}"
+        assert found_contract, f"StudioLightSceneContract missing in {wf_name}"
 
 
 def test_directional_photometric_truth():
