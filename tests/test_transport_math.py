@@ -80,9 +80,10 @@ class TransportMathTests(unittest.TestCase):
   from nodes.studio_light import StudioLightRig
   rig=StudioLightRig()
   n=torch.full((1,16,16,3),.5,device=self.device);n[...,2]=1.
-  r0=rig.execute_rig(preset="Custom",normals_optional=n,normal_smoothing=0.)
+  d_3ch=torch.full((1,16,16,3),.4,device=self.device)
+  r0=rig.execute_rig(preset="Custom",normals_optional=n,depth_optional=d_3ch,normal_smoothing=0.)
   self.assertEqual(r0[0].shape,(1,16,16,3))
-  r1=rig.execute_rig(preset="Custom",normals_optional=n,normal_smoothing=.30)
+  r1=rig.execute_rig(preset="Custom",normals_optional=n,depth_optional=d_3ch,normal_smoothing=.30)
   self.assertEqual(r1[0].shape,(1,16,16,3))
 
 if __name__=='__main__':unittest.main()

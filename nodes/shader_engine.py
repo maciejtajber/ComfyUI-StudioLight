@@ -1027,6 +1027,8 @@ def filter_normals_cross_bilateral(
             d = d.unsqueeze(-1)
         elif d.shape[-1] != 1 and d.shape[1] == 1:
             d = d.permute(0, 2, 3, 1)
+        if d.shape[-1] > 1:
+            d = d.mean(dim=-1, keepdim=True)
         if d.shape[1:3] != (H, W):
             d = F.interpolate(d.permute(0, 3, 1, 2), size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
         d_pad = F.pad(d, (0, 0, 2, 2, 2, 2), mode="replicate")
