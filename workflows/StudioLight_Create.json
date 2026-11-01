@@ -1787,8 +1787,7 @@
         "Flux.1",
         false,
         "Upper",
-        0.3,
-        0.0
+        0.3
       ],
       "widgets_values_named": {
         "preset": "Custom",

@@ -56,34 +56,4 @@ class TransportMathTests(unittest.TestCase):
   self.assertAlmostEqual(float(irradiance(3.6).max()),.25,delta=.0005)
   self.assertEqual(float(irradiance(1.8,-n).max()),0.)
 
- def test_bounded_cross_bilateral_normal_filter_bounds_rotation_and_reduces_noise(self):
-  from nodes.shader_engine import filter_normals_cross_bilateral
-  import math
-  n=torch.tensor([[[[0.,0.,1.]]]],device=self.device).repeat(1,32,32,1)
-  torch.manual_seed(42)
-  noise=(torch.rand_like(n)-.5)*.08
-  n_noisy=torch.nn.functional.normalize(n+noise,dim=-1)
-  depth=torch.full((1,32,32,1),.5,device=self.device)
-
-  # Bypass when strength == 0.0
-  n_bypass=filter_normals_cross_bilateral(n_noisy,depth,strength=0.)
-  self.assertTrue(torch.equal(n_noisy,n_bypass))
-
-  # Filtered with strength = 0.5, max_theta_deg = 2.0
-  n_filtered=filter_normals_cross_bilateral(n_noisy,depth,strength=.5,max_theta_deg=2.)
-  self.assertLess((n_filtered-n).std().item(),(n_noisy-n).std().item())
-  cos_ang=(n_noisy*n_filtered).sum(dim=-1).clamp(-1.,1.)
-  max_deg=math.degrees(torch.acos(cos_ang).max().item())
-  self.assertLessEqual(max_deg,2.0001)
-
- def test_rig_normal_smoothing_execution(self):
-  from nodes.studio_light import StudioLightRig
-  rig=StudioLightRig()
-  n=torch.full((1,16,16,3),.5,device=self.device);n[...,2]=1.
-  d_3ch=torch.full((1,16,16,3),.4,device=self.device)
-  r0=rig.execute_rig(preset="Custom",normals_optional=n,depth_optional=d_3ch,normal_smoothing=0.)
-  self.assertEqual(r0[0].shape,(1,16,16,3))
-  r1=rig.execute_rig(preset="Custom",normals_optional=n,depth_optional=d_3ch,normal_smoothing=.30)
-  self.assertEqual(r1[0].shape,(1,16,16,3))
-
 if __name__=='__main__':unittest.main()

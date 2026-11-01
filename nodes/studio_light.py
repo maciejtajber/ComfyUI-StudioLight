@@ -206,13 +206,6 @@ class StudioLightRig:
                     "max": 1.00,
                     "step": 0.05,
                 }),
-                "normal_smoothing": ("FLOAT", {
-                    "default": 0.0,
-                    "min": 0.0,
-                    "max": 1.0,
-                    "step": 0.05,
-                    "tooltip": "Bounded depth-guided cross-bilateral normal filter. Smooths Marigold estimation noise and grazing stepping artifacts. 0.0 = bypass (default).",
-                }),
             },
         }
 
@@ -353,7 +346,6 @@ class StudioLightRig:
             vertical_fov_deg=vertical_fov_deg,
             aim_target=aim_target,
             depth_relief_scale=float(depth_relief_scale),
-            normal_smoothing=float(normal_smoothing),
         )
 
         # 3. Synthesize High-Signal Photographic Prompt Tokens

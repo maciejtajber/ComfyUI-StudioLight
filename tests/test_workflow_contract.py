@@ -49,11 +49,8 @@ def test_workflow_coordinate_invariants():
                 assert inv_y is False, (
                     f"In {wf_name}, StudioLightRig invert_normals_y must be False, got {inv_y}"
                 )
-                assert len(wv) >= 32, (
-                    f"In {wf_name}, StudioLightRig must have at least 32 widget values, got {len(wv)}"
-                )
-                assert wv[31] == 0.0, (
-                    f"In {wf_name}, StudioLightRig normal_smoothing must default to 0.0, got {wv[31]}"
+                assert len(wv) >= 31, (
+                    f"In {wf_name}, StudioLightRig must have at least 31 widget values, got {len(wv)}"
                 )
 
             if n.get("type") == "StudioLightSceneContract":

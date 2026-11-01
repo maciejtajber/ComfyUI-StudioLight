@@ -980,111 +980,6 @@ def draw_studio_radar_diagram(
     return torch.from_numpy(arr).unsqueeze(0)
 
 
-def filter_normals_cross_bilateral(
-    normals: torch.Tensor,
-    depth: Optional[torch.Tensor] = None,
-    strength: float = 0.25,
-    sigma_s: float = 1.0,
-    sigma_d: float = 0.01,
-    sigma_n_deg: float = 15.0,
-    max_theta_deg: float = 2.0,
-    mask: Optional[torch.Tensor] = None,
-) -> torch.Tensor:
-    """
-    Bounded Cross-Bilateral Normal Filter (Tandem Specification with GPT-6 Astra).
-    Eliminates high-frequency surface normal estimation noise (e.g. Marigold micro-stepping
-    on hair or cloth) under close-proximity grazing fixtures without degrading facial features.
-
-    Args:
-        normals: [B, H, W, 3] decoded unit normal vectors in [-1, 1].
-        depth: Optional [B, H, W, 1] or [B, H, W] aligned depth map in [0, 1].
-        strength: Smoothing blend strength in [0.0, 1.0]. 0.0 = bypass.
-        sigma_s: Spatial Gaussian bandwidth in pixels (default 1.0).
-        sigma_d: Depth Gaussian bandwidth in normalized depth space (default 0.01).
-        sigma_n_deg: Angular normal bandwidth in degrees (default 15.0).
-        max_theta_deg: Maximum permitted normal rotation in degrees (default 2.0).
-        mask: Optional [B, H, W, 1] spatial permission mask.
-    """
-    if strength <= 0.0:
-        return normals
-
-    B, H, W, C = normals.shape
-    device = normals.device
-    dtype = normals.dtype
-
-    sigma_n_rad = math.radians(sigma_n_deg)
-    sigma_n_sq = max(sigma_n_rad * sigma_n_rad, 1e-6)
-    sigma_d_sq = max(2.0 * sigma_d * sigma_d, 1e-6)
-    sigma_s_sq = max(2.0 * sigma_s * sigma_s, 1e-6)
-    theta_max_rad = math.radians(max_theta_deg)
-
-    # Pad normals by 2 with replicate padding
-    n_pad = F.pad(normals, (0, 0, 2, 2, 2, 2), mode="replicate")
-
-    if depth is not None:
-        d = depth.to(device=device, dtype=dtype)
-        if d.ndim == 3:
-            d = d.unsqueeze(-1)
-        elif d.shape[-1] != 1 and d.shape[1] == 1:
-            d = d.permute(0, 2, 3, 1)
-        if d.shape[-1] > 1:
-            d = d.mean(dim=-1, keepdim=True)
-        if d.shape[1:3] != (H, W):
-            d = F.interpolate(d.permute(0, 3, 1, 2), size=(H, W), mode="bilinear", align_corners=False).permute(0, 2, 3, 1)
-        d_pad = F.pad(d, (0, 0, 2, 2, 2, 2), mode="replicate")
-    else:
-        d = None
-        d_pad = None
-
-    weighted_sum = torch.zeros_like(normals)
-    total_weight = torch.zeros(B, H, W, 1, device=device, dtype=dtype)
-
-    for dy in range(-2, 3):
-        y_start = 2 + dy
-        y_end = y_start + H
-        for dx in range(-2, 3):
-            x_start = 2 + dx
-            x_end = x_start + W
-
-            # Spatial weight
-            r2 = float(dy * dy + dx * dx)
-            w_s = math.exp(-r2 / sigma_s_sq)
-
-            n_q = n_pad[:, y_start:y_end, x_start:x_end, :]
-
-            # Normal angular similarity weight
-            dot = (normals * n_q).sum(dim=-1, keepdim=True).clamp(-1.0, 1.0)
-            w_n = torch.exp(-(1.0 - dot) / sigma_n_sq)
-
-            # Depth similarity weight
-            if d_pad is not None and d is not None:
-                d_q = d_pad[:, y_start:y_end, x_start:x_end, :]
-                diff_d = d - d_q
-                w_d = torch.exp(-(diff_d * diff_d) / sigma_d_sq)
-            else:
-                w_d = 1.0
-
-            w = w_s * w_n * w_d
-            weighted_sum += w * n_q
-            total_weight += w
-
-    n_bar = F.normalize(weighted_sum / total_weight.clamp_min(1e-8), dim=-1)
-
-    # Angular rotation angle
-    cos_theta = (normals * n_bar).sum(dim=-1, keepdim=True).clamp(-1.0, 1.0)
-    theta = torch.acos(cos_theta)
-
-    # Bounded rotation factor t (strictly clamped to max_theta_deg)
-    scale = torch.clamp(theta_max_rad / theta.clamp_min(1e-6), max=1.0)
-    t = float(strength) * scale
-    if mask is not None:
-        t = t * mask.to(device=device, dtype=dtype)
-
-    # Nlerp
-    n_out = F.normalize((1.0 - t) * normals + t * n_bar, dim=-1)
-    return n_out
-
-
 def render_studio_lighting(
     normals: Optional[torch.Tensor],
     depth: Optional[torch.Tensor],
@@ -1235,17 +1130,6 @@ def render_studio_lighting(
         norm_unpacked[..., 1] = -norm_unpacked[..., 1]
 
     norm_raw = F.normalize(norm_unpacked, dim=-1)
-
-    if float(normal_smoothing) > 0.0 and not is_procedural_fallback:
-        norm_raw = filter_normals_cross_bilateral(
-            normals=norm_raw,
-            depth=depth,
-            strength=float(normal_smoothing),
-            sigma_s=1.0,
-            sigma_d=0.01,
-            sigma_n_deg=15.0,
-            max_theta_deg=2.0,
-        )
 
     if float(normal_boost) != 1.0:
         boost = max(float(normal_boost), 0.5)
