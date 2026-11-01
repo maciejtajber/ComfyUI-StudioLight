@@ -52,7 +52,9 @@ class TestPromptArchitectureV2(unittest.TestCase):
 
         # Neutral capture guidance
         self.assertIn("neutral diffuse reference capture", p1.lower())
-        self.assertIn("preserving subject identity", p2.lower())
+        self.assertNotIn("preserving subject identity", p2.lower())
+        self.assertNotIn("fine surface details", p2.lower())
+        self.assertNotIn("material characteristics", p2.lower())
 
     def test_mandatory_example_2_chrome_android(self):
         """
@@ -149,14 +151,15 @@ class TestPromptArchitectureV2(unittest.TestCase):
 
     def test_pass2_refinement_clause_does_not_contain_fine_surface_details(self):
         """
-        PASS2_MINIMAL_REFINEMENT must not contain 'fine surface details' (the FLUX pimple trigger).
+        PASS2_MINIMAL_REFINEMENT must be empty or clean (zero pimple / dirt triggers).
         """
         self.assertNotIn("fine surface details", PASS2_MINIMAL_REFINEMENT.lower())
-        self.assertIn("preserving subject identity, composition, and material characteristics", PASS2_MINIMAL_REFINEMENT)
+        self.assertNotIn("material characteristics", PASS2_MINIMAL_REFINEMENT.lower())
+        self.assertEqual(PASS2_MINIMAL_REFINEMENT, "")
 
     def test_scene_contract_auto_mode(self):
         """
-        In Auto mode, StudioLightSceneContract builds clean prompts without 'fine surface details'.
+        In Auto mode, StudioLightSceneContract builds clean prompts without 'fine surface details' or suffixes.
         """
         node = StudioLightSceneContract()
         contract, p1, p2, report = node.build(
@@ -167,7 +170,9 @@ class TestPromptArchitectureV2(unittest.TestCase):
             custom_pass2_prompt="",
         )
         self.assertNotIn("fine surface details", p2.lower())
-        self.assertIn("preserving subject identity", p2.lower())
+        self.assertNotIn("material characteristics", p2.lower())
+        self.assertNotIn("preserving", p2.lower())
+        self.assertEqual(p2, "portrait of a model")
         self.assertEqual(contract["refinement_mode"], "Auto")
         self.assertEqual(contract["effective_pass2_prompt"], p2)
 

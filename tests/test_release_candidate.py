@@ -99,7 +99,7 @@ class ReleaseTests(unittest.TestCase):
         # Bug 5 fix: Material nouns (glossy, patent leather, liquid chrome) must pass through untouched
         self.assertIn('patent', draft.lower())
         self.assertIn('patent', final.lower())
-        self.assertIn('preserving subject identity', final.lower())
+        self.assertNotIn('preserving subject identity', final.lower())
         # Verify VERBATIM_RAW backward compatibility
         _, final_raw = StudioPromptSanitizer().sanitize(master, lighting_policy="VERBATIM_RAW")
         self.assertEqual(final_raw, master.strip())

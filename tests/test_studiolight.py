@@ -763,7 +763,7 @@ def test_prompt_sanitizer():
     assert "liquid chrome" in p2.lower()
     for forbidden in ["rim light", "hard sunlight"]:
         assert forbidden not in p2.lower(), f"Forbidden lighting trigger '{forbidden}' leaked into Pass 2 under RIG_OVERRIDE: {p2}"
-    assert "preserving subject identity" in p2.lower(), "Pass 2 minimal refinement tag must be present"
+    assert "preserving subject identity" not in p2.lower(), "Pass 2 must be clean scene without appended meta-suffixes"
 
     # Backward compatibility mode test (lighting_policy="VERBATIM_RAW")
     p1_raw, p2_raw = sanitizer.sanitize(test_prompt, lighting_policy="VERBATIM_RAW", pass1_log_acquisition=True)

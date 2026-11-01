@@ -58,9 +58,7 @@ PASS1_PRESERVE_MOOD_CAPTURE = (
     "balanced shadow depth with clear surface detail"
 )
 
-PASS2_MINIMAL_REFINEMENT = (
-    "preserving subject identity, composition, and material characteristics"
-)
+PASS2_MINIMAL_REFINEMENT = ""
 
 
 # --- MATERIAL DICTIONARIES ---
@@ -416,7 +414,7 @@ def build_pass2_prompt_v2(
         if "reflective metallic" not in text.lower():
             mat_preservation = ", with reflective metallic surfaces"
 
-    refinement_clause = f", {PASS2_MINIMAL_REFINEMENT}" if minimal_refinement else ""
+    refinement_clause = f", {PASS2_MINIMAL_REFINEMENT.strip()}" if (minimal_refinement and PASS2_MINIMAL_REFINEMENT.strip()) else ""
 
     pass2 = f"{text}{mat_preservation}{refinement_clause}"
     pass2 = re.sub(r"\s*,\s*,+", ", ", pass2)
