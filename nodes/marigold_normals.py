@@ -62,10 +62,12 @@ class StudioLightMarigoldNormalsTest:
         dtype = torch.float16 if device.type == "cuda" else torch.float32
         cache = Path(folder_paths.models_dir) / "studiolight" / "huggingface"
         snapshot = cache / "models--prs-eth--marigold-normals-v1-1" / "snapshots" / REVISION
+        has_fp16 = (snapshot / "unet/diffusion_pytorch_model.fp16.safetensors").is_file()
+        weights_suffix = ".fp16.safetensors" if has_fp16 else ".safetensors"
         required = ["model_index.json", "unet/config.json",
-                    "unet/diffusion_pytorch_model.fp16.safetensors",
-                    "text_encoder/config.json", "text_encoder/model.fp16.safetensors",
-                    "vae/config.json", "vae/diffusion_pytorch_model.fp16.safetensors",
+                    f"unet/diffusion_pytorch_model{weights_suffix}",
+                    "text_encoder/config.json", f"text_encoder/model{weights_suffix}",
+                    "vae/config.json", f"vae/diffusion_pytorch_model{weights_suffix}",
                     "scheduler/scheduler_config.json", "tokenizer/vocab.json",
                     "tokenizer/merges.txt", "tokenizer/tokenizer_config.json",
                     "tokenizer/special_tokens_map.json"]
@@ -78,10 +80,15 @@ class StudioLightMarigoldNormalsTest:
         cuda_devices = [device.index or 0] if device.type == "cuda" else []
         try:
             with torch.random.fork_rng(devices=cuda_devices):
+                kwargs = {
+                    "torch_dtype": dtype,
+                    "cache_dir": str(cache),
+                    "local_files_only": True,
+                }
+                if has_fp16:
+                    kwargs["variant"] = "fp16"
                 pipeline = MarigoldNormalsPipeline.from_pretrained(
-                    str(snapshot), variant="fp16",
-                    torch_dtype=dtype, cache_dir=str(cache),
-                    local_files_only=True,
+                    str(snapshot), **kwargs
                 ).to(device)
                 source = image.detach().float().cpu().permute(0, 3, 1, 2)
                 result = pipeline(
