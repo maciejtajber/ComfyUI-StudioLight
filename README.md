@@ -265,12 +265,14 @@ StudioLight represents an extensive engineering effort to bring physically motiv
   <img src="assets/02_studiolight_relighting_pipeline.svg" alt="StudioLight Dual-Input Pipeline" width="735" />
 </div>
 
-### 6-Stage Technical Layer Dissection
+### 9-Stage Technical Layer Dissection
 
 <div align="center">
-  <img src="assets/studiolight_pipeline_dissection_grid.png" alt="StudioLight 6-Stage Pipeline Dissection" width="100%" />
+  <a href="assets/studiolight_master_00002_process_clean.webp">
+    <img src="assets/studiolight_master_00002_process_clean.webp" alt="StudioLight 9-Stage Technical Layer Dissection Grid" width="100%" />
+  </a>
   <br>
-  <sub><b>Six-Stage Technical Pipeline Dissection:</b> Row 1: Source Plate ➔ Estimated Depth Map ➔ Surface Normals. Row 2: Pure Relighting Field ➔ Lit Proxy Plate (~2s) ➔ Final FLUX Synthesis.</sub>
+  <sub><b>Nine-Stage Technical Layer Dissection (3072×3072):</b> Row 1: Source Plate ➔ Estimated Depth Map ➔ 3D Surface Normals. Row 2: Foreground Subject Mask ➔ Intrinsic Albedo ➔ Extracted Shading. Row 3: Pure 3D Relighting Field ➔ Direct Lit Proxy (~2s) ➔ Final FLUX Synthesis. <i>(Click image to inspect in full 3K resolution)</i>.</sub>
 </div>
 
 ### 3D Camera-Space Shadow Raymarching
