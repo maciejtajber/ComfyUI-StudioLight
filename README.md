@@ -229,19 +229,6 @@ python3 -m unittest discover -s tests
 └────────────────────────┴───────────────────────────┴───────────────────────────────────┘
 ```
 
-#### StudioLight Relight (`workflows/StudioLight_Relight.json`)
-Single-pass fixed-image relighting. Ingests any photograph or render, extracts surface geometry and intrinsic albedo, positions 3D lights, and composites the relit proxy in ~2 seconds without diffusion overhead.
-
-<div align="center">
-  <a href="assets/workflow_studiolight_relight.webp">
-    <img src="assets/workflow_studiolight_relight.webp" alt="StudioLight Relight Production Canvas" width="100%" />
-  </a>
-  <br>
-  <sub><b>StudioLight Relight Canvas (5K):</b> Pure photometric relighting pipeline with zero diffusion latency. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
-</div>
-
-<br>
-
 #### StudioLight Create (`workflows/StudioLight_Create.json`)
 Flagship generative studio featuring decoupled prompt architecture, 3D C-stands, area shadow raymarching, and optional FLUX Krea Dev generative refinement.
 
@@ -251,6 +238,19 @@ Flagship generative studio featuring decoupled prompt architecture, 3D C-stands,
   </a>
   <br>
   <sub><b>StudioLight Create Master Canvas (5K):</b> Prompt Sanitizer ➔ Pass 1 Draft ➔ 3D Geometry ➔ StudioLight Rig ➔ Schema 1 Compositor ➔ Optional Pass 2 FLUX Polish. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
+</div>
+
+<br>
+
+#### StudioLight Relight (`workflows/StudioLight_Relight.json`)
+Single-pass fixed-image relighting. Ingests any photograph or render, extracts surface geometry and intrinsic albedo, positions 3D lights, and composites the relit proxy in ~2 seconds without diffusion overhead.
+
+<div align="center">
+  <a href="assets/workflow_studiolight_relight.webp">
+    <img src="assets/workflow_studiolight_relight.webp" alt="StudioLight Relight Production Canvas" width="100%" />
+  </a>
+  <br>
+  <sub><b>StudioLight Relight Canvas (5K):</b> Pure photometric relighting pipeline with zero diffusion latency. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
 </div>
 
 ---
