@@ -173,6 +173,11 @@ StudioLight features an explicit **Schema 1 Compositing Contract**, allowing you
 ```
 <p align="center"><sub><b>Battle-Tested Scene Intelligence:</b> Refined through weeks of pod stress-testing across dark clubs, exterior daylight, enclosed interior sets, and multi-color practicals.</sub></p>
 
+| Sculpted Night Beauty | Direct On-Camera Flash | Raking Fresnel Spotlight |
+| :---: | :---: | :---: |
+| ![Sculpted Night Beauty](assets/showcase_night_beauty_dish.webp) | ![Direct On-Camera Flash](assets/showcase_night_direct_flash.webp) | ![Raking Fresnel Spotlight](assets/showcase_night_fresnel_spotlight.webp) |
+| <sub>Beauty Dish (5500K) + Dark Ambient.<br>Sculpted cheekbones, zero background wash.</sub> | <sub>Direct Flash (6500K, az=0°).<br>Pinpoint glare, anchored black floor, no milky fog.</sub> | <sub>Fresnel Spotlight (4800K, az=-85°).<br>Raking chiaroscuro side-key, dramatic architectural relief.</sub> |
+
 ### Operation A: Add Studio Light (Default)
 $$\text{HDR} = \text{Source} \cdot 2^{\text{exposure}} + \text{Diffuse} + \text{Specular} + \text{Ambient}$$
 * **Preserves Native Environment:** The original scene is retained as an independent underlying base layer. Existing practical lamps, candles, neon signs, daylight skies, and ambient reflections survive natively.
