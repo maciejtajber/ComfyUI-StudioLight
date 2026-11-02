@@ -173,10 +173,13 @@ StudioLight features an explicit **Schema 1 Compositing Contract**, allowing you
 ```
 <p align="center"><sub><b>Battle-Tested Scene Intelligence:</b> Refined through weeks of pod stress-testing across dark clubs, exterior daylight, enclosed interior sets, and multi-color practicals.</sub></p>
 
-| Sculpted Night Beauty | Direct On-Camera Flash | Raking Fresnel Spotlight |
-| :---: | :---: | :---: |
-| ![Sculpted Night Beauty](assets/showcase_night_beauty_dish.webp) | ![Direct On-Camera Flash](assets/showcase_night_direct_flash.webp) | ![Raking Fresnel Spotlight](assets/showcase_night_fresnel_spotlight.webp) |
-| <sub>Beauty Dish (5500K) + Dark Ambient.<br>Sculpted cheekbones, zero background wash.</sub> | <sub>Direct Flash (6500K, az=0°).<br>Pinpoint glare, anchored black floor, no milky fog.</sub> | <sub>Fresnel Spotlight (4800K, az=-85°).<br>Raking chiaroscuro side-key, dramatic architectural relief.</sub> |
+| Fresnel Spotlight Left (-85°) | Fresnel Spotlight Right (+85°) |
+| :---: | :---: |
+| [![Fresnel Spotlight Left (-85°)](assets/showcase_night_fresnel_left.webp)](assets/showcase_night_fresnel_left.webp) | [![Fresnel Spotlight Right (+85°)](assets/showcase_night_fresnel_right.webp)](assets/showcase_night_fresnel_right.webp) |
+| <sub><b>Hard Side-Key (Left):</b> `az=-85°`, `int=1.5`. Extreme dimensional relief sculpting cheekbones and coat weave.</sub> | <sub><b>Hard Side-Key (Right):</b> `az=+85°`, `int=1.5`. Symmetrical spatial steering illuminating the opposite shoulder and street.</sub> |
+| **Angled Fresnel Key (+75°)** | **Soft Studio Octabox (-60°)** |
+| [![Angled Fresnel Key (+75°)](assets/showcase_night_fresnel_75.webp)](assets/showcase_night_fresnel_75.webp) | [![Soft Studio Octabox (-60°)](assets/showcase_night_octabox_soft.webp)](assets/showcase_night_octabox_soft.webp) |
+| <sub><b>Focused Spotlight:</b> `az=+75°`, `int=1.5`, `amb=0.01`. Focused beam sculpting the right cheek with subtle ambient retention.</sub> | <sub><b>Soft Parabolic Wrap:</b> `az=-60°`, `int=1.3`, `amb=0.04`. Diffused studio wrap across wool coat and Paris street.</sub> |
 
 ### Operation A: Add Studio Light (Default)
 $$\text{HDR} = \text{Source} \cdot 2^{\text{exposure}} + \text{Diffuse} + \text{Specular} + \text{Ambient}$$
