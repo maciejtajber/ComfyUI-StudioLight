@@ -156,8 +156,6 @@ def render_consistent(source, diffuse_base, telemetry, scene_contract,
     elif env == 'Unknown':
         warnings.append('Environment unknown; no automatic sky label. Set environment or supply a sky mask if needed.')
     receiver = (1-protected) * masks.get('receiver', torch.ones_like(zero))
-    if operation == 'Replace subject light':
-        receiver = receiver * subject
     source_linear = srgb_to_linear(images['source']) * (2. ** exposure)
     base = srgb_to_linear(images['base'])
     diffuse = base * images['surface_direct_diffuse'] * strength * receiver

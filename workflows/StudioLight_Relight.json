@@ -1,14 +1,14 @@
 {
   "id": "8cfe85ad-eabb-4a05-8742-8080ebd9d2f5",
   "revision": 1,
-  "last_node_id": 100,
+  "last_node_id": 106,
   "last_link_id": 141,
   "nodes": [
     {
       "id": 8,
       "type": "StudioLightSceneContract",
       "pos": [
-        -3280,
+        -2820,
         120
       ],
       "size": [
@@ -39,9 +39,7 @@
         {
           "name": "pass1_capture_prompt",
           "type": "STRING",
-          "links": [
-            6
-          ]
+          "links": []
         },
         {
           "name": "pass2_scene_prompt",
@@ -73,13 +71,15 @@
         "ambient_intent": "Auto",
         "refinement_mode": "Auto",
         "custom_pass2_prompt": ""
-      }
+      },
+      "color": "#362844",
+      "bgcolor": "#221430"
     },
     {
       "id": 1,
       "type": "UNETLoader",
       "pos": [
-        -3680,
+        -3220,
         -320
       ],
       "size": [
@@ -121,7 +121,7 @@
       "id": 2,
       "type": "DualCLIPLoader",
       "pos": [
-        -3680,
+        -3220,
         -180
       ],
       "size": [
@@ -168,8 +168,8 @@
       "id": 3,
       "type": "VAELoader",
       "pos": [
-        -3680,
-        -20
+        -3220,
+        0
       ],
       "size": [
         380,
@@ -209,7 +209,7 @@
       "id": 5,
       "type": "CLIPTextEncode",
       "pos": [
-        -3280,
+        -2820,
         -20
       ],
       "size": [
@@ -234,7 +234,6 @@
           "type": "CONDITIONING",
           "slot_index": 0,
           "links": [
-            10,
             83
           ]
         }
@@ -258,7 +257,7 @@
       "id": 6,
       "type": "PrimitiveStringMultiline",
       "pos": [
-        -3280,
+        -2820,
         -320
       ],
       "size": [
@@ -266,7 +265,7 @@
         260
       ],
       "flags": {},
-      "order": 4,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -306,7 +305,7 @@
         390
       ],
       "flags": {},
-      "order": 28,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
@@ -341,7 +340,7 @@
         390
       ],
       "flags": {},
-      "order": 30,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
@@ -376,7 +375,7 @@
         390
       ],
       "flags": {},
-      "order": 31,
+      "order": 25,
       "mode": 0,
       "inputs": [
         {
@@ -411,7 +410,7 @@
         390
       ],
       "flags": {},
-      "order": 32,
+      "order": 26,
       "mode": 0,
       "inputs": [
         {
@@ -446,7 +445,7 @@
         40
       ],
       "flags": {},
-      "order": 38,
+      "order": 32,
       "mode": 0,
       "inputs": [
         {
@@ -483,7 +482,7 @@
         390
       ],
       "flags": {},
-      "order": 40,
+      "order": 34,
       "mode": 0,
       "inputs": [
         {
@@ -517,7 +516,7 @@
         390
       ],
       "flags": {},
-      "order": 25,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -552,7 +551,7 @@
         90
       ],
       "flags": {},
-      "order": 23,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -597,7 +596,7 @@
         390
       ],
       "flags": {},
-      "order": 26,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
@@ -632,7 +631,7 @@
         60
       ],
       "flags": {},
-      "order": 42,
+      "order": 36,
       "mode": 0,
       "inputs": [
         {
@@ -675,7 +674,7 @@
         390
       ],
       "flags": {},
-      "order": 33,
+      "order": 28,
       "mode": 0,
       "inputs": [
         {
@@ -696,7 +695,9 @@
         "cnr_id": "comfy-core",
         "ver": "0.30.0",
         "Node name for S&R": "PreviewImage"
-      }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
     },
     {
       "id": 19,
@@ -710,7 +711,7 @@
         390
       ],
       "flags": {},
-      "order": 41,
+      "order": 35,
       "mode": 0,
       "inputs": [
         {
@@ -726,12 +727,14 @@
           "links": []
         }
       ],
-      "title": "Exact proxy sent to Krea \u2014 ungraded",
+      "title": "Exact proxy sent to Krea — ungraded",
       "properties": {
         "cnr_id": "comfy-core",
         "ver": "0.30.0",
         "Node name for S&R": "PreviewImage"
-      }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
     },
     {
       "id": 16,
@@ -745,7 +748,7 @@
         390
       ],
       "flags": {},
-      "order": 34,
+      "order": 29,
       "mode": 0,
       "inputs": [
         {
@@ -767,6 +770,8 @@
         "ver": "0.30.0",
         "Node name for S&R": "PreviewImage"
       },
+      "widgets_values": [],
+      "widgets_values_named": {},
       "color": "#222",
       "bgcolor": "#000"
     },
@@ -782,7 +787,7 @@
         390
       ],
       "flags": {},
-      "order": 43,
+      "order": 37,
       "mode": 0,
       "inputs": [
         {
@@ -817,7 +822,7 @@
         320
       ],
       "flags": {},
-      "order": 15,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -857,7 +862,7 @@
         90
       ],
       "flags": {},
-      "order": 16,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -909,7 +914,7 @@
         60
       ],
       "flags": {},
-      "order": 18,
+      "order": 27,
       "mode": 0,
       "inputs": [
         {
@@ -947,7 +952,7 @@
       "id": 41,
       "type": "MarkdownNote",
       "pos": [
-        -4190,
+        -3730,
         -370
       ],
       "size": [
@@ -957,17 +962,17 @@
       "flags": {
         "collapsed": true
       },
-      "order": 5,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "title": "INFO",
       "properties": {},
       "widgets_values": [
-        "# StudioLight v1.0\n## Relight Studio (Portrait Relighting Pipeline)\n\n### Required Model Downloads (Direct Links)\n\n* Diffusion UNET: [flux1-krea-dev_fp8_scaled.safetensors](https://huggingface.co/KreaAI/flux1-krea-dev-fp8-scaled/blob/main/flux1-krea-dev_fp8_scaled.safetensors) (or standard flux1-dev / GGUF quants)\n* Text Encoders: [clip_l.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/clip_l.safetensors) + [t5xxl_fp16.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/t5xxl_fp16.safetensors) (or t5xxl_fp8)\n* VAE: [ae.safetensors](https://huggingface.co/black-forest-labs/FLUX.1-dev/blob/main/ae.safetensors)\n* Surface Normals: [prs-eth/marigold-normals-v1-1](https://huggingface.co/prs-eth/marigold-normals-v1-1) (Auto-downloaded on first run)\n* Albedo De-Light: [prs-eth/marigold-iid-lighting-v1-1](https://huggingface.co/prs-eth/marigold-iid-lighting-v1-1) (Auto-downloaded on first run)\n* Depth & Masking: [Depth Anything V2 ViT-L](https://huggingface.co/depth-anything/Depth-Anything-V2-Large) + [BiRefNet-general](https://huggingface.co/ZhengPeng7/BiRefNet)\n\n### Quick Start\n\n1. Upload: Drop your portrait into INPUT PORTRAIT PHOTO.\n2. Describe: Type a brief description of the person in Base Subject Prompt (Green Box), for example: \"portrait of a young woman with sleek dark hair\".\n3. Light Rig: Dial your 3D lights on StudioLightRig (Key, Fill, Rim coordinates and Kelvin color).\n4. Queue: Click Run for a single-pass photorealistic relight in ~40 seconds.\n\n### Calibration Rules\n\n* Pass 2 Denoise (KSampler): 0.48 - 0.55 is the calibrated artist sweet spot for rich skin textures and soft shadow wrapping. Use 0.35 - 0.42 when flipping light direction 180\u00b0 for strict directional shadow enforcement. Values above 0.60 allow AI diffusion to override 3D lighting.\n\n* DeLight Strength (DeLight Strength): Use 1.00 when changing light direction 180\u00b0 to completely wipe old shadows from the base plate. Use 0.70 - 0.85 to preserve subtle natural skin ambient occlusion during softer relighting.\n\n* Operating Mode (Consistent Relighting): Use Replace subject light for studio portraits to light the person while keeping the background scenery untouched. Use Add studio light for environmental scenes (caveman, dark rooms, street lamps) to splash physical light onto walls, ceiling, and floor with inverse-square falloff.\n\n* Scene Contract (StudioLight Scene Contract): Auto detects outdoor vs indoor prompts. Set to Open manually to guarantee sky and cloud protection from studio flashes. Set to Enclosed for interior light bounce.\n\nCreated by METAMATERIAL // Maciej Tajber (MIT License)"
+        "# StudioLight v1.0\n## Relight Studio (Portrait Relighting Pipeline)\n\n### Required Model Downloads (Direct Links)\n\n* Diffusion UNET: [flux1-krea-dev_fp8_scaled.safetensors](https://huggingface.co/KreaAI/flux1-krea-dev-fp8-scaled/blob/main/flux1-krea-dev_fp8_scaled.safetensors) (or standard flux1-dev / GGUF quants)\n* Text Encoders: [clip_l.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/clip_l.safetensors) + [t5xxl_fp16.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/t5xxl_fp16.safetensors) (or t5xxl_fp8)\n* VAE: [ae.safetensors](https://huggingface.co/black-forest-labs/FLUX.1-dev/blob/main/ae.safetensors)\n* Surface Normals: [prs-eth/marigold-normals-v1-1](https://huggingface.co/prs-eth/marigold-normals-v1-1) (Auto-downloaded on first run)\n* Albedo De-Light: [prs-eth/marigold-iid-lighting-v1-1](https://huggingface.co/prs-eth/marigold-iid-lighting-v1-1) (Auto-downloaded on first run)\n* Depth & Masking: [Depth Anything V2 ViT-L](https://huggingface.co/depth-anything/Depth-Anything-V2-Large) + [BiRefNet-general](https://huggingface.co/ZhengPeng7/BiRefNet)\n\n### Quick Start\n\n1. Upload: Drop your portrait into INPUT PORTRAIT PHOTO.\n2. Describe: Type a brief description of the person in Base Subject Prompt (Green Box), for example: \"portrait of a young woman with sleek dark hair\".\n3. Light Rig: Dial your 3D lights on StudioLightRig (Key, Fill, Rim coordinates and Kelvin color).\n4. Queue: Click Run for a single-pass photorealistic relight in ~40 seconds.\n\n### Calibration Rules\n\n* Pass 2 Denoise (KSampler): 0.48 - 0.55 is the calibrated artist sweet spot for rich skin textures and soft shadow wrapping. Use 0.35 - 0.42 when flipping light direction 180° for strict directional shadow enforcement. Values above 0.60 allow AI diffusion to override 3D lighting.\n\n* DeLight Strength (DeLight Strength): Use 1.00 when changing light direction 180° to completely wipe old shadows from the base plate. Use 0.70 - 0.85 to preserve subtle natural skin ambient occlusion during softer relighting.\n\n* Operating Mode (Consistent Relighting): Use Replace subject light for studio portraits to light the person while keeping the background scenery untouched. Use Add studio light for environmental scenes (caveman, dark rooms, street lamps) to splash physical light onto walls, ceiling, and floor with inverse-square falloff.\n\n* Scene Contract (StudioLight Scene Contract): Auto detects outdoor vs indoor prompts. Set to Open manually to guarantee sky and cloud protection from studio flashes. Set to Enclosed for interior light bounce.\n\nCreated by METAMATERIAL // Maciej Tajber (MIT License)"
       ],
       "widgets_values_named": {
-        "text": "# StudioLight v1.0\n## Professional 3-Point Photometric Lighting Console & Studio Rig\n\n### Required Model Downloads (Direct Links)\n\n* Diffusion UNET: [flux1-krea-dev_fp8_scaled.safetensors](https://huggingface.co/KreaAI/flux1-krea-dev-fp8-scaled/blob/main/flux1-krea-dev_fp8_scaled.safetensors) (or standard flux1-dev / GGUF quants)\n* Text Encoders: [clip_l.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/clip_l.safetensors) + [t5xxl_fp16.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/t5xxl_fp16.safetensors) (or t5xxl_fp8)\n* VAE: [ae.safetensors](https://huggingface.co/black-forest-labs/FLUX.1-dev/blob/main/ae.safetensors)\n* Surface Normals: [prs-eth/marigold-normals-v1-1](https://huggingface.co/prs-eth/marigold-normals-v1-1) (Auto-downloaded on first run)\n* Albedo De-Light: [prs-eth/marigold-iid-lighting-v1-1](https://huggingface.co/prs-eth/marigold-iid-lighting-v1-1) (Auto-downloaded on first run)\n* Depth & Masking: [Depth Anything V2 ViT-L](https://huggingface.co/depth-anything/Depth-Anything-V2-Large) + [BiRefNet-general](https://huggingface.co/ZhengPeng7/BiRefNet)\n\n### Quick Start\n\n1. Prompt: Enter subject description in Base Subject Prompt (Green Box). Flux works best with an empty Negative prompt. If adding negative terms, raise CFG to 2.5 - 3.5.\n2. Light Rig: Dial light coordinates and Kelvin colors on StudioLightRig. Check the 2D Studio Radar and Chrome Ball for real-time aim feedback.\n3. Queue: Pass 1 generates the base subject; Pass 2 synthesizes physical 3D shadows and specular reflections into skin and clothing.\n\n### Calibration Rules\n\n* Pass 2 Denoise (KSampler): 0.48 - 0.55 is the calibrated artist sweet spot for rich skin textures and soft shadow wrapping. Use 0.35 - 0.42 when flipping light direction 180\u00b0 for strict directional shadow enforcement. Values above 0.60 allow AI diffusion to override 3D lighting.\n\n* DeLight Strength (DeLight Strength): Use 1.00 when changing light direction 180\u00b0 to completely wipe old shadows from the base plate. Use 0.70 - 0.85 to preserve subtle natural skin ambient occlusion during softer relighting.\n\n* Operating Mode (Consistent Relighting): Use Replace subject light for studio portraits to light the person while keeping the background scenery untouched. Use Add studio light for environmental scenes (caveman, dark rooms, street lamps) to splash physical light onto walls, ceiling, and floor with inverse-square falloff.\n\n* Scene Contract (StudioLight Scene Contract): Auto detects outdoor vs indoor prompts. Set to Open manually to guarantee sky and cloud protection from studio flashes. Set to Enclosed for interior light bounce.\n\nCreated by METAMATERIAL / Maciej Tajber (MIT License)"
+        "text": "# StudioLight v1.0\n## Relight Studio (Portrait Relighting Pipeline)\n\n### Required Model Downloads (Direct Links)\n\n* Diffusion UNET: [flux1-krea-dev_fp8_scaled.safetensors](https://huggingface.co/KreaAI/flux1-krea-dev-fp8-scaled/blob/main/flux1-krea-dev_fp8_scaled.safetensors) (or standard flux1-dev / GGUF quants)\n* Text Encoders: [clip_l.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/clip_l.safetensors) + [t5xxl_fp16.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/t5xxl_fp16.safetensors) (or t5xxl_fp8)\n* VAE: [ae.safetensors](https://huggingface.co/black-forest-labs/FLUX.1-dev/blob/main/ae.safetensors)\n* Surface Normals: [prs-eth/marigold-normals-v1-1](https://huggingface.co/prs-eth/marigold-normals-v1-1) (Auto-downloaded on first run)\n* Albedo De-Light: [prs-eth/marigold-iid-lighting-v1-1](https://huggingface.co/prs-eth/marigold-iid-lighting-v1-1) (Auto-downloaded on first run)\n* Depth & Masking: [Depth Anything V2 ViT-L](https://huggingface.co/depth-anything/Depth-Anything-V2-Large) + [BiRefNet-general](https://huggingface.co/ZhengPeng7/BiRefNet)\n\n### Quick Start\n\n1. Upload: Drop your portrait into INPUT PORTRAIT PHOTO.\n2. Describe: Type a brief description of the person in Base Subject Prompt (Green Box), for example: \"portrait of a young woman with sleek dark hair\".\n3. Light Rig: Dial your 3D lights on StudioLightRig (Key, Fill, Rim coordinates and Kelvin color).\n4. Queue: Click Run for a single-pass photorealistic relight in ~40 seconds.\n\n### Calibration Rules\n\n* Pass 2 Denoise (KSampler): 0.48 - 0.55 is the calibrated artist sweet spot for rich skin textures and soft shadow wrapping. Use 0.35 - 0.42 when flipping light direction 180° for strict directional shadow enforcement. Values above 0.60 allow AI diffusion to override 3D lighting.\n\n* DeLight Strength (DeLight Strength): Use 1.00 when changing light direction 180° to completely wipe old shadows from the base plate. Use 0.70 - 0.85 to preserve subtle natural skin ambient occlusion during softer relighting.\n\n* Operating Mode (Consistent Relighting): Use Replace subject light for studio portraits to light the person while keeping the background scenery untouched. Use Add studio light for environmental scenes (caveman, dark rooms, street lamps) to splash physical light onto walls, ceiling, and floor with inverse-square falloff.\n\n* Scene Contract (StudioLight Scene Contract): Auto detects outdoor vs indoor prompts. Set to Open manually to guarantee sky and cloud protection from studio flashes. Set to Enclosed for interior light bounce.\n\nCreated by METAMATERIAL // Maciej Tajber (MIT License)"
       },
       "color": "#df691a",
       "bgcolor": "#cb5506"
@@ -984,7 +989,7 @@
         390
       ],
       "flags": {},
-      "order": 37,
+      "order": 31,
       "mode": 0,
       "inputs": [
         {
@@ -1018,7 +1023,7 @@
         350
       ],
       "flags": {},
-      "order": 24,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
@@ -1114,7 +1119,7 @@
         120
       ],
       "flags": {},
-      "order": 35,
+      "order": 30,
       "mode": 0,
       "inputs": [
         {
@@ -1190,7 +1195,7 @@
         80
       ],
       "flags": {},
-      "order": 29,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
@@ -1241,17 +1246,17 @@
       "flags": {
         "collapsed": true
       },
-      "order": 7,
+      "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "title": "DE-LIGHT - Marigold",
       "properties": {},
       "widgets_values": [
-        "De-Light Engine\n\nPurpose: Decomposes the draft image into a pure diffuse albedo base plate, stripping out old baked shadows and specular glares so new 3D lights don't create dirty double-shadows.\n\nDeLight Strength: Set to 1.00 when changing light direction 180\u00b0 for full shadow wipeout. Set to 0.70 - 0.85 to preserve subtle natural skin ambient occlusion for gentle lighting enhancements.\n\nDiagnostic Grid: The 4 inspection cards display estimated Albedo, Original Shading, Non-diffuse Residual, and the physical reconstruction check (A*S+R)."
+        "De-Light Engine\n\nPurpose: Decomposes the draft image into a pure diffuse albedo base plate, stripping out old baked shadows and specular glares so new 3D lights don't create dirty double-shadows.\n\nDeLight Strength: Set to 1.00 when changing light direction 180° for full shadow wipeout. Set to 0.70 - 0.85 to preserve subtle natural skin ambient occlusion for gentle lighting enhancements.\n\nDiagnostic Grid: The 4 inspection cards display estimated Albedo, Original Shading, Non-diffuse Residual, and the physical reconstruction check (A*S+R)."
       ],
       "widgets_values_named": {
-        "text": "De-Light Engine\n\nPurpose: Decomposes the draft image into a pure diffuse albedo base plate, stripping out old baked shadows and specular glares so new 3D lights don't create dirty double-shadows.\n\nDeLight Strength: Set to 1.00 when changing light direction 180\u00b0 for full shadow wipeout. Set to 0.70 - 0.85 to preserve subtle natural skin ambient occlusion for gentle lighting enhancements.\n\nDiagnostic Grid: The 4 inspection cards display estimated Albedo, Original Shading, Non-diffuse Residual, and the physical reconstruction check (A*S+R)."
+        "text": "De-Light Engine\n\nPurpose: Decomposes the draft image into a pure diffuse albedo base plate, stripping out old baked shadows and specular glares so new 3D lights don't create dirty double-shadows.\n\nDeLight Strength: Set to 1.00 when changing light direction 180° for full shadow wipeout. Set to 0.70 - 0.85 to preserve subtle natural skin ambient occlusion for gentle lighting enhancements.\n\nDiagnostic Grid: The 4 inspection cards display estimated Albedo, Original Shading, Non-diffuse Residual, and the physical reconstruction check (A*S+R)."
       },
       "color": "#223",
       "bgcolor": "#335"
@@ -1270,7 +1275,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 8,
+      "order": 6,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1297,7 +1302,7 @@
         220
       ],
       "flags": {},
-      "order": 22,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -1363,7 +1368,7 @@
         930
       ],
       "flags": {},
-      "order": 27,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
@@ -1502,7 +1507,7 @@
         310
       ],
       "flags": {},
-      "order": 39,
+      "order": 33,
       "mode": 0,
       "inputs": [
         {
@@ -1587,7 +1592,7 @@
       "widgets_values": [
         "Add studio light",
         1,
-        0.0,
+        0,
         0,
         1,
         true
@@ -1595,7 +1600,7 @@
       "widgets_values_named": {
         "operation": "Add studio light",
         "studio_strength": 1,
-        "specular_strength": 0.2,
+        "specular_strength": 0,
         "scene_exposure": 0,
         "source_preservation": 1,
         "protect_far_background": true
@@ -1617,27 +1622,27 @@
       "flags": {
         "collapsed": true
       },
-      "order": 9,
+      "order": 7,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "title": "STUDIO LIGHT RIG",
       "properties": {},
       "widgets_values": [
-        "### 3D Rig & Relighting Console\n\nStudioLight Rig: Controls 3 physical studio fixtures (Key, Fill, Rim). Azimuth rotates 360\u00b0 around the subject; Elevation sets fixture height; Distance sets physical falloff in meters; Kelvin dials color temperature (3200K warm tungsten to 6500K daylight).\n\nAim Target: Set to Upper (calibrated default) to automatically track the face and eyes. Center targets torso or product; Lower targets the lower third.\n\nNormal Boost: Default 1.35 provides clean 3D facial sculpting without edge seams. Increase to 1.80 - 2.50 for heavy micro-relief textures (armor, stone, coarse fabric).\n\nConsistent Relighting Modes:\n  Use Replace subject light for commercial studio portraits to illuminate the model while preserving original background scenery.\n  Use Add studio light for environmental scenes (caveman in dark cave, room lamps) to splash physical 3D light across the entire scene volume.\n\nSource Preservation: Active under Replace subject light. Set to 0.00 - 0.05 when flipping light direction 180\u00b0 to wipe old lighting. Set higher (0.70 - 1.00) to retain original lighting cues and punch in subtle accents."
+        "### 3D Rig & Relighting Console\n\nStudioLight Rig: Controls 3 physical studio fixtures (Key, Fill, Rim). Azimuth rotates 360° around the subject; Elevation sets fixture height; Distance sets physical falloff in meters; Kelvin dials color temperature (3200K warm tungsten to 6500K daylight).\n\nAim Target: Set to Upper (calibrated default) to automatically track the face and eyes. Center targets torso or product; Lower targets the lower third.\n\nNormal Boost: Default 1.35 provides clean 3D facial sculpting without edge seams. Increase to 1.80 - 2.50 for heavy micro-relief textures (armor, stone, coarse fabric).\n\nConsistent Relighting Modes:\n  Use Replace subject light for commercial studio portraits to illuminate the model while preserving original background scenery.\n  Use Add studio light for environmental scenes (caveman in dark cave, room lamps) to splash physical 3D light across the entire scene volume.\n\nSource Preservation: Active under Replace subject light. Set to 0.00 - 0.05 when flipping light direction 180° to wipe old lighting. Set higher (0.70 - 1.00) to retain original lighting cues and punch in subtle accents."
       ],
       "widgets_values_named": {
-        "text": "### 3D Rig & Relighting Console\n\nStudioLight Rig: Controls 3 physical studio fixtures (Key, Fill, Rim). Azimuth rotates 360\u00b0 around the subject; Elevation sets fixture height; Distance sets physical falloff in meters; Kelvin dials color temperature (3200K warm tungsten to 6500K daylight).\n\nAim Target: Set to Upper (calibrated default) to automatically track the face and eyes. Center targets torso or product; Lower targets the lower third.\n\nNormal Boost: Default 1.35 provides clean 3D facial sculpting without edge seams. Increase to 1.80 - 2.50 for heavy micro-relief textures (armor, stone, coarse fabric).\n\nConsistent Relighting Modes:\n  Use Replace subject light for commercial studio portraits to illuminate the model while preserving original background scenery.\n  Use Add studio light for environmental scenes (caveman in dark cave, room lamps) to splash physical 3D light across the entire scene volume.\n\nSource Preservation: Active under Replace subject light. Set to 0.00 - 0.05 when flipping light direction 180\u00b0 to wipe old lighting. Set higher (0.70 - 1.00) to retain original lighting cues and punch in subtle accents."
+        "text": "### 3D Rig & Relighting Console\n\nStudioLight Rig: Controls 3 physical studio fixtures (Key, Fill, Rim). Azimuth rotates 360° around the subject; Elevation sets fixture height; Distance sets physical falloff in meters; Kelvin dials color temperature (3200K warm tungsten to 6500K daylight).\n\nAim Target: Set to Upper (calibrated default) to automatically track the face and eyes. Center targets torso or product; Lower targets the lower third.\n\nNormal Boost: Default 1.35 provides clean 3D facial sculpting without edge seams. Increase to 1.80 - 2.50 for heavy micro-relief textures (armor, stone, coarse fabric).\n\nConsistent Relighting Modes:\n  Use Replace subject light for commercial studio portraits to illuminate the model while preserving original background scenery.\n  Use Add studio light for environmental scenes (caveman in dark cave, room lamps) to splash physical 3D light across the entire scene volume.\n\nSource Preservation: Active under Replace subject light. Set to 0.00 - 0.05 when flipping light direction 180° to wipe old lighting. Set higher (0.70 - 1.00) to retain original lighting cues and punch in subtle accents."
       },
-      "color": "#2d3732",
-      "bgcolor": "#19231e"
+      "color": "#244131",
+      "bgcolor": "#102d1d"
     },
     {
       "id": 37,
       "type": "MarkdownNote",
       "pos": [
-        160.357337591495,
-        300.12048682800895
+        160,
+        300
       ],
       "size": [
         380,
@@ -1646,17 +1651,17 @@
       "flags": {
         "collapsed": true
       },
-      "order": 10,
+      "order": 8,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "title": "FLUX guidance",
       "properties": {},
       "widgets_values": [
-        "ARCHIVED CHECKPOINT NOTE: may be stale; see TEST SETTINGS note.\n\nFLUX guidance (Default 3.5)\n\n2.0 \u2013 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 \u2013 4.5: High prompt adherence; enhances crisp edges, but pushing above 4.0 can introduce digital sharpness."
+        "ARCHIVED CHECKPOINT NOTE: may be stale; see TEST SETTINGS note.\n\nFLUX guidance (Default 3.5)\n\n2.0 – 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 – 4.5: High prompt adherence; enhances crisp edges, but pushing above 4.0 can introduce digital sharpness."
       ],
       "widgets_values_named": {
-        "text": "ARCHIVED CHECKPOINT NOTE: may be stale; see TEST SETTINGS note.\n\nFLUX guidance (Default 3.5)\n\n2.0 \u2013 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 \u2013 4.5: High prompt adherence; enhances crisp edges, but pushing above 4.0 can introduce digital sharpness."
+        "text": "ARCHIVED CHECKPOINT NOTE: may be stale; see TEST SETTINGS note.\n\nFLUX guidance (Default 3.5)\n\n2.0 – 2.5: More photographic, softer transitions, yields more authority to the 3D lit plate.\n\n3.5 – 4.5: High prompt adherence; enhances crisp edges, but pushing above 4.0 can introduce digital sharpness."
       },
       "color": "#362844",
       "bgcolor": "#221430"
@@ -1673,7 +1678,7 @@
         670
       ],
       "flags": {},
-      "order": 44,
+      "order": 38,
       "mode": 0,
       "inputs": [
         {
@@ -1745,7 +1750,7 @@
         50
       ],
       "flags": {},
-      "order": 45,
+      "order": 39,
       "mode": 0,
       "inputs": [
         {
@@ -1790,17 +1795,17 @@
       "flags": {
         "collapsed": true
       },
-      "order": 11,
+      "order": 9,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "title": "Pass 2 KSampler",
       "properties": {},
       "widgets_values": [
-        "### Pass 2 KSampler (Final Master Synthesis)\n\nCore Function: Governs how much Flux regenerates the image to adopt the 2.5D photometric lighting versus locking the base draft geometry.\n\n0.35 - 0.42 (Strict Directional Lock): Use when flipping light direction 180\u00b0. Strictly enforces physical 3D shadow boundaries and locks 100% of facial anatomy and fine skin pores.\n\nDefault 0.50): Generatively synthesizes rich subsurface scattering across skin, natural eye catchlights, and authentic specular gleam on fabrics and leather.\n\n0.60 - 0.75+ (High Chiaroscuro): Dramatic diffusion freedom. Allows Flux to create deep, moody shadow roll-off and intense theatrical contrast."
+        "### Pass 2 KSampler (Final Master Synthesis)\n\nCore Function: Governs how much Flux regenerates the image to adopt the 2.5D photometric lighting versus locking the base draft geometry.\n\n0.35 - 0.42 (Strict Directional Lock): Use when flipping light direction 180°. Strictly enforces physical 3D shadow boundaries and locks 100% of facial anatomy and fine skin pores.\n\nDefault 0.50): Generatively synthesizes rich subsurface scattering across skin, natural eye catchlights, and authentic specular gleam on fabrics and leather.\n\n0.60 - 0.75+ (High Chiaroscuro): Dramatic diffusion freedom. Allows Flux to create deep, moody shadow roll-off and intense theatrical contrast."
       ],
       "widgets_values_named": {
-        "text": "### Pass 2 KSampler (Final Master Synthesis)\n\nCore Function: Governs how much Flux regenerates the image to adopt the 2.5D photometric lighting versus locking the base draft geometry.\n\n0.35 - 0.42 (Strict Directional Lock): Use when flipping light direction 180\u00b0. Strictly enforces physical 3D shadow boundaries and locks 100% of facial anatomy and fine skin pores.\n\nDefault 0.50): Generatively synthesizes rich subsurface scattering across skin, natural eye catchlights, and authentic specular gleam on fabrics and leather.\n\n0.60 - 0.75+ (High Chiaroscuro): Dramatic diffusion freedom. Allows Flux to create deep, moody shadow roll-off and intense theatrical contrast."
+        "text": "### Pass 2 KSampler (Final Master Synthesis)\n\nCore Function: Governs how much Flux regenerates the image to adopt the 2.5D photometric lighting versus locking the base draft geometry.\n\n0.35 - 0.42 (Strict Directional Lock): Use when flipping light direction 180°. Strictly enforces physical 3D shadow boundaries and locks 100% of facial anatomy and fine skin pores.\n\nDefault 0.50): Generatively synthesizes rich subsurface scattering across skin, natural eye catchlights, and authentic specular gleam on fabrics and leather.\n\n0.60 - 0.75+ (High Chiaroscuro): Dramatic diffusion freedom. Allows Flux to create deep, moody shadow roll-off and intense theatrical contrast."
       },
       "color": "#243440",
       "bgcolor": "#10202c"
@@ -1817,7 +1822,7 @@
         580
       ],
       "flags": {},
-      "order": 46,
+      "order": 40,
       "mode": 0,
       "inputs": [
         {
@@ -1833,7 +1838,7 @@
           "links": []
         }
       ],
-      "title": "\ud83d\udc8e FINAL LIT RENDER",
+      "title": "💎 FINAL LIT RENDER",
       "properties": {
         "cnr_id": "comfy-core",
         "ver": "0.30.0",
@@ -1852,39 +1857,19 @@
       "id": 105,
       "type": "LoadImage",
       "pos": [
-        -2820,
-        -100
+        -3220,
+        100
       ],
       "size": [
         380,
         460
       ],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "image",
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        },
-        {
-          "localized_name": "choose file to upload",
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
-          "widget": {
-            "name": "upload"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
-          "localized_name": "IMAGE",
           "name": "IMAGE",
           "type": "IMAGE",
           "slot_index": 0,
@@ -1898,24 +1883,54 @@
           ]
         },
         {
-          "localized_name": "MASK",
           "name": "MASK",
           "type": "MASK",
           "links": null
         }
       ],
-      "title": "\ud83d\udcf7 INPUT PORTRAIT PHOTO",
+      "title": "📷 INPUT PORTRAIT PHOTO",
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.42.1",
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "StudioLight_Test_Source.png",
+        "Maciej_DepthMap_1024.png",
         "image"
       ],
       "widgets_values_named": {
-        "image": "StudioLight_Test_Source.png",
+        "image": "Maciej_DepthMap_1024.png",
         "upload": "image"
       }
+    },
+    {
+      "id": 106,
+      "type": "MarkdownNote",
+      "pos": [
+        -2820,
+        630
+      ],
+      "size": [
+        380,
+        340
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "DE-LIGHT - Marigold",
+      "properties": {},
+      "widgets_values": [
+        "### ENVIRONMENT (Background & Sky Interaction) \n\nAuto: Automatically parses prompt for indoor vs outdoor cues. \n\nOpen: Outdoors (sky, street, beach). Protects sky and horizon from being lit by studio lights. \n\nEnclosed: Indoors/Studio (room, cave, stage). Background receives ambient light and wall falloff. \n\nMixed: Indoor spaces with large windows, terraces, or open doorways.\n\n### AMBIENT INTENT (Base Tone Calibration) \n\nAuto: Detects mood keywords (low-key, dusk vs bright daylight). \n\nBright: Forces Neutral Diffuse Reference (flat, shadowless studio base). \n\nDark: Forces Preserve Environmental Tone (deep blacks and moody ambient base).\n\n### REFINEMENT MODE (Pass 2 FLUX Conditioning) \n\nAuto: Strips old conflicting lighting keywords and delivers pure scene content to prevent skin or texture artifacts. \n\nCustom Override: 100% manual control. Sends the text box below verbatim to FLUX with zero automatic modifications.\n"
+      ],
+      "widgets_values_named": {
+        "text": "### ENVIRONMENT (Background & Sky Interaction) \n\nAuto: Automatically parses prompt for indoor vs outdoor cues. \n\nOpen: Outdoors (sky, street, beach). Protects sky and horizon from being lit by studio lights. \n\nEnclosed: Indoors/Studio (room, cave, stage). Background receives ambient light and wall falloff. \n\nMixed: Indoor spaces with large windows, terraces, or open doorways.\n\n### AMBIENT INTENT (Base Tone Calibration) \n\nAuto: Detects mood keywords (low-key, dusk vs bright daylight). \n\nBright: Forces Neutral Diffuse Reference (flat, shadowless studio base). \n\nDark: Forces Preserve Environmental Tone (deep blacks and moody ambient base).\n\n### REFINEMENT MODE (Pass 2 FLUX Conditioning) \n\nAuto: Strips old conflicting lighting keywords and delivers pure scene content to prevent skin or texture artifacts. \n\nCustom Override: 100% manual control. Sends the text box below verbatim to FLUX with zero automatic modifications.\n"
+      },
+      "color": "#362844",
+      "bgcolor": "#221430"
     }
   ],
   "links": [
@@ -2269,24 +2284,12 @@
       "id": 1,
       "title": "INPUTS",
       "bounding": [
-        -3700,
+        -3240,
         -400,
         820,
         980
       ],
       "color": "#444",
-      "flags": {}
-    },
-    {
-      "id": 2,
-      "title": "INPUT PORTRAIT",
-      "bounding": [
-        -2840,
-        -400,
-        420,
-        820
-      ],
-      "color": "#182836",
       "flags": {}
     },
     {
@@ -2351,14 +2354,14 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.49568479251591335,
+      "scale": 0.5315218814895574,
       "offset": [
-        3086.778190862036,
-        804.4235753827757
+        3476.4912308987614,
+        705.5172242344075
       ]
     },
     "frontendVersion": "1.55.18",
-    "workflow_name": "StudioLight Consistent V1 \u2014 GPU Candidate R1"
+    "workflow_name": "StudioLight Consistent V1 — GPU Candidate R1"
   },
   "version": 0.4
 }
