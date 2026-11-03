@@ -100,9 +100,11 @@ StudioLight equips you with a professional photographer's gaffer console. You co
 * **Live VFX Probes & Studio Radar:** Real-time 3D dual spheres (**18% Neutral Grey + Mirror Chrome**) and a top-down studio radar give instant visual telemetry of light vectors, fixture angles, and catchlight shapes.
 
 <div align="center">
-  <img src="assets/studiolight_probe_and_render.webp" alt="StudioLight VFX Probes & Studio Radar HUD" width="100%" />
+  <a href="assets/studiolight_probe_and_render.webp">
+    <img src="assets/studiolight_probe_and_render.webp" alt="Eight synchronized StudioLight console and final-render comparisons" width="100%" />
+  </a>
   <br>
-  <sub><b>Interactive Camera-Space Lighting Rig:</b> Real-time 3D VFX spheres &amp; top-down studio radar driving generative relighting across 6 distinct setups.</sub>
+  <sub><b>Camera-Space Lighting Rig:</b> Eight lighting setups, each paired with its matching grey/chrome probes, studio radar, and final FLUX.1 Krea render. Two seconds per setup.</sub>
 </div>
 
 ### Physically Motivated Modifier Apertures
