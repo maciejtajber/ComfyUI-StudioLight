@@ -44,7 +44,7 @@ Stop prompt gambling. StudioLight brings real, three-dimensional studio lighting
 
 Instead of typing descriptive text and hoping the diffusion model understands your intent, you position physical lights on C-stands in 3D camera space, choose real photographic modifiers, and shape the shot with calibrated blackbody color temperatures.
 
-https://github.com/user-attachments/assets/f82d96d9-08ac-4dfb-8f1a-a65432f33a32
+https://github.com/user-attachments/assets/d78a75ba-4405-492c-aa67-ba472267fc73
 
 <p align="center"><sub><b>Identical Base Prompt and locked Seed: 777777</b> | FLUX.1 Krea Dev</sub></p>
 
