@@ -56,10 +56,13 @@ The core creative problem in generative AI is that changing a lighting prompt mu
 
 StudioLight locks the image and relights the **exact same source plate** with physical precision:
 
-| High-Fashion Beauty | Direct On-Camera Flash | Golden Hour Window |
-| :---: | :---: | :---: |
-| ![High-Fashion Beauty](assets/showcase_high_fashion_beauty.png) | ![Direct On-Camera Flash](assets/showcase_direct_flash.png) | ![Golden Hour Window](assets/showcase_golden_hour.png) |
-| <sub>Beauty Dish (5500K) + Soft Fill.<br>Sculpted cheekbones, circular catchlight.</sub> | <sub>On-Camera Flash (6500K).<br>Pinpoint glare, hard contact drop shadows.</sub> | <sub>Warm Area Light (3200K) + Sky Fill.<br>Atmospheric wrap, sunset chiaroscuro glow.</sub> |
+<div align="center">
+  <a href="assets/studiolight_portrait_triptych.webp">
+    <img src="assets/studiolight_portrait_triptych.webp" alt="Same portrait under three lighting setups: directional shadows, soft beauty lighting, and warm/cool lighting" width="100%" />
+  </a>
+  <br>
+  <sub>Left to right: directional shadows · soft beauty lighting · warm/cool lighting. StudioLight lighting with FLUX.1 Krea refinement.</sub>
+</div>
 
 ### Prompt Lottery vs. Spatial Control
 
