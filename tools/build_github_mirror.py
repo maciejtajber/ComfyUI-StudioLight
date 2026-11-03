@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Builds a standalone, 100% self-contained GitHub HTML mirror of README.md
-with all image assets embedded as Base64 data URIs.
+Builds a local GitHub-styled HTML preview of README.md with local image assets
+embedded as Base64 data URIs (uses CDN scripts for Markdown/KaTeX rendering).
 """
 
 import base64

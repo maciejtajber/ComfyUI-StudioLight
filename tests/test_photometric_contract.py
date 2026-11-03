@@ -197,10 +197,11 @@ class PhotometricContractTests(unittest.TestCase):
         self.assertEqual(len(result),len(rig.RETURN_TYPES));self.assertIs(result[4],self.tele)
 
     def test_workflow_diagnostic_link_is_reachable(self):
-        workflow=json.loads((Path(__file__).parent.parent/'workflows/StudioLight_Master.json').read_text())
-        nodes={n['id']:n for n in workflow['nodes']}
-        diagnostics=[l for l in workflow['links'] if l[1:3]==[17,1]]
-        self.assertEqual(len(diagnostics),1)
-        self.assertEqual(nodes[diagnostics[0][3]]['type'],'PreviewImage')
+        for wf_name in ('StudioLight_Create.json', 'StudioLight_Relight.json'):
+            workflow=json.loads((Path(__file__).parent.parent/'workflows'/wf_name).read_text())
+            nodes={n['id']:n for n in workflow['nodes']}
+            diagnostics=[l for l in workflow['links'] if l[1:3]==[17,1]]
+            self.assertEqual(len(diagnostics),1,wf_name)
+            self.assertEqual(nodes[diagnostics[0][3]]['type'],'PreviewImage',wf_name)
 
 if __name__=='__main__':unittest.main()

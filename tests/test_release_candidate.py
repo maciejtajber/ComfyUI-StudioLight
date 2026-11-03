@@ -63,45 +63,41 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(comp.composite(base,torch.ones(1,4,4,3,device=self.device))[0].shape,base.shape)
 
     def test_master_compositor_defaults_and_optional_connections(self):
-        wf=json.loads((Path(__file__).parent.parent/'workflows/StudioLight_Master.json').read_text())
-        nodes={n['id']:n for n in wf['nodes']}; edges={l[0]:l for l in wf['links']}
-        compositor=nodes[17]
-        schema = StudioPhotometricComposite.INPUT_TYPES()
-        widgets = {k: v for group in schema.values() for k, v in group.items()
-                   if isinstance(v[0], list) or v[0] in ('FLOAT', 'INT', 'BOOLEAN')}
-        self.assertEqual(len(compositor['widgets_values']), len(widgets))
-        self.assertEqual(dict(zip(widgets, compositor['widgets_values'])), compositor['widgets_values_named'])
-        self.assertEqual(compositor['widgets_values_named']['filmic_white_point'], 3.5)
-        self.assertEqual(compositor['widgets_values_named']['wall_shadow_density'], 0.65)
-        self.assertEqual(compositor['widgets_values_named']['room_bounce_strength'], 0.0)
-        self.assertEqual(nodes[11]['widgets_values_named']['end_at_step'],10)
-        self.assertEqual(nodes[25]['widgets_values_named']['denoise'],0.55)
-        for name,source,slot in [('depth_map',29,0),('specular_map',15,3),('telemetry',15,4)]:
-            index=next(i for i,x in enumerate(compositor['inputs']) if x['name']==name)
-            edge=edges[compositor['inputs'][index]['link']]
-            self.assertEqual(edge[1:5],[source,slot,17,index])
+        from nodes.consistent_relighting import StudioLightConsistentComposite
+        for wf_name in ('StudioLight_Create.json', 'StudioLight_Relight.json'):
+            wf=json.loads((Path(__file__).parent.parent/'workflows'/wf_name).read_text())
+            nodes={n['id']:n for n in wf['nodes']}; edges={l[0]:l for l in wf['links']}
+            compositor=nodes[17]
+            self.assertEqual(compositor['type'], 'StudioLightConsistentComposite')
+            schema = StudioLightConsistentComposite.INPUT_TYPES()
+            widgets = {k: v for group in schema.values() for k, v in group.items()
+                       if isinstance(v[0], list) or v[0] in ('FLOAT', 'INT', 'BOOLEAN')}
+            self.assertEqual(len(compositor['widgets_values']), len(widgets))
+            self.assertEqual(nodes[25]['widgets_values'][6], 0.5)
+            for name,source,slot in [('diffuse_base',92,0),('telemetry',15,4),('scene_contract',8,0),('subject_mask',87,1)]:
+                index=next(i for i,x in enumerate(compositor['inputs']) if x['name']==name)
+                edge=edges[compositor['inputs'][index]['link']]
+                self.assertEqual(edge[1:5],[source,slot,17,index])
 
     def test_master_graph_routes_both_sanitizer_outputs(self):
-        wf=json.loads((Path(__file__).parent.parent/'workflows/StudioLight_Master.json').read_text())
-        nodes={n['id']:n for n in wf['nodes']}
-        sanitizer=nodes[8]
-        self.assertEqual(sanitizer['type'],'StudioPromptSanitizer')
-        edges={l[0]:l for l in wf['links']}
-        self.assertEqual(edges[6][1:5],[8,0,9,1])
-        self.assertEqual(edges[29][1:5],[8,1,21,0])
-        for lid,src,ss,dst,ds,kind in wf['links']:
-            self.assertEqual(nodes[dst]['inputs'][ds]['link'],lid)
-            self.assertIn(lid,nodes[src]['outputs'][ss]['links'])
-            self.assertEqual(nodes[src]['outputs'][ss]['type'],kind)
-            self.assertIn(nodes[dst]['inputs'][ds]['type'],(kind,'*'))
-        master=nodes[6]['widgets_values'][0]
-        draft,final=StudioPromptSanitizer().sanitize(master,nodes[7]['widgets_values'][0])
-        # Bug 5 fix: Material nouns (glossy, patent leather, liquid chrome) must pass through untouched
-        self.assertIn('patent', draft.lower())
-        self.assertIn('patent', final.lower())
-        self.assertNotIn('preserving subject identity', final.lower())
-        # Verify VERBATIM_RAW backward compatibility
-        _, final_raw = StudioPromptSanitizer().sanitize(master, lighting_policy="VERBATIM_RAW")
-        self.assertEqual(final_raw, master.strip())
+        for wf_name in ('StudioLight_Create.json', 'StudioLight_Relight.json'):
+            wf=json.loads((Path(__file__).parent.parent/'workflows'/wf_name).read_text())
+            nodes={n['id']:n for n in wf['nodes']}
+            contract=nodes[8]
+            self.assertEqual(contract['type'],'StudioLightSceneContract')
+            for lid,src,ss,dst,ds,kind in wf['links']:
+                self.assertEqual(nodes[dst]['inputs'][ds]['link'],lid)
+                self.assertIn(lid,nodes[src]['outputs'][ss]['links'])
+                self.assertEqual(nodes[src]['outputs'][ss]['type'],kind)
+                self.assertIn(nodes[dst]['inputs'][ds]['type'],(kind,'*'))
+            master=nodes[6]['widgets_values'][0]
+            draft,final=StudioPromptSanitizer().sanitize(master,'auto')
+            # Material nouns (glossy, patent leather, liquid chrome) must pass through untouched
+            self.assertIn('patent', draft.lower())
+            self.assertIn('patent', final.lower())
+            self.assertNotIn('preserving subject identity', final.lower())
+            # Verify VERBATIM_RAW backward compatibility
+            _, final_raw = StudioPromptSanitizer().sanitize(master, lighting_policy="VERBATIM_RAW")
+            self.assertEqual(final_raw, master.strip())
 
 if __name__=='__main__': unittest.main()

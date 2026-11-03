@@ -3,4 +3,8 @@
 # or alters the user's CUDA / ROCm / Apple Silicon MPS PyTorch build.
 numpy>=1.24.0
 Pillow>=9.5.0
+diffusers>=0.28.0
+transformers>=4.38.0
+accelerate>=0.28.0
+safetensors>=0.4.0
 

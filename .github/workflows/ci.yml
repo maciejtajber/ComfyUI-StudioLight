@@ -2,7 +2,7 @@ name: StudioLight Verification Suite
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, "preview/**" ]
   pull_request:
     branches: [ main ]
 
@@ -24,7 +24,6 @@ jobs:
           pip install --index-url https://download.pytorch.org/whl/cpu torch
           pip install -r requirements.txt
 
-      - name: Run 22-test StudioLight verification suite
+      - name: Run StudioLight automated verification suite
         run: |
-          python test_studiolight.py
-          python -m unittest test_workflow_migration test_release_candidate test_pod_harness test_visual_corrections test_transport_math test_softlight test_photometric_contract -v
+          PYTHONPATH=. python -m unittest discover -s tests -v

@@ -7,6 +7,7 @@ Enforces the 2026-10-31 Invariant:
    on a surface with normal +X than on a surface with normal -X.
 """
 import json
+import unittest
 from pathlib import Path
 import torch
 
@@ -19,23 +20,35 @@ WORKFLOWS_DIR = Path(__file__).resolve().parent.parent / "workflows"
 def test_workflow_coordinate_invariants():
     """Verify serialized settings in shipped workflow JSONs."""
     workflows = ["StudioLight_Create.json", "StudioLight_Relight.json"]
+    actual_files = sorted(p.name for p in WORKFLOWS_DIR.glob("*.json"))
+    assert actual_files == workflows, (
+        f"workflows/ must contain strictly {workflows}, found {actual_files}"
+    )
     for wf_name in workflows:
         wf_path = WORKFLOWS_DIR / wf_name
         assert wf_path.is_file(), f"Workflow {wf_name} missing from {WORKFLOWS_DIR}"
 
-        with open(wf_path) as f:
+        with open(wf_path, encoding="utf-8") as f:
             data = json.load(f)
 
         found_normals = False
         found_rig = False
         found_contract = False
+        found_delight = False
 
         for n in data.get("nodes", []):
-            if n.get("type") == "StudioLightMarigoldNormalsTest":
+            if n.get("type") in ("StudioLightMarigoldNormals", "StudioLightMarigoldNormalsTest"):
                 found_normals = True
                 convention = n.get("widgets_values", [])[5]
                 assert convention == "marigold_native", (
                     f"In {wf_name}, Node #14 output_convention must be 'marigold_native', got {convention}"
+                )
+
+            if n.get("type") == "StudioLightMarigoldDeLight":
+                found_delight = True
+                wv = n.get("widgets_values", [])
+                assert len(wv) >= 7 and wv[6] is True, (
+                    f"In {wf_name}, StudioLightMarigoldDeLight allow_download must default to True for first-run setup"
                 )
 
             if n.get("type") == "StudioLightRig":
@@ -64,6 +77,7 @@ def test_workflow_coordinate_invariants():
                 )
 
         assert found_normals, f"Node #14 missing in {wf_name}"
+        assert found_delight, f"Node #58 missing in {wf_name}"
         assert found_rig, f"Node #15 missing in {wf_name}"
         assert found_contract, f"StudioLightSceneContract missing in {wf_name}"
 
@@ -132,7 +146,13 @@ def test_directional_photometric_truth():
     assert buggy_left > buggy_right, "Invariant assertion: invert_normals_x=True flipped left/right."
 
 
+class WorkflowContractTests(unittest.TestCase):
+    def test_workflow_coordinate_and_inventory_invariants(self):
+        test_workflow_coordinate_invariants()
+
+    def test_directional_photometric_truth(self):
+        test_directional_photometric_truth()
+
+
 if __name__ == "__main__":
-    test_workflow_coordinate_invariants()
-    test_directional_photometric_truth()
-    print("✓ All workflow coordinate & directional photometric invariants PASSED.")
+    unittest.main()

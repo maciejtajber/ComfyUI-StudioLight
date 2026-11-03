@@ -1,7 +1,8 @@
-"""Test-only Marigold Normals adapter. Copyright 2026 Maciej Tajber. MIT.
+"""Marigold Surface Normals adapter for ComfyUI-StudioLight.
+Original adapter code: Copyright 2026 Maciej Tajber (MIT License).
 
-Model weights retain their separate upstream license. This adapter is not a
-license clearance or a release replacement for the checkpoint workflow.
+Upstream model weights (prs-eth/marigold-normals-v1-1) are downloaded on first
+use from Hugging Face and remain governed by CreativeML Open RAIL++-M.
 """
 import gc
 from pathlib import Path
@@ -28,7 +29,7 @@ def encode_normals(prediction, convention):
     return ((n.permute(0, 2, 3, 1) + 1) * 0.5).clamp(0, 1).cpu()
 
 
-class StudioLightMarigoldNormalsTest:
+class StudioLightMarigoldNormals:
     @classmethod
     def INPUT_TYPES(cls):
         return {"required": {
@@ -45,14 +46,20 @@ class StudioLightMarigoldNormalsTest:
     RETURN_TYPES = ("IMAGE", "IMAGE", "STRING")
     RETURN_NAMES = ("normals", "native_preview", "report")
     FUNCTION = "estimate"
-    CATEGORY = "StudioLight/Experimental"
+    CATEGORY = "StudioLight/Geometry"
 
     @torch.inference_mode()
     def estimate(self, image, seed, steps, processing_resolution,
                  ensemble_size, output_convention):
         import comfy.model_management as mm
         import folder_paths
-        from diffusers import MarigoldNormalsPipeline
+        try:
+            from diffusers import MarigoldNormalsPipeline
+        except ImportError as exc:
+            raise RuntimeError(
+                "Missing Diffusers dependency for Marigold Normals. "
+                "Run `pip install -r requirements.txt` in ComfyUI's Python environment, then restart ComfyUI."
+            ) from exc
 
         if image.ndim != 4 or image.shape[-1] != 3:
             raise ValueError("Expected BHWC RGB IMAGE")
@@ -61,6 +68,7 @@ class StudioLightMarigoldNormalsTest:
         device = mm.get_torch_device()
         dtype = torch.float16 if device.type == "cuda" else torch.float32
         cache = Path(folder_paths.models_dir) / "studiolight" / "huggingface"
+        cache.mkdir(parents=True, exist_ok=True)
         snapshot = cache / "models--prs-eth--marigold-normals-v1-1" / "snapshots" / REVISION
         has_fp16 = (snapshot / "unet/diffusion_pytorch_model.fp16.safetensors").is_file()
         weights_suffix = ".fp16.safetensors" if has_fp16 else ".safetensors"
@@ -72,24 +80,43 @@ class StudioLightMarigoldNormalsTest:
                     "tokenizer/merges.txt", "tokenizer/tokenizer_config.json",
                     "tokenizer/special_tokens_map.json"]
         missing = [name for name in required if not (snapshot / name).is_file()]
-        if missing:
-            raise RuntimeError("Marigold download is not finished. Missing: " + ", ".join(missing))
         mm.unload_all_models()
         mm.soft_empty_cache()
         pipeline = None
         cuda_devices = [device.index or 0] if device.type == "cuda" else []
         try:
             with torch.random.fork_rng(devices=cuda_devices):
-                kwargs = {
-                    "torch_dtype": dtype,
-                    "cache_dir": str(cache),
-                    "local_files_only": True,
-                }
-                if has_fp16:
-                    kwargs["variant"] = "fp16"
-                pipeline = MarigoldNormalsPipeline.from_pretrained(
-                    str(snapshot), **kwargs
-                ).to(device)
+                if not missing:
+                    kwargs = {
+                        "torch_dtype": dtype,
+                        "cache_dir": str(cache),
+                        "local_files_only": True,
+                    }
+                    if has_fp16:
+                        kwargs["variant"] = "fp16"
+                    pipeline = MarigoldNormalsPipeline.from_pretrained(
+                        str(snapshot), **kwargs
+                    ).to(device)
+                else:
+                    # First-run automatic download from Hugging Face into StudioLight cache
+                    dl_kwargs = {
+                        "revision": REVISION,
+                        "torch_dtype": dtype,
+                        "cache_dir": str(cache),
+                    }
+                    if dtype == torch.float16:
+                        try:
+                            pipeline = MarigoldNormalsPipeline.from_pretrained(
+                                MODEL_ID, variant="fp16", **dl_kwargs
+                            ).to(device)
+                        except OSError:
+                            pipeline = MarigoldNormalsPipeline.from_pretrained(
+                                MODEL_ID, **dl_kwargs
+                            ).to(device)
+                    else:
+                        pipeline = MarigoldNormalsPipeline.from_pretrained(
+                            MODEL_ID, **dl_kwargs
+                        ).to(device)
                 source = image.detach().float().cpu().permute(0, 3, 1, 2)
                 result = pipeline(
                     image=source, num_inference_steps=steps,
@@ -107,15 +134,21 @@ class StudioLightMarigoldNormalsTest:
                 del pipeline
             gc.collect()
             mm.soft_empty_cache()
-        report = (f"TEST ONLY: {MODEL_ID}@{REVISION}; fp16 weights; "
+        report = (f"Marigold Normals: {MODEL_ID}@{REVISION[:8]}; "
                   f"steps={steps}, processing={processing_resolution}, "
                   f"ensemble={ensemble_size}; convention={output_convention}. "
-                  "Float normals; no gamma encoding. Verify directional lighting "
-                  "before acceptance. Model licensing clearance remains separate.")
+                  "Linear unit normals encoded in [0,1]; no gamma transfer function.")
         return oriented, native, report
 
 
-NODE_CLASS_MAPPINGS = {"StudioLightMarigoldNormalsTest": StudioLightMarigoldNormalsTest}
+# Keep StudioLightMarigoldNormalsTest alias for backward compatibility with saved workflows
+StudioLightMarigoldNormalsTest = StudioLightMarigoldNormals
+
+NODE_CLASS_MAPPINGS = {
+    "StudioLightMarigoldNormals": StudioLightMarigoldNormals,
+    "StudioLightMarigoldNormalsTest": StudioLightMarigoldNormalsTest,
+}
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "StudioLightMarigoldNormalsTest": "StudioLight Marigold Normals Test"
+    "StudioLightMarigoldNormals": "StudioLight Marigold Normals",
+    "StudioLightMarigoldNormalsTest": "StudioLight Marigold Normals",
 }

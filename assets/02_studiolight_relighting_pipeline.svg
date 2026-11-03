@@ -10,16 +10,16 @@ rect { rx: 0; ry: 0; }
 
 <!-- TOP PIPELINE BOX -->
 <rect x="77" y="16" width="580" height="42" />
-<text x="367" y="42" class="b" text-anchor="middle">STUDIOLIGHT DUAL-INPUT PIPELINE [Consistent V1]</text>
+<text x="367" y="42" class="b" text-anchor="middle">STUDIOLIGHT DUAL-INPUT PIPELINE [v1.0.0]</text>
 
 <!-- 1. DUAL INGESTION -->
 <rect x="30" y="74" width="325" height="54" />
 <text x="192" y="96" class="b" text-anchor="middle">Existing 2D Photograph / Render</text>
-<text x="192" y="116" text-anchor="middle">Fixed pixels (Zero prompt drift)</text>
+<text x="192" y="116" text-anchor="middle">Fixed pixels (StudioLight Relight)</text>
 
 <rect x="380" y="74" width="325" height="54" />
 <text x="542" y="96" class="b" text-anchor="middle">Optional Diffusion Draft</text>
-<text x="542" y="116" text-anchor="middle">Base latent plate from FLUX / SDXL</text>
+<text x="542" y="116" text-anchor="middle">Base latent plate (StudioLight Create)</text>
 
 <!-- Bus to Source Plate -->
 <path d="M 192,128 L 192,146 L 367,146" />
@@ -29,7 +29,7 @@ rect { rx: 0; ry: 0; }
 
 <!-- 2. SOURCE PLATE -->
 <rect x="197" y="171" width="340" height="38" />
-<text x="367" y="195" class="b" text-anchor="middle">Source Plate (Linear sRGB)</text>
+<text x="367" y="195" class="b" text-anchor="middle">Source Plate (sRGB ➔ Scene-Linear)</text>
 
 <!-- Down to Scene Analysis -->
 <path d="M 367,209 L 367,235" />
@@ -37,15 +37,15 @@ rect { rx: 0; ry: 0; }
 
 <!-- 3. SCENE ANALYSIS -->
 <rect x="30" y="242" width="675" height="126" />
-<text x="50" y="266" class="b">STRUCTURAL SCENE ANALYSIS [Upstream Extraction]</text>
+<text x="50" y="266" class="b">STRUCTURAL SCENE ANALYSIS [2.5D Upstream Extraction]</text>
 
-<text x="50" y="292">• Surface Normals: Marigold / DSINE</text>
-<text x="50" y="316">• Relative Depth: Depth Anything V2</text>
+<text x="50" y="292">• Surface Normals: Marigold Normals v1-1</text>
+<text x="50" y="316">• Relative Depth: Depth Anything V2 (ViT-S)</text>
 <text x="50" y="340">• Subject Mask: BiRefNet-general</text>
 
-<text x="385" y="292">• Intrinsic Albedo: Marigold IID</text>
+<text x="385" y="292">• Intrinsic Albedo: Marigold IID v1-1</text>
 <text x="385" y="316">• DeLight: Linear Diffuse Blend</text>
-<text x="385" y="340">• Scene Intent: Prompt Sanitizer</text>
+<text x="385" y="340">• Scene Contract: Environment &amp; Policy</text>
 
 <!-- Split to Rig & Compositor -->
 <path d="M 200,368 L 200,405" />
@@ -85,6 +85,6 @@ rect { rx: 0; ry: 0; }
 
 <rect x="390" y="633" width="300" height="56" />
 <text x="540" y="655" class="b" text-anchor="middle">Optional FLUX Polish</text>
-<text x="540" y="675" text-anchor="middle">VAE Encode · Denoise 0.35–0.45</text>
+<text x="540" y="675" text-anchor="middle">VAE Encode · Denoise 0.35–0.55</text>
 
 </svg>

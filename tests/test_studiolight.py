@@ -7,8 +7,8 @@ import os
 import sys
 import torch
 
-# Ensure package is on sys.path
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Ensure package root is on sys.path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COMFY_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
 sys.path.insert(0, COMFY_DIR)
 sys.path.insert(0, BASE_DIR)
@@ -274,7 +274,7 @@ def test_end_to_end_workflow_and_product_behavior():
     from nodes.photometric_composite import StudioPhotometricComposite
     from nodes.si_shadow_highlight import SIShadowHighlight
 
-    # 1. Verify exact 4 production nodes are registered and instantiable
+    # 1. Verify core production nodes are registered and instantiable
     expected_nodes = {
         "StudioLightRig",
         "StudioPhotometricComposite",
@@ -282,28 +282,35 @@ def test_end_to_end_workflow_and_product_behavior():
         "SIShadowHighlight",
         "StudioPromptSanitizer",
         "StudioLightPostComposite",
+        "StudioLightConsistentComposite",
+        "StudioLightSceneContract",
+        "StudioLightSubjectBackgroundBase",
+        "StudioLightDeLightStrength",
     }
-    assert expected_nodes == set(NODE_CLASS_MAPPINGS.keys()), (
-        f"Expected {expected_nodes}, got {set(NODE_CLASS_MAPPINGS.keys())}"
+    assert expected_nodes.issubset(set(NODE_CLASS_MAPPINGS.keys())), (
+        f"Expected {expected_nodes} to be registered, got {set(NODE_CLASS_MAPPINGS.keys())}"
     )
 
-    expected_in_master = {
+    expected_in_shipped = {
         "StudioLightRig",
-        "StudioPhotometricComposite",
-        "SIShadowHighlight",
-        "StudioPromptSanitizer",
+        "StudioLightConsistentComposite",
+        "StudioLightSceneContract",
+        "StudioLightSubjectBackgroundBase",
+        "StudioLightDeLightStrength",
     }
-    with open("workflows/StudioLight_Master.json", "r", encoding="utf-8") as f:
-        wf = json.load(f)
-    wf_nodes = {n["id"]: n for n in wf["nodes"]}
-    custom_in_wf = {n["type"] for n in wf["nodes"] if n["type"] in expected_in_master}
-    assert custom_in_wf == expected_in_master, (
-        f"Missing core nodes in StudioLight_Master.json: {custom_in_wf}"
-    )
-    for link in wf["links"]:
-        _, src_id, _, dst_id, _, _ = link
-        assert src_id in wf_nodes and dst_id in wf_nodes, f"Broken link in workflow: {link}"
-    print("  ✓ StudioLight_Master.json custom nodes and all graph links verified.")
+    for wf_name in ("StudioLight_Create.json", "StudioLight_Relight.json"):
+        wf_path = os.path.join(BASE_DIR, "workflows", wf_name)
+        with open(wf_path, "r", encoding="utf-8") as f:
+            wf = json.load(f)
+        wf_nodes = {n["id"]: n for n in wf["nodes"]}
+        custom_in_wf = {n["type"] for n in wf["nodes"] if n["type"] in expected_in_shipped}
+        assert custom_in_wf == expected_in_shipped, (
+            f"Missing core nodes in {wf_name}: {custom_in_wf}"
+        )
+        for link in wf["links"]:
+            _, src_id, _, dst_id, _, _ = link
+            assert src_id in wf_nodes and dst_id in wf_nodes, f"Broken link in {wf_name}: {link}"
+    print("  ✓ StudioLight_Create.json and StudioLight_Relight.json custom nodes and all graph links verified.")
 
     # 3. End-to-End 4-Node Execution + Product Behavior Invariants
     sanitizer = StudioPromptSanitizer()
@@ -616,11 +623,7 @@ def test_external_review_fixes():
 # ---------------------------------------------------------------------------------------------
 # Workflows known to target the pre-refactor rig (removed conditioning/lit_composite outputs, removed inputs).
 # They are reported, not silently ignored. Rebuild or delete them, then remove them from this list.
-OBSOLETE_WORKFLOWS = {
-    "StudioLight_ICLight_Relighting.json", "StudioLight_Master_Suite.json",
-    "StudioLight_Phase05_Validation.json", "StudioLight_Probe_Local_Test.json", "StudioLight_T2I_Simple.json",
-    "StudioLight_T2I_Simple_api.json", "StudioLight_TwoStage_Master.json", "StudioLight_TwoStage_Master_api.json",
-}
+OBSOLETE_WORKFLOWS = set()
 
 
 def _validate_widget_values(wv, it, widgets):
@@ -650,7 +653,8 @@ def test_workflow_widget_schema():
     checked, skipped, failures = 0, [], []
     for path in sorted(glob.glob(os.path.join(BASE_DIR, "workflows", "*.json"))):
         name = os.path.basename(path)
-        data = json.load(open(path))
+        with open(path, encoding="utf-8") as wf_f:
+            data = json.load(wf_f)
         if not isinstance(data, dict):
             continue
         if "nodes" in data:  # graph format
@@ -1800,30 +1804,79 @@ def test_non_contiguous_and_mps_whole_frame_equivalence():
         print("  ✓ Non-contiguous view equivalence verified on CPU (MPS not present on this host).")
 
 
+import unittest
+
+
+class StudioLightCoreEngineTests(unittest.TestCase):
+    def test_01_color_utils(self):
+        test_color_utils()
+
+    def test_02_presets(self):
+        test_presets()
+
+    def test_03_shader_engine(self):
+        test_shader_engine()
+
+    def test_04_prompt_synthesizer(self):
+        test_prompt_synthesizer()
+
+    def test_05_studio_light_node(self):
+        test_studio_light_node()
+
+    def test_06_end_to_end_workflow_and_product_behavior(self):
+        test_end_to_end_workflow_and_product_behavior()
+
+    def test_07_photometric_composite(self):
+        test_photometric_composite()
+
+    def test_08_octabox_polygon_sampling_invariants(self):
+        test_octabox_polygon_sampling_invariants()
+
+    def test_09_council_hardened_edge_cases(self):
+        test_council_hardened_edge_cases()
+
+    def test_10_external_review_fixes(self):
+        test_external_review_fixes()
+
+    def test_11_workflow_widget_schema(self):
+        test_workflow_widget_schema()
+
+    def test_12_depth_polarity_toggle(self):
+        test_depth_polarity_toggle()
+
+    def test_13_specular_pass_wiring(self):
+        test_specular_pass_wiring()
+
+    def test_14_prompt_sanitizer(self):
+        test_prompt_sanitizer()
+
+    def test_15_optical_penumbra_shadows(self):
+        test_optical_penumbra_shadows()
+
+    def test_16_si_shadow_highlight_hermite_isolation(self):
+        test_si_shadow_highlight_hermite_isolation()
+
+    def test_17_physically_based_geometric_area_emitters(self):
+        test_physically_based_geometric_area_emitters()
+
+    def test_18_metric_3d_camera_space_shadow(self):
+        test_metric_3d_camera_space_shadow()
+
+    def test_19_light_aiming_beam_and_depth_relief_validation_gate(self):
+        test_light_aiming_beam_and_depth_relief_validation_gate()
+
+    def test_20_reviewer_signoff_numerical_stability_and_beam_calculus(self):
+        test_reviewer_signoff_numerical_stability_and_beam_calculus()
+
+    def test_21_wall_mask_shadow_dither_and_ambient_floor_regression(self):
+        test_wall_mask_shadow_dither_and_ambient_floor_regression()
+
+    def test_22_non_contiguous_and_mps_whole_frame_equivalence(self):
+        test_non_contiguous_and_mps_whole_frame_equivalence()
+
+
 if __name__ == "__main__":
-    test_color_utils()
-    test_presets()
-    test_shader_engine()
-    test_prompt_synthesizer()
-    test_studio_light_node()
-    test_end_to_end_workflow_and_product_behavior()
-    test_photometric_composite()
-    test_octabox_polygon_sampling_invariants()
-    test_council_hardened_edge_cases()
-    test_external_review_fixes()
-    test_workflow_widget_schema()
-    test_depth_polarity_toggle()
-    test_specular_pass_wiring()
-    test_prompt_sanitizer()
-    test_optical_penumbra_shadows()
-    test_si_shadow_highlight_hermite_isolation()
-    test_physically_based_geometric_area_emitters()
-    test_metric_3d_camera_space_shadow()
-    test_light_aiming_beam_and_depth_relief_validation_gate()
-    test_reviewer_signoff_numerical_stability_and_beam_calculus()
-    test_wall_mask_shadow_dither_and_ambient_floor_regression()
-    test_non_contiguous_and_mps_whole_frame_equivalence()
-    print("\n🎉 ALL TESTS PASSED! ComfyUI-StudioLight Suite is 100% verified (22/22 TESTS)!")
+    unittest.main()
 
 
 

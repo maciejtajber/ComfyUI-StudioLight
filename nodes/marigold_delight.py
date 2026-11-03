@@ -57,8 +57,8 @@ class StudioLightMarigoldDeLight:
             "processing_resolution": ("INT", {"default": 768, "min": 128, "max": 1536, "step": 8}),
             "ensemble_size": ("INT", {"default": 1, "min": 1, "max": 8}),
             "device": (["auto", "cuda", "mps", "cpu"],),
-            "allow_download": ("BOOLEAN", {"default": False,
-                "tooltip": "Enable for the first run to download the pretrained model. Weights have their own license."}),
+            "allow_download": ("BOOLEAN", {"default": True,
+                "tooltip": "Enable to automatically download the pretrained Marigold IID Lighting model on first run. Weights are governed by CreativeML Open RAIL++-M."}),
             "offload_after_run": ("BOOLEAN", {"default": True}),
             "local_model_path": ("STRING", {"default": "",
                 "tooltip": "Optional local Diffusers model directory containing model_index.json. Empty uses the official model cache."}),
@@ -79,7 +79,7 @@ class StudioLightMarigoldDeLight:
         try:
             from diffusers import MarigoldIntrinsicsPipeline
         except ImportError as exc:
-            raise RuntimeError("Install requirements-marigold.txt in ComfyUI's Python environment, then restart ComfyUI.") from exc
+            raise RuntimeError("Missing Diffusers dependency for Marigold DeLight. Run `pip install -r requirements.txt` in ComfyUI's Python environment, then restart ComfyUI.") from exc
         source = str(Path(local_model_path).expanduser().resolve()) if local_model_path.strip() else MODEL_ID
         if local_model_path.strip() and not (Path(source) / "model_index.json").is_file():
             raise ValueError("local_model_path must contain a Diffusers model_index.json file.")
@@ -114,7 +114,7 @@ class StudioLightMarigoldDeLight:
 
     @torch.inference_mode()
     def decompose(self, image, seed=0, steps=4, processing_resolution=768,
-                  ensemble_size=1, device="auto", allow_download=False,
+                  ensemble_size=1, device="auto", allow_download=True,
                   offload_after_run=True, local_model_path=""):
         if image.ndim != 4 or image.shape[-1] != 3 or image.shape[0] < 1:
             raise ValueError("Expected a nonempty ComfyUI IMAGE batch shaped [B,H,W,3].")
