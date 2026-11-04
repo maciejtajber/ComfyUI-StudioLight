@@ -335,27 +335,41 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 V1 includes fixed-image relighting, additive and subject-replacement modes, Marigold albedo control, a direct lighting preview, and FLUX.1 Krea refinement in the supplied workflows.
 
 ```text
-┌──────────────────────────────┬─────────────────────────────────────────────────────────────┐
-│ DIRECTION                    │ FOCUS                                                       │
-├──────────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ Broader model support —      │ Adapt and validate workflows across additional generative   │
-│ priority                     │ model families, including their conditioning, sampling, and │
-│                              │ refinement behavior.                                        │
-│                              │                                                             │
-│ Workflow efficiency —        │ Streamline diagnostic previews, intermediate outputs, and   │
-│ priority                     │ memory use; evaluate compatible quantized models.           │
-│                              │                                                             │
-│ Material-aware relighting —  │ Estimate material regions and surface properties to improve │
-│ research & development       │ diffuse and specular response.                              │
-│                              │                                                             │
-│ Reference-driven pose        │ Explore pose estimation from reference images and fitting   │
-│ control — longer-term        │ an editable 3D mannequin for lighting and composition.      │
-│ research                     │                                                             │
-│                              │                                                             │
-│ Full 3D relighting —         │ Explore extending single-view depth and normals toward      │
-│ longer-term research         │ reconstructed 3D geometry, including estimates of unseen    │
-│                              │ surfaces.                                                   │
-└──────────────────────────────┴─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────┬────────────────────┬────────────────────────────────────────┐
+│ CAPABILITY / MILESTONE       │ STATUS             │ ARCHITECTURAL SCOPE                    │
+├──────────────────────────────┼────────────────────┼────────────────────────────────────────┤
+│ Fixed-Image 2D Relighting    │ Shipped in v1.0    │ Relight photographs and renders using  │
+│                              │                    │ a direct lighting proxy.               │
+│ Pure Additive Layering       │ Shipped in v1.0    │ Practical & room-ambient preservation. │
+│ Controlled Subject Replace   │ Shipped in v1.0    │ Source preservation + BiRefNet mask.   │
+│ Intrinsic Albedo Pipeline    │ Shipped in v1.0    │ Full-surface Marigold IID DeLight.     │
+│ Direct Proxy / VAE Parity    │ Shipped in v1.0    │ Linear HDR parity between preview and  │
+│                              │                    │ VAE input.                             │
+│ Optional FLUX Krea Polish    │ Shipped in v1.0    │ Decoupled Pass 2 micro-texture polish. │
+├──────────────────────────────┼────────────────────┼────────────────────────────────────────┤
+│ Broader Model Support        │ Priority           │ Adapt and validate additional model    │
+│                              │                    │ families: conditioning, sampling and   │
+│                              │                    │ refinement.                            │
+│ Workflow Efficiency          │ Priority           │ Streamline previews, intermediate      │
+│                              │                    │ outputs and memory use; evaluate       │
+│                              │                    │ compatible quantized models.           │
+├──────────────────────────────┼────────────────────┼────────────────────────────────────────┤
+│ Temporal Light Keyframing    │ Research Horizon   │ C-stand interpolation for video.       │
+│ Video Attention Integration  │ Research Horizon   │ 32-bit linear plates into Wan / LTX.   │
+│ Temporal Geometry Deflicker  │ Research Horizon   │ Multi-frame depth & normal filtering.  │
+│ Material-Aware PBR Roughness │ Research Horizon   │ Automatic material-region and          │
+│                              │                    │ surface-property estimation; per-pixel │
+│                              │                    │ roughness and GGX for improved         │
+│                              │                    │ diffuse/specular response.             │
+│ Multi-View Coherent Rigging  │ Research Horizon   │ Shared 3D rigs across multi-camera.    │
+│ Reference-Driven Pose        │ Long-Term Research │ Estimate poses from reference images   │
+│ Control                      │                    │ and fit an editable 3D mannequin for   │
+│                              │                    │ lighting and composition.              │
+│ Full 3D Relighting           │ Long-Term Research │ Extend single-view depth and normals   │
+│                              │                    │ toward reconstructed 3D geometry,      │
+│                              │                    │ including estimated unseen surfaces.   │
+│ Integrated Three.js Rig      │ Explicitly Retired │ Replaced by 2.5D depth raymarching.    │
+└──────────────────────────────┴────────────────────┴────────────────────────────────────────┘
 ```
 
 These are development directions, not scheduled release commitments.
