@@ -10,7 +10,7 @@ rect { rx: 0; ry: 0; }
 
 <!-- TOP PIPELINE BOX -->
 <rect x="77" y="16" width="580" height="42" />
-<text x="367" y="42" class="b" text-anchor="middle">STUDIOLIGHT DUAL-INPUT PIPELINE [v1.0.0]</text>
+<text x="367" y="42" class="b" text-anchor="middle">STUDIOLIGHT DUAL-INPUT PIPELINE [v1.0]</text>
 
 <!-- 1. DUAL INGESTION -->
 <rect x="30" y="74" width="325" height="54" />

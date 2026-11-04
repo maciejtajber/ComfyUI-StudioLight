@@ -10,13 +10,13 @@
 **Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin control for existing photographs, finished renders, and generative drafts in ComfyUI.**
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-v1.0.0-1f2328?style=flat&labelColor=555555" alt="Release v1.0.0" />
-  <img src="https://img.shields.io/badge/ComfyUI-Custom_Node-1f2328?style=flat&labelColor=555555" alt="ComfyUI Custom Node" />
-  <img src="https://img.shields.io/badge/FLUX.1-Dev_%C2%B7_Krea_(Optional)-1f2328?style=flat&labelColor=555555" alt="FLUX.1 Dev / Krea (Optional)" />
-  <img src="https://img.shields.io/badge/PyTorch-2.0%2B_CUDA_%2F_MPS-1f2328?style=flat&logo=pytorch&logoColor=white&labelColor=555555" alt="PyTorch 2.0+ CUDA / MPS" />
-  <img src="https://img.shields.io/badge/python-3.10%2B-1f2328?style=flat&logo=python&logoColor=white&labelColor=555555" alt="Python 3.10+" />
-  <img src="https://img.shields.io/badge/tests-97_%2F_97_passing-2ea44f?style=flat&labelColor=555555" alt="Tests 97/97 Passing" />
-  <img src="https://img.shields.io/badge/license-MIT-99080a?style=flat&labelColor=555555" alt="License MIT" />
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v1.0-1f2328?style=flat&labelColor=555555" alt="Release v1.0" /></a>
+  <a href="#6-quick-start--workflows"><img src="https://img.shields.io/badge/ComfyUI-Custom_Node-1f2328?style=flat&labelColor=555555" alt="ComfyUI Custom Node" /></a>
+  <a href="#4-ready-to-run-workflows"><img src="https://img.shields.io/badge/FLUX.1-Dev_%C2%B7_Krea_(Optional)-1f2328?style=flat&labelColor=555555" alt="FLUX.1 Dev / Krea (Optional)" /></a>
+  <a href="#1-installation"><img src="https://img.shields.io/badge/PyTorch-2.0%2B_CUDA_%2F_MPS-1f2328?style=flat&logo=pytorch&logoColor=white&labelColor=555555" alt="PyTorch 2.0+ CUDA / MPS" /></a>
+  <a href="#1-installation"><img src="https://img.shields.io/badge/python-3.10%2B-1f2328?style=flat&logo=python&logoColor=white&labelColor=555555" alt="Python 3.10+" /></a>
+  <a href="#3-verification-suite"><img src="https://img.shields.io/badge/tests-97_%2F_97_passing-2ea44f?style=flat&labelColor=555555" alt="Tests 97/97 Passing" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-99080a?style=flat&labelColor=555555" alt="License MIT" /></a>
 </p>
 
 <br>
@@ -88,7 +88,7 @@ StudioLight locks the image and relights the **exact same source plate** with ph
 
 ---
 
-## 3. The Photographer’s Console (Physical C-Stands)
+## 3. The Photographer's Console (Physical C-Stands)
 
 StudioLight equips you with a professional photographer's gaffer console. You control three independent physical lights—**Key, Fill, and Rim**—in assumed 3D camera space:
 
@@ -114,16 +114,16 @@ Each modifier is modeled as a 3D virtual emitter with oriented tangent-space fra
 </div>
 
 ```text
-┌───────────────────────┬──────────────┬────────────┬─────────────────────────────┬──────────────────────────┐
-│ MODIFIER              │ APERTURE     │ BEAM ANGLE │ OPTICAL BEHAVIOR            │ CATCHLIGHT PROFILE       │
-├───────────────────────┼──────────────┼────────────┼─────────────────────────────┼──────────────────────────┤
-│ Direct Flash          │ 0.08 × 0.05m │ 70°        │ Near-point strobe emitter   │ Crisp micro-pinpoint     │
-│ Hard Snoot            │ R = 0.05m    │ 18°        │ Collimated beam cone        │ Tight circular spotlight │
-│ Fresnel Spotlight     │ R = 0.15m    │ 35°        │ Optical lens edge cutoff    │ Stepped concentric disc  │
-│ Stripbox              │ 0.30 × 1.20m │ 65°        │ 1:4 Asymmetric rectangle    │ Elongated vertical slit  │
-│ Beauty Dish (Silver)  │ R = 0.275m   │ 85°        │ Parabolic dish + deflector  │ Sculpted donut ring      │
-│ Octabox (Soft)        │ R = 0.70m    │ 130°       │ Broad Lambertian octagon    │ Soft continuous wrap     │
-└───────────────────────┴──────────────┴────────────┴─────────────────────────────┴──────────────────────────┘
+┌──────────────────────┬──────────────┬──────┬───────────────────────────┬───────────────────┐
+│ MODIFIER             │ APERTURE     │ BEAM │ OPTICAL BEHAVIOR          │ CATCHLIGHT        │
+├──────────────────────┼──────────────┼──────┼───────────────────────────┼───────────────────┤
+│ Direct Flash         │ 0.08 × 0.05m │ 70°  │ Near-point strobe emitter │ Crisp pinpoint    │
+│ Hard Snoot           │ R = 0.05m    │ 18°  │ Collimated beam cone      │ Tight spot        │
+│ Fresnel Spotlight    │ R = 0.15m    │ 35°  │ Optical lens edge cutoff  │ Concentric disc   │
+│ Stripbox             │ 0.30 × 1.20m │ 65°  │ 1:4 Asymmetric rectangle  │ Vertical slit     │
+│ Beauty Dish (Silver) │ R = 0.275m   │ 85°  │ Parabolic dish+deflector  │ Sculpted ring     │
+│ Octabox (Soft)       │ R = 0.70m    │ 130° │ Broad Lambertian octagon  │ Soft octagon wrap │
+└──────────────────────┴──────────────┴──────┴───────────────────────────┴───────────────────┘
 ```
 
 ---
@@ -139,16 +139,16 @@ The central workflow breakthrough of StudioLight is separating scene geometry an
 ### RTX 3090 Performance Benchmarks (Shader Parameter Study)
 
 ```text
-┌─────────────┬────────────────────┬─────────┬───────┬──────────────┬───────────┬───────────────┐
-│ RESOLUTION  │ CONFIGURATION TIER │ SAMPLES │ STEPS │ PASS LATENCY │ PEAK VRAM │ THROUGHPUT    │
-├─────────────┼────────────────────┼─────────┼───────┼──────────────┼───────────┼───────────────┤
-│ 512 × 512   │ Fast Preview       │ 4       │ 12    │ 12.0 ms      │ 113 MB    │ 1,047 M/s     │
-│ 512 × 512   │ Balanced (Default) │ 8       │ 16    │ 29.6 ms      │ 118 MB    │ 1,135 M/s     │
-│ 1024 × 1024 │ Fast Preview       │ 4       │ 12    │ 32.0 ms      │ 450 MB    │ 1,571 M/s     │
-│ 1024 × 1024 │ Balanced (Default) │ 8       │ 16    │ 83.0 ms      │ 469 MB    │ 1,617 M/s     │
-│ 1024 × 1024 │ High-End Quality   │ 16      │ 24    │ 245.3 ms     │ 469 MB    │ 1,642 M/s     │
-│ 2048 × 2048 │ Balanced (Default) │ 8       │ 16    │ 311.5 ms     │ 1.87 GB   │ 1,724 M/s     │
-└─────────────┴────────────────────┴─────────┴───────┴──────────────┴───────────┴───────────────┘
+┌─────────────┬────────────────────┬─────────┬───────┬────────────┬───────────┬──────────────┐
+│ RESOLUTION  │ CONFIGURATION TIER │ SAMPLES │ STEPS │ LATENCY    │ PEAK VRAM │ THROUGHPUT   │
+├─────────────┼────────────────────┼─────────┼───────┼────────────┼───────────┼──────────────┤
+│ 512 × 512   │ Fast Preview       │ 4       │ 12    │ 12.0 ms    │ 113 MB    │ 1,047 M/s    │
+│ 512 × 512   │ Balanced (Default) │ 8       │ 16    │ 29.6 ms    │ 118 MB    │ 1,135 M/s    │
+│ 1024 × 1024 │ Fast Preview       │ 4       │ 12    │ 32.0 ms    │ 450 MB    │ 1,571 M/s    │
+│ 1024 × 1024 │ Balanced (Default) │ 8       │ 16    │ 83.0 ms    │ 469 MB    │ 1,617 M/s    │
+│ 1024 × 1024 │ High-End Quality   │ 16      │ 24    │ 245.3 ms   │ 469 MB    │ 1,642 M/s    │
+│ 2048 × 2048 │ Balanced (Default) │ 8       │ 16    │ 311.5 ms   │ 1.87 GB   │ 1,724 M/s    │
+└─────────────┴────────────────────┴─────────┴───────┴────────────┴───────────┴──────────────┘
 ```
 
 ---
@@ -158,21 +158,21 @@ The central workflow breakthrough of StudioLight is separating scene geometry an
 StudioLight features an explicit **Schema 1 Compositing Contract**, allowing you to choose how the new light integrates with the existing image:
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        BATTLE-TESTED SCENE & AMBIENT INTELLIGENCE                      │
-├───────────────────────┬────────────────────────────────────────────────────────────────┤
-│ NIGHT & NOCTURNAL     │ 60th-percentile background luminance metering anchors dark     │
-│ (Clubs, Caves, Noir)  │ floors so studio strobes don't wash out scenes into grey fog.  │
-├───────────────────────┼────────────────────────────────────────────────────────────────┤
-│ OPEN SKY & EXTERIOR   │ Multi-factor gate (depth + brightness + saturation) protects   │
-│ (Daylight, Horizons)  │ daylight horizons and clouds from artificial strobe spill.     │
-├───────────────────────┼────────────────────────────────────────────────────────────────┤
-│ ENCLOSED INTERIOR     │ Models ambient boundary bounce for rooms, studios, and stages, │
-│ (Rooms, Soundstages)  │ supplementing direct key lighting with natural fill.           │
-├───────────────────────┼────────────────────────────────────────────────────────────────┤
-│ SPATIALLY-VARYING     │ Samples perimeter background colors (e.g. left neon sign,      │
-│ CHROMATICITY WRAP     │ right tungsten lamp) to wrap contextual ambient light.         │
-└───────────────────────┴────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                         BATTLE-TESTED SCENE & AMBIENT INTELLIGENCE                         │
+├───────────────────────┬────────────────────────────────────────────────────────────────────┤
+│ NIGHT & NOCTURNAL     │ 60th-percentile background luminance metering anchors dark         │
+│ (Clubs, Caves, Noir)  │ floors so studio strobes don't wash out scenes into grey fog.      │
+├───────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ OPEN SKY & EXTERIOR   │ Multi-factor gate (depth + brightness + saturation) protects       │
+│ (Daylight, Horizons)  │ daylight horizons and clouds from artificial strobe spill.         │
+├───────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ ENCLOSED INTERIOR     │ Models ambient boundary bounce for rooms, studios, and stages,     │
+│ (Rooms, Soundstages)  │ supplementing direct key lighting with natural fill.               │
+├───────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ SPATIALLY-VARYING     │ Samples perimeter background colors (e.g. left neon sign,          │
+│ CHROMATICITY WRAP     │ right tungsten lamp) to wrap contextual ambient light.             │
+└───────────────────────┴────────────────────────────────────────────────────────────────────┘
 ```
 <p align="center"><sub><b>Battle-Tested Scene Intelligence:</b> Refined through weeks of pod stress-testing across dark clubs, exterior daylight, enclosed interior sets, and multi-color practicals.</sub></p>
 
@@ -227,17 +227,17 @@ python3 -m unittest discover -s tests
 ### 4. Ready-to-Run Workflows
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              STUDIOLIGHT WORKFLOW TOPOLOGY                             │
-├────────────────────────┬───────────────────────────┬───────────────────────────────────┤
-│ 1. INGESTION & DEPTH   │ 2. PHYSICAL 3D RIG        │ 3. CONSISTENT COMPOSITOR & OUTPUT │
-├────────────────────────┼───────────────────────────┼───────────────────────────────────┤
-│ • Fixed Photo / Draft  │ • Key / Fill / Rim Stands │ • Direct Relit Proxy (~2s)        │
-│ • Marigold Normals     │ • Octa / Dish / Flash     │ • Pure Additive Mode (Schema 1)   │
-│ • Depth Anything V2    │ • Kelvin Blackbody (CCT)  │ • Controlled Subject Replacement  │
-│ • Marigold IID Albedo  │ • 3D Shadow Raymarching   │ • (Optional) FLUX Refinement      │
-│ • BiRefNet Mask        │ • Full-Surface Telemetry  │   (Denoise 0.35–0.55)             │
-└────────────────────────┴───────────────────────────┴───────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                               STUDIOLIGHT WORKFLOW TOPOLOGY                                │
+├────────────────────────┬─────────────────────────────┬─────────────────────────────────────┤
+│ 1. INGESTION & DEPTH   │ 2. PHYSICAL 3D RIG          │ 3. CONSISTENT COMPOSITOR & OUTPUT   │
+├────────────────────────┼─────────────────────────────┼─────────────────────────────────────┤
+│ • Fixed Photo / Draft  │ • Key / Fill / Rim Stands   │ • Direct Relit Proxy (~2s)          │
+│ • Marigold Normals     │ • Octa / Dish / Flash       │ • Pure Additive Mode (Schema 1)     │
+│ • Depth Anything V2    │ • Kelvin Blackbody (CCT)    │ • Controlled Subject Replacement    │
+│ • Marigold IID Albedo  │ • 3D Shadow Raymarching     │ • (Optional) FLUX Refinement        │
+│ • BiRefNet Mask        │ • Full-Surface Telemetry    │   (Denoise 0.35–0.55)               │
+└────────────────────────┴─────────────────────────────┴─────────────────────────────────────┘
 ```
 
 #### StudioLight Create (`workflows/StudioLight_Create.json`)
@@ -327,23 +327,22 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 ### Status-Based Capability Roadmap
 
 ```text
-┌──────────────────────────────────┬──────────────────────┬──────────────────────────────────────────────────┐
-│ CAPABILITY / MILESTONE           │ STATUS               │ ARCHITECTURAL SCOPE                              │
-├──────────────────────────────────┼──────────────────────┼──────────────────────────────────────────────────┤
-│ Fixed-Image 2D Relighting        │ Shipped in V1        │ Relight photographs & renders without diffusion. │
-│ Pure Additive Layering Contract  │ Shipped in V1        │ Practical & room-ambient preservation (HDR eq).  │
-│ Controlled Subject Replacement   │ Shipped in V1        │ Source preservation slider + BiRefNet isolation. │
-│ Intrinsic Albedo Pipeline        │ Shipped in V1        │ Full-surface Marigold IID DeLight modulation.    │
-│ Direct Proxy / VAE Parity        │ Shipped in V1        │ Linear HDR parity between preview & VAE in ~2s.  │
-│ Optional FLUX Krea Polish        │ Shipped in V1        │ Decoupled Pass 2 micro-texture synthesis.        │
-│ Temporal Light Keyframing        │ Research Horizon     │ Reproducible C-stand interpolation for video.    │
-│ Video Attention Integration      │ Research Horizon     │ 32-bit linear photometric plates into Wan / LTX. │
-│ Temporal Geometry Deflicker      │ Research Horizon     │ Multi-frame depth & normal temporal filtering.   │
-│ Material-Aware PBR Roughness     │ Research Horizon     │ Semantic material segmentation + per-pixel       │
-│ & Microfacet GGX Shading         │                      │ roughness/metallic maps for artifact-free PBR.   │
-│ Multi-View Coherent Rigging      │ Research Horizon     │ Shared 3D camera-space rigs across multi-cam.    │
-│ Integrated Three.js Mannequin    │ Explicitly Retired   │ Replaced by 2.5D camera-space depth raymarching. │
-└──────────────────────────────────┴──────────────────────┴──────────────────────────────────────────────────┘
+┌──────────────────────────────┬────────────────────┬────────────────────────────────────────┐
+│ CAPABILITY / MILESTONE       │ STATUS             │ ARCHITECTURAL SCOPE                    │
+├──────────────────────────────┼────────────────────┼────────────────────────────────────────┤
+│ Fixed-Image 2D Relighting    │ Shipped in v1.0    │ Relight photos & renders (~2s proxy).  │
+│ Pure Additive Layering       │ Shipped in v1.0    │ Practical & room-ambient preservation. │
+│ Controlled Subject Replace   │ Shipped in v1.0    │ Source preservation + BiRefNet mask.   │
+│ Intrinsic Albedo Pipeline    │ Shipped in v1.0    │ Full-surface Marigold IID DeLight.     │
+│ Direct Proxy / VAE Parity    │ Shipped in v1.0    │ Linear HDR parity in ~2s preview.      │
+│ Optional FLUX Krea Polish    │ Shipped in v1.0    │ Decoupled Pass 2 micro-texture polish. │
+│ Temporal Light Keyframing    │ Research Horizon   │ C-stand interpolation for video.       │
+│ Video Attention Integration  │ Research Horizon   │ 32-bit linear plates into Wan / LTX.   │
+│ Temporal Geometry Deflicker  │ Research Horizon   │ Multi-frame depth & normal filtering.  │
+│ Material-Aware PBR Roughness │ Research Horizon   │ Semantic per-pixel roughness & GGX.    │
+│ Multi-View Coherent Rigging  │ Research Horizon   │ Shared 3D rigs across multi-camera.    │
+│ Integrated Three.js Rig      │ Explicitly Retired │ Replaced by 2.5D depth raymarching.    │
+└──────────────────────────────┴────────────────────┴────────────────────────────────────────┘
 ```
 
 ---

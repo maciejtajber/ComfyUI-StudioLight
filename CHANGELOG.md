@@ -2,7 +2,7 @@
 
 All notable changes to **ComfyUI-StudioLight** are documented in this file.
 
-## [1.0.0] — 2026-11-04 — Initial Public Release
+## [1.0] — 2026-11-04 — Initial Public Release
 
 ### Added
 - **`StudioLightRig` (3-Point Photographic Console):**
