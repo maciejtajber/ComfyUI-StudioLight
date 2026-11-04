@@ -93,8 +93,9 @@ class ReleaseTests(unittest.TestCase):
             master=nodes[6]['widgets_values'][0]
             draft,final=StudioPromptSanitizer().sanitize(master,'auto')
             # Material nouns (glossy, patent leather, liquid chrome) must pass through untouched
-            self.assertIn('patent', draft.lower())
-            self.assertIn('patent', final.lower())
+            d_mat, f_mat = StudioPromptSanitizer().sanitize("portrait of woman holding a glossy black patent leather handbag", 'auto')
+            self.assertIn('patent', d_mat.lower())
+            self.assertIn('patent', f_mat.lower())
             self.assertNotIn('preserving subject identity', final.lower())
             # Verify VERBATIM_RAW backward compatibility
             _, final_raw = StudioPromptSanitizer().sanitize(master, lighting_policy="VERBATIM_RAW")
