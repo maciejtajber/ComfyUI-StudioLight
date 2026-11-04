@@ -80,8 +80,8 @@ rect { rx: 0; ry: 0; }
 
 <!-- 6. OUTPUTS -->
 <rect x="45" y="633" width="330" height="56" />
-<text x="210" y="655" class="b" text-anchor="middle">Direct Relit Proxy (~2s)</text>
-<text x="210" y="675" text-anchor="middle">Instant Physically Coherent VFX Plate</text>
+<text x="210" y="655" class="b" text-anchor="middle">Direct Relit Proxy</text>
+<text x="210" y="675" text-anchor="middle">Lighting Preview Before Refinement</text>
 
 <rect x="390" y="633" width="300" height="56" />
 <text x="540" y="655" class="b" text-anchor="middle">Optional FLUX Polish</text>

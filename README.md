@@ -25,7 +25,7 @@
 <a href="#same-subject-same-prompt-different-light">1. SHOWCASE</a> &nbsp;·&nbsp;
 <a href="#2-one-image-multiple-lighting-decisions">2. DECISIONS</a> &nbsp;·&nbsp;
 <a href="#3-the-photographers-console-physical-c-stands">3. RIG CONSOLE</a> &nbsp;·&nbsp;
-<a href="#4-analyze-once-adjust-preview-the-2-second-loop">4. 2-SEC LOOP</a> &nbsp;·&nbsp;
+<a href="#4-analyze-once-adjust-preview">4. LIGHTING PREVIEW</a> &nbsp;·&nbsp;
 <a href="#5-add-to-the-scene--or-relight-the-subject">5. DUAL CONTRACT</a> &nbsp;·&nbsp;
 <a href="#6-quick-start--workflows">6. QUICK START</a> &nbsp;·&nbsp;
 <a href="#7-the-engineering-behind-the-image">7. ENGINEERING</a> &nbsp;·&nbsp;
@@ -43,6 +43,8 @@
 Stop prompt gambling. StudioLight brings real, three-dimensional studio lighting control directly into ComfyUI. 
 
 Instead of typing descriptive text and hoping the diffusion model understands your intent, you position physical lights on C-stands in 3D camera space, choose real photographic modifiers, and shape the shot with calibrated blackbody color temperatures.
+
+StudioLight is being developed as a lighting tool for use across model families. It has been used with **FLUX.1 (including Krea) and SDXL**. The included workflows and examples use **FLUX.1 Krea as a demonstration model**; the lighting engine is not dedicated to Krea. Additional model families require workflow adaptation and validation.
 
 https://github.com/user-attachments/assets/d78a75ba-4405-492c-aa67-ba472267fc73
 
@@ -69,20 +71,20 @@ StudioLight locks the image and relights the **exact same source plate** with ph
 │ PROMPT LOTTERY (TEXT ONLY)        │ STUDIOLIGHT SPATIAL CONTROL (VFX ENGINE)               │
 ├───────────────────────────────────┼────────────────────────────────────────────────────────┤
 │ • Subject Mutation                │ • Pure Lighting Isolation                              │
-│   Prompting light changes facial  │   Relights fixed 2D photographs or frozen drafts       │
-│   anatomy, clothing, and shapes.  │   without altering subject geometry or identity.       │
+│ Prompting light changes facial    │ Relights fixed 2D photographs or frozen drafts         │
+│ anatomy, clothing, and shapes.    │ without altering subject geometry or identity.         │
 │                                   │                                                        │
 │ • Chromatic Bleed                 │ • Directional Lobe Isolation                           │
-│   Color words tint skin, hair,    │   Key, fill, and rim colors remain strictly            │
-│   and entire background.          │   confined to illuminated surfaces (N · L > 0).        │
+│ Color words tint skin, hair,      │ Key, fill, and rim colors remain strictly              │
+│ and entire background.            │ confined to illuminated surfaces (N · L > 0).          │
 │                                   │                                                        │
 │ • Uncalibrated Falloff            │ • Inverse-Square & Enclosure Bounce                    │
-│   Lights ignore depth & context,  │   Models true (r_ref / r)² falloff with enclosure-     │
-│   treating scene as a flat plane. │   aware ambient bounce & nocturnal black-level anchor. │
+│ Lights ignore depth & context,    │ Models true (r_ref / r)² falloff with enclosure-       │
+│ treating scene as a flat plane.   │ aware ambient bounce & nocturnal black-level anchor.   │
 │                                   │                                                        │
-│ • Diffusion Bottleneck            │ • Instant ~2s Feedback Loop                            │
-│   Requires 30–50 full diffusion   │   Shader computes an inspectable physical lighting     │
-│   steps to test moving a light.   │   proxy in ~2 seconds without waiting for diffusion.   │
+│ • Diffusion Bottleneck            │ • Lighting Preview Without Refinement                  │
+│ Requires 30–50 full diffusion     │ Shader computes an inspectable lighting                │
+│ steps to test moving a light.     │ proxy without rerunning generative refinement.         │
 └───────────────────────────────────┴────────────────────────────────────────────────────────┘
 ```
 
@@ -102,7 +104,7 @@ StudioLight equips you with a professional photographer's gaffer console. You co
     <img src="assets/studiolight_probe_and_render.webp" alt="Eight synchronized StudioLight console and final-render comparisons" width="100%" />
   </a>
   <br>
-  <sub><b>Camera-Space Lighting Rig:</b> Eight lighting setups, each paired with its matching grey/chrome probes, studio radar, and final FLUX.1 Krea render. Two seconds per setup.</sub>
+  <sub><b>Camera-Space Lighting Rig:</b> Eight lighting setups, each paired with its matching grey/chrome probes, studio radar, and final FLUX.1 Krea render.</sub>
 </div>
 
 ### Physically Motivated Modifier Apertures
@@ -128,15 +130,19 @@ Each modifier is modeled as a 3D virtual emitter with oriented tangent-space fra
 
 ---
 
-## 4. Analyze Once. Adjust. Preview. (The 2-Second Loop)
+## 4. Analyze Once. Adjust. Preview.
 
-The central workflow breakthrough of StudioLight is separating scene geometry analysis from lighting adjustments:
+StudioLight separates scene geometry analysis from lighting adjustments:
 
-1. **Analyze Once:** When you load an image, StudioLight extracts its surface orientation, relative depth, and intrinsic albedo.
-2. **Adjust & Preview in ~2 Seconds:** With geometry cached, you move C-stands, swap modifiers, and tweak Kelvin temperatures. The shader computes the complete 3D relit proxy in **approximately 2 seconds** on an NVIDIA RTX 3090.
-3. **Zero Diffusion Bottleneck:** You explore multiple lighting setups in seconds without running heavy KSampler passes. When you find the perfect light, you optionally pass the proxy to FLUX for final material synthesis.
+1. **Analyze Once:** StudioLight estimates surface orientation, relative depth, and intrinsic albedo from the source image. These results can be reused while the source and analysis settings remain unchanged.
+2. **Adjust & Preview:** Move lights, swap modifiers, and adjust Kelvin temperatures, then inspect the direct relit proxy without rerunning generation. Queue only the preview output branch when exploring lighting.
+3. **Refine When Ready:** The supplied workflows also include a separate FLUX.1 refinement pass. Run it when you want a generative finish; it adds sampling time and may change image details.
+
+**Performance:** Total runtime depends on image resolution, analysis settings, GPU memory, and refinement. Disable unnecessary diagnostic preview/output branches and extra intermediate decodes when they are not needed; simply hiding a preview does not stop its computation. Compatible quantized models reduce memory requirements and may reduce offloading, but speed gains depend on the GPU, format, and loader.
 
 ### RTX 3090 Performance Benchmarks (Shader Parameter Study)
+
+These measurements cover the shadow pass only, not scene analysis, image previews, model loading, or generative refinement. They are not complete-workflow timings or total VRAM requirements.
 
 ```text
 ┌─────────────┬────────────────────┬─────────┬───────┬────────────┬───────────┬──────────────┐
@@ -232,36 +238,36 @@ python3 -m unittest discover -s tests
 ├────────────────────────┬─────────────────────────────┬─────────────────────────────────────┤
 │ 1. INGESTION & DEPTH   │ 2. PHYSICAL 3D RIG          │ 3. CONSISTENT COMPOSITOR & OUTPUT   │
 ├────────────────────────┼─────────────────────────────┼─────────────────────────────────────┤
-│ • Fixed Photo / Draft  │ • Key / Fill / Rim Stands   │ • Direct Relit Proxy (~2s)          │
+│ • Fixed Photo / Draft  │ • Key / Fill / Rim Stands   │ • Direct Relit Proxy                │
 │ • Marigold Normals     │ • Octa / Dish / Flash       │ • Pure Additive Mode (Schema 1)     │
 │ • Depth Anything V2    │ • Kelvin Blackbody (CCT)    │ • Controlled Subject Replacement    │
 │ • Marigold IID Albedo  │ • 3D Shadow Raymarching     │ • (Optional) FLUX Refinement        │
-│ • BiRefNet Mask        │ • Full-Surface Telemetry    │   (Denoise 0.35–0.55)               │
+│ • BiRefNet Mask        │ • Full-Surface Telemetry    │ (Denoise 0.35–0.55)                 │
 └────────────────────────┴─────────────────────────────┴─────────────────────────────────────┘
 ```
 
 #### StudioLight Create (`workflows/StudioLight_Create.json`)
-Flagship generative studio featuring decoupled scene-contract prompt architecture, 3D C-stands, area shadow raymarching, inspectable ~2s direct proxy preview, and Pass 2 FLUX Krea Dev generative refinement.
+Generative workflow with scene-contract prompt architecture, 3D C-stands, area shadow raymarching, an inspectable direct lighting preview, and a separate Pass 2 FLUX.1 Krea refinement stage.
 
 <div align="center">
   <a href="assets/workflow_studiolight_create.webp">
     <img src="assets/workflow_studiolight_create.webp" alt="StudioLight Create Master Canvas" width="100%" />
   </a>
   <br>
-  <sub><b>StudioLight Create Master Canvas (5K):</b> Scene Contract ➔ Pass 1 Draft ➔ 3D Geometry ➔ StudioLight Rig ➔ Schema 1 Compositor (~2s Direct Proxy) ➔ Pass 2 FLUX Polish. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
+  <sub><b>StudioLight Create Master Canvas (5K):</b> Scene Contract ➔ Pass 1 Draft ➔ 3D Geometry ➔ StudioLight Rig ➔ Schema 1 Compositor (Direct Proxy) ➔ Pass 2 FLUX Polish. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
 </div>
 
 <br>
 
 #### StudioLight Relight (`workflows/StudioLight_Relight.json`)
-Fixed-image relighting pipeline. Ingests any photograph or render, extracts surface geometry and intrinsic albedo once, previews the deterministic relit proxy in ~2 seconds when adjusting lights (`Node 19`), and includes Pass 2 FLUX refinement (`denoise 0.50`, `Node 25`) for final material synthesis (bypass Pass 2 when only the direct proxy is needed).
+Fixed-image relighting pipeline. Start from a photograph or render, estimate surface geometry and intrinsic albedo, then adjust lights and inspect the direct relit proxy (`Node 19`). The supplied workflow includes a separate Pass 2 FLUX refinement stage (`denoise 0.50`, `Node 25`); queue only the direct-preview branch when refinement is not needed.
 
 <div align="center">
   <a href="assets/workflow_studiolight_relight.webp">
     <img src="assets/workflow_studiolight_relight.webp" alt="StudioLight Relight Production Canvas" width="100%" />
   </a>
   <br>
-  <sub><b>StudioLight Relight Canvas (5K):</b> Fixed-image photometric relighting with ~2s Direct Lit Proxy preview and optional Pass 2 FLUX refinement. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
+  <sub><b>StudioLight Relight Canvas (5K):</b> Fixed-image photometric relighting with a Direct Lit Proxy preview and optional Pass 2 FLUX refinement. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
 </div>
 
 ---
@@ -283,7 +289,7 @@ StudioLight represents an extensive engineering effort to bring physically motiv
     <img src="assets/studiolight_master_00002_process_clean.webp" alt="StudioLight 9-Stage Technical Layer Dissection Grid" width="100%" />
   </a>
   <br>
-  <sub><b>Nine-Stage Technical Layer Dissection (3072×3072):</b> Row 1: Source Plate ➔ Estimated Depth Map ➔ 3D Surface Normals. Row 2: Intrinsic Albedo ➔ Extracted Shading ➔ Foreground Subject Mask. Row 3: Pure 3D Relighting Field ➔ Direct Lit Proxy (~2s) ➔ Final FLUX Synthesis. <i>(Click image to inspect in full 3K resolution)</i>.</sub>
+  <sub><b>Nine-Stage Technical Layer Dissection (3072×3072):</b> Row 1: Source Plate ➔ Estimated Depth Map ➔ 3D Surface Normals. Row 2: Intrinsic Albedo ➔ Extracted Shading ➔ Foreground Subject Mask. Row 3: Pure 3D Relighting Field ➔ Direct Lit Proxy ➔ Final FLUX Synthesis. <i>(Click image to inspect in full 3K resolution)</i>.</sub>
 </div>
 
 ### 3D Camera-Space Shadow Raymarching
@@ -299,7 +305,7 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 ### Core Engine Components (Clean Names)
 
 * **StudioLight Rig:** 3-point C-stand console calculating area diffuse, analytical specular, and 3D shadow raymarching.
-* **Consistent Compositor:** Physical layer engine executing Schema 1 Additive and Replacement modes, directly driving the ~2s preview.
+* **Consistent Compositor:** Physical layer engine executing Schema 1 Additive and Replacement modes, producing the direct lighting preview.
 * **DeLight Controller:** Blends source appearance with estimated Marigold albedo to eliminate harsh baked-shadow doubling.
 * **Subject Mask Isolator:** Automatic BiRefNet foreground segmentation for clean subject isolation.
 * **Prompt Sanitizer:** Strips conflicting lighting tokens to eliminate prompt clashing during optional Pass 2 diffusion.
@@ -309,7 +315,7 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 1. **Choose Your Relighting Mode First (Erase vs Splash):** Use **Add Studio Light** to splash key/rim strobes across an entire room while preserving practical lamps and ambient mood. Use **Replace Subject Light** (with `source_preservation: 0.00 – 0.05`) whenever you need to completely erase harsh existing shadows (such as baked chin/neck shadows or hard directional sunlight) and rebuild portrait lighting from scratch.
 2. **Keep Source Plate & Diffuse Base Independent:** The source carrier preserves environmental background radiance; the DeLight Controller supplies pure diffuse reflectance.
 3. **Inspect Upstream Geometry Before Tuning Intensities:** Verify surface normals and relative depth maps before over-amplifying rig power.
-4. **Trust the Direct Proxy:** The direct ~2s compositor output is physically coherent. If light vectors or shadows look misplaced in the proxy, generative diffusion will not correct them.
+4. **Trust the Direct Proxy:** Inspect the direct compositor output before running refinement. If light vectors or shadows look misplaced in the proxy, generative diffusion will not correct them.
 5. **Diffusion is an Optional Material Synthesizer:** Use Pass 2 FLUX Krea Dev at gentle denoise (`0.35 – 0.45`) to add dielectric micro-textures and pore-level skin scattering.
 6. **Keep Analytical Specular at Default (`0.0 – 0.05`):** Analytical `specular_strength` defaults to `0.0`. Testing confirms values $\ge 0.10$ can introduce synthetic specular streaks on dark, low-albedo matte textiles (wool, cotton, velvet). Keeping it at `0.0` (or $\le 0.05$) leaves matte fabrics pristine while FLUX Pass 2 naturally synthesizes material-correct micro-sheen from the 3D directional diffuse field ($N \cdot L$). Increase above $0.1$ only when specifically relighting wet surfaces, polished metals, or synthetic gloss.
 
@@ -324,26 +330,19 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 * **Additive Layer Retention:** Additive mode retains existing ambient lighting and practical lamps natively. It does not erase old light sources or rotate existing baked shadows.
 * **Diffusion Interpretation:** Higher Pass 2 denoise levels ($\ge 0.60$) give diffusion greater freedom to repaint textures, whereas lower values ($0.35–0.45$) strictly preserve subject identity and proxy lighting vectors.
 
-### Status-Based Capability Roadmap
+### Development Roadmap
 
-```text
-┌──────────────────────────────┬────────────────────┬────────────────────────────────────────┐
-│ CAPABILITY / MILESTONE       │ STATUS             │ ARCHITECTURAL SCOPE                    │
-├──────────────────────────────┼────────────────────┼────────────────────────────────────────┤
-│ Fixed-Image 2D Relighting    │ Shipped in v1.0    │ Relight photos & renders (~2s proxy).  │
-│ Pure Additive Layering       │ Shipped in v1.0    │ Practical & room-ambient preservation. │
-│ Controlled Subject Replace   │ Shipped in v1.0    │ Source preservation + BiRefNet mask.   │
-│ Intrinsic Albedo Pipeline    │ Shipped in v1.0    │ Full-surface Marigold IID DeLight.     │
-│ Direct Proxy / VAE Parity    │ Shipped in v1.0    │ Linear HDR parity in ~2s preview.      │
-│ Optional FLUX Krea Polish    │ Shipped in v1.0    │ Decoupled Pass 2 micro-texture polish. │
-│ Temporal Light Keyframing    │ Research Horizon   │ C-stand interpolation for video.       │
-│ Video Attention Integration  │ Research Horizon   │ 32-bit linear plates into Wan / LTX.   │
-│ Temporal Geometry Deflicker  │ Research Horizon   │ Multi-frame depth & normal filtering.  │
-│ Material-Aware PBR Roughness │ Research Horizon   │ Semantic per-pixel roughness & GGX.    │
-│ Multi-View Coherent Rigging  │ Research Horizon   │ Shared 3D rigs across multi-camera.    │
-│ Integrated Three.js Rig      │ Explicitly Retired │ Replaced by 2.5D depth raymarching.    │
-└──────────────────────────────┴────────────────────┴────────────────────────────────────────┘
-```
+V1 includes fixed-image relighting, additive and subject-replacement modes, Marigold albedo control, a direct lighting preview, and FLUX.1 Krea refinement in the supplied workflows.
+
+| Direction | Focus |
+| :--- | :--- |
+| **Broader model support — priority** | Adapt and validate workflows across additional generative model families, including their conditioning, sampling, and refinement behavior. |
+| **Workflow efficiency — priority** | Streamline diagnostic previews, intermediate outputs, and memory use; evaluate compatible quantized models. |
+| **Material-aware relighting — research & development** | Estimate material regions and surface properties to improve diffuse and specular response. |
+| **Reference-driven pose control — longer-term research** | Explore pose estimation from reference images and fitting an editable 3D mannequin for lighting and composition. |
+| **Full 3D relighting — longer-term research** | Explore extending single-view depth and normals toward reconstructed 3D geometry, including estimates of unseen surfaces. |
+
+These are development directions, not scheduled release commitments.
 
 ---
 
