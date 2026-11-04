@@ -334,13 +334,29 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 
 V1 includes fixed-image relighting, additive and subject-replacement modes, Marigold albedo control, a direct lighting preview, and FLUX.1 Krea refinement in the supplied workflows.
 
-| Direction | Focus |
-| :--- | :--- |
-| **Broader model support — priority** | Adapt and validate workflows across additional generative model families, including their conditioning, sampling, and refinement behavior. |
-| **Workflow efficiency — priority** | Streamline diagnostic previews, intermediate outputs, and memory use; evaluate compatible quantized models. |
-| **Material-aware relighting — research & development** | Estimate material regions and surface properties to improve diffuse and specular response. |
-| **Reference-driven pose control — longer-term research** | Explore pose estimation from reference images and fitting an editable 3D mannequin for lighting and composition. |
-| **Full 3D relighting — longer-term research** | Explore extending single-view depth and normals toward reconstructed 3D geometry, including estimates of unseen surfaces. |
+```text
+┌──────────────────────────────┬─────────────────────────────────────────────────────────────┐
+│ DIRECTION                    │ FOCUS                                                       │
+├──────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ Broader model support —      │ Adapt and validate workflows across additional generative   │
+│ priority                     │ model families, including their conditioning, sampling, and │
+│                              │ refinement behavior.                                        │
+│                              │                                                             │
+│ Workflow efficiency —        │ Streamline diagnostic previews, intermediate outputs, and   │
+│ priority                     │ memory use; evaluate compatible quantized models.           │
+│                              │                                                             │
+│ Material-aware relighting —  │ Estimate material regions and surface properties to improve │
+│ research & development       │ diffuse and specular response.                              │
+│                              │                                                             │
+│ Reference-driven pose        │ Explore pose estimation from reference images and fitting   │
+│ control — longer-term        │ an editable 3D mannequin for lighting and composition.      │
+│ research                     │                                                             │
+│                              │                                                             │
+│ Full 3D relighting —         │ Explore extending single-view depth and normals toward      │
+│ longer-term research         │ reconstructed 3D geometry, including estimates of unseen    │
+│                              │ surfaces.                                                   │
+└──────────────────────────────┴─────────────────────────────────────────────────────────────┘
+```
 
 These are development directions, not scheduled release commitments.
 
