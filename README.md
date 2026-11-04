@@ -46,7 +46,9 @@ Instead of typing descriptive text and hoping the diffusion model understands yo
 
 StudioLight is being developed as a lighting tool for use across model families. It has been used with **FLUX.1 (including Krea) and SDXL**. The included workflows and examples use **FLUX.1 Krea as a demonstration model**; the lighting engine is not dedicated to Krea. Additional model families require workflow adaptation and validation.
 
-https://github.com/user-attachments/assets/d78a75ba-4405-492c-aa67-ba472267fc73
+https://github.com/user-attachments/assets/442d67d0-36c0-48c3-a2c8-aecac0bd61c4
+
+
 
 ---
 
