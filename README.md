@@ -10,7 +10,7 @@
 **Camera-space key, fill, and rim lights, photographic modifiers, and Kelvin control for existing photographs, finished renders, and generative drafts in ComfyUI.**
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-Consistent_V1_(R1)-1f2328?style=flat&labelColor=555555" alt="Release Consistent V1 (R1)" />
+  <img src="https://img.shields.io/badge/release-v1.0.0-1f2328?style=flat&labelColor=555555" alt="Release v1.0.0" />
   <img src="https://img.shields.io/badge/ComfyUI-Custom_Node-1f2328?style=flat&labelColor=555555" alt="ComfyUI Custom Node" />
   <img src="https://img.shields.io/badge/FLUX.1-Dev_%C2%B7_Krea_(Optional)-1f2328?style=flat&labelColor=555555" alt="FLUX.1 Dev / Krea (Optional)" />
   <img src="https://img.shields.io/badge/PyTorch-2.0%2B_CUDA_%2F_MPS-1f2328?style=flat&logo=pytorch&logoColor=white&labelColor=555555" alt="PyTorch 2.0+ CUDA / MPS" />
@@ -23,13 +23,13 @@
 
 <sub>
 <a href="#same-subject-same-prompt-different-light">1. SHOWCASE</a> &nbsp;·&nbsp;
-<a href="#one-image-multiple-lighting-decisions">2. DECISIONS</a> &nbsp;·&nbsp;
-<a href="#the-photographers-console-physical-c-stands">3. RIG CONSOLE</a> &nbsp;·&nbsp;
-<a href="#analyze-once-adjust-preview-the-2-second-loop">4. 2-SEC LOOP</a> &nbsp;·&nbsp;
-<a href="#add-to-the-scene--or-relight-the-subject">5. DUAL CONTRACT</a> &nbsp;·&nbsp;
-<a href="#quick-start--workflows">6. QUICK START</a> &nbsp;·&nbsp;
-<a href="#the-engineering-behind-the-image">7. ENGINEERING</a> &nbsp;·&nbsp;
-<a href="#status-honest-limitations--roadmap">8. ROADMAP</a>
+<a href="#2-one-image-multiple-lighting-decisions">2. DECISIONS</a> &nbsp;·&nbsp;
+<a href="#3-the-photographers-console-physical-c-stands">3. RIG CONSOLE</a> &nbsp;·&nbsp;
+<a href="#4-analyze-once-adjust-preview-the-2-second-loop">4. 2-SEC LOOP</a> &nbsp;·&nbsp;
+<a href="#5-add-to-the-scene--or-relight-the-subject">5. DUAL CONTRACT</a> &nbsp;·&nbsp;
+<a href="#6-quick-start--workflows">6. QUICK START</a> &nbsp;·&nbsp;
+<a href="#7-the-engineering-behind-the-image">7. ENGINEERING</a> &nbsp;·&nbsp;
+<a href="#8-status-honest-limitations--roadmap">8. ROADMAP</a>
 </sub>
 
 </div>
@@ -236,32 +236,32 @@ python3 -m unittest discover -s tests
 │ • Marigold Normals     │ • Octa / Dish / Flash     │ • Pure Additive Mode (Schema 1)   │
 │ • Depth Anything V2    │ • Kelvin Blackbody (CCT)  │ • Controlled Subject Replacement  │
 │ • Marigold IID Albedo  │ • 3D Shadow Raymarching   │ • (Optional) FLUX Refinement      │
-│ • BiRefNet Mask        │ • Full-Surface Telemetry  │   (Denoise 0.35–0.45)             │
+│ • BiRefNet Mask        │ • Full-Surface Telemetry  │   (Denoise 0.35–0.55)             │
 └────────────────────────┴───────────────────────────┴───────────────────────────────────┘
 ```
 
 #### StudioLight Create (`workflows/StudioLight_Create.json`)
-Flagship generative studio featuring decoupled prompt architecture, 3D C-stands, area shadow raymarching, and optional FLUX Krea Dev generative refinement.
+Flagship generative studio featuring decoupled scene-contract prompt architecture, 3D C-stands, area shadow raymarching, inspectable ~2s direct proxy preview, and Pass 2 FLUX Krea Dev generative refinement.
 
 <div align="center">
   <a href="assets/workflow_studiolight_create.webp">
     <img src="assets/workflow_studiolight_create.webp" alt="StudioLight Create Master Canvas" width="100%" />
   </a>
   <br>
-  <sub><b>StudioLight Create Master Canvas (5K):</b> Prompt Sanitizer ➔ Pass 1 Draft ➔ 3D Geometry ➔ StudioLight Rig ➔ Schema 1 Compositor ➔ Optional Pass 2 FLUX Polish. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
+  <sub><b>StudioLight Create Master Canvas (5K):</b> Scene Contract ➔ Pass 1 Draft ➔ 3D Geometry ➔ StudioLight Rig ➔ Schema 1 Compositor (~2s Direct Proxy) ➔ Pass 2 FLUX Polish. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
 </div>
 
 <br>
 
 #### StudioLight Relight (`workflows/StudioLight_Relight.json`)
-Single-pass fixed-image relighting. Ingests any photograph or render, extracts surface geometry and intrinsic albedo, positions 3D lights, and composites the relit proxy in ~2 seconds without diffusion overhead.
+Fixed-image relighting pipeline. Ingests any photograph or render, extracts surface geometry and intrinsic albedo once, previews the deterministic relit proxy in ~2 seconds when adjusting lights (`Node 19`), and includes Pass 2 FLUX refinement (`denoise 0.50`, `Node 25`) for final material synthesis (bypass Pass 2 when only the direct proxy is needed).
 
 <div align="center">
   <a href="assets/workflow_studiolight_relight.webp">
     <img src="assets/workflow_studiolight_relight.webp" alt="StudioLight Relight Production Canvas" width="100%" />
   </a>
   <br>
-  <sub><b>StudioLight Relight Canvas (5K):</b> Pure photometric relighting pipeline with zero diffusion latency. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
+  <sub><b>StudioLight Relight Canvas (5K):</b> Fixed-image photometric relighting with ~2s Direct Lit Proxy preview and optional Pass 2 FLUX refinement. <i>(Click image to inspect in full 5120×2280 resolution)</i>.</sub>
 </div>
 
 ---
@@ -336,9 +336,9 @@ StudioLight represents an extensive engineering effort to bring physically motiv
 │ Intrinsic Albedo Pipeline        │ Shipped in V1        │ Full-surface Marigold IID DeLight modulation.    │
 │ Direct Proxy / VAE Parity        │ Shipped in V1        │ Linear HDR parity between preview & VAE in ~2s.  │
 │ Optional FLUX Krea Polish        │ Shipped in V1        │ Decoupled Pass 2 micro-texture synthesis.        │
-│ Temporal Light Keyframing        │ Next Sprint (Q4)     │ Reproducible C-stand interpolation for video.    │
-│ Video Attention Integration      │ Next Sprint (Q4)     │ 32-bit linear photometric plates into Wan / LTX. │
-│ Temporal Geometry Deflicker      │ Next Sprint (Q4)     │ Multi-frame depth & normal temporal filtering.   │
+│ Temporal Light Keyframing        │ Research Horizon     │ Reproducible C-stand interpolation for video.    │
+│ Video Attention Integration      │ Research Horizon     │ 32-bit linear photometric plates into Wan / LTX. │
+│ Temporal Geometry Deflicker      │ Research Horizon     │ Multi-frame depth & normal temporal filtering.   │
 │ Material-Aware PBR Roughness     │ Research Horizon     │ Semantic material segmentation + per-pixel       │
 │ & Microfacet GGX Shading         │                      │ roughness/metallic maps for artifact-free PBR.   │
 │ Multi-View Coherent Rigging      │ Research Horizon     │ Shared 3D camera-space rigs across multi-cam.    │
