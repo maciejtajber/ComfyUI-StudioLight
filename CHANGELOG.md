@@ -13,7 +13,7 @@ All notable changes to **ComfyUI-StudioLight** are documented in this file.
   - **Server-Side & Frontend Preset Synchronization:** 5 studio lighting presets (`Rembrandt Classic`, `High-Fashion Beauty`, `Direct On-Camera Flash`, `Cinematic Film Noir`, `Golden Hour Window`) resolved both server-side and in the ComfyUI browser UI.
 - **`StudioLightConsistentComposite` (Schema 1 Scene-Linear Compositor):**
   - Dual relighting modes: **Add studio light** (preserves source plate radiance, practicals, and background ambient while adding direct diffuse, specular, and optional room fill) and **Replace subject light** (relights masked subject over estimated intrinsic albedo with controllable `source_preservation`).
-  - Direct ~2-second cached lighting proxy preview output alongside labeled diagnostic contact sheets.
+  - Direct cached lighting proxy preview output alongside labeled diagnostic contact sheets.
 - **Bundled Intrinsic & Geometry Adapters:**
   - **`StudioLightMarigoldNormals` (`nodes/marigold_normals.py`):** Native float surface normal estimation (`prs-eth/marigold-normals-v1-1`) with automatic first-run Hugging Face caching.
   - **`StudioLightMarigoldDeLight` & `StudioLightDeLightStrength`:** Linear intrinsic albedo/shading/residual decomposition (`prs-eth/marigold-iid-lighting-v1-1`) and linear diffuse base blending.

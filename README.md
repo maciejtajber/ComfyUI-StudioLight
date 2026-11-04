@@ -71,20 +71,20 @@ StudioLight locks the image and relights the **exact same source plate** with ph
 │ PROMPT LOTTERY (TEXT ONLY)        │ STUDIOLIGHT SPATIAL CONTROL (VFX ENGINE)               │
 ├───────────────────────────────────┼────────────────────────────────────────────────────────┤
 │ • Subject Mutation                │ • Pure Lighting Isolation                              │
-│ Prompting light changes facial    │ Relights fixed 2D photographs or frozen drafts         │
-│ anatomy, clothing, and shapes.    │ without altering subject geometry or identity.         │
+│   Prompting light changes facial  │   Relights fixed 2D photographs or frozen drafts       │
+│   anatomy, clothing, and shapes.  │   without altering subject geometry or identity.       │
 │                                   │                                                        │
 │ • Chromatic Bleed                 │ • Directional Lobe Isolation                           │
-│ Color words tint skin, hair,      │ Key, fill, and rim colors remain strictly              │
-│ and entire background.            │ confined to illuminated surfaces (N · L > 0).          │
+│   Color words tint skin, hair,    │   Key, fill, and rim colors remain strictly            │
+│   and entire background.          │   confined to illuminated surfaces (N · L > 0).        │
 │                                   │                                                        │
 │ • Uncalibrated Falloff            │ • Inverse-Square & Enclosure Bounce                    │
-│ Lights ignore depth & context,    │ Models true (r_ref / r)² falloff with enclosure-       │
-│ treating scene as a flat plane.   │ aware ambient bounce & nocturnal black-level anchor.   │
+│   Lights ignore depth & context,  │   Models true (r_ref / r)² falloff with enclosure-     │
+│   treating scene as a flat plane. │   aware ambient bounce & nocturnal black-level anchor. │
 │                                   │                                                        │
 │ • Diffusion Bottleneck            │ • Lighting Preview Without Refinement                  │
-│ Requires 30–50 full diffusion     │ Shader computes an inspectable lighting                │
-│ steps to test moving a light.     │ proxy without rerunning generative refinement.         │
+│   Requires 30–50 full diffusion   │   Shader computes an inspectable lighting              │
+│   steps to test moving a light.   │   proxy without rerunning generative refinement.       │
 └───────────────────────────────────┴────────────────────────────────────────────────────────┘
 ```
 
@@ -242,7 +242,7 @@ python3 -m unittest discover -s tests
 │ • Marigold Normals     │ • Octa / Dish / Flash       │ • Pure Additive Mode (Schema 1)     │
 │ • Depth Anything V2    │ • Kelvin Blackbody (CCT)    │ • Controlled Subject Replacement    │
 │ • Marigold IID Albedo  │ • 3D Shadow Raymarching     │ • (Optional) FLUX Refinement        │
-│ • BiRefNet Mask        │ • Full-Surface Telemetry    │ (Denoise 0.35–0.55)                 │
+│ • BiRefNet Mask        │ • Full-Surface Telemetry    │   (Denoise 0.35–0.55)               │
 └────────────────────────┴─────────────────────────────┴─────────────────────────────────────┘
 ```
 
