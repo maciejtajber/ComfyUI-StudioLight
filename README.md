@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/studiolight_banner.png" alt="StudioLight by METAMATERIAL" width="100%" />
+<img src="assets/studiolight_banner.jpeg" alt="StudioLight by METAMATERIAL" width="100%" />
 
 <br>
 <br>
