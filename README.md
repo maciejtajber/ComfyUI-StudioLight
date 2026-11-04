@@ -138,8 +138,6 @@ StudioLight separates scene geometry analysis from lighting adjustments:
 2. **Adjust & Preview:** Move lights, swap modifiers, and adjust Kelvin temperatures, then inspect the direct relit proxy without rerunning generation. Queue only the preview output branch when exploring lighting.
 3. **Refine When Ready:** The supplied workflows also include a separate FLUX.1 refinement pass. Run it when you want a generative finish; it adds sampling time and may change image details.
 
-**Performance:** Total runtime depends on image resolution, analysis settings, GPU memory, and refinement. Disable unnecessary diagnostic preview/output branches and extra intermediate decodes when they are not needed; simply hiding a preview does not stop its computation. Compatible quantized models reduce memory requirements and may reduce offloading, but speed gains depend on the GPU, format, and loader.
-
 ### RTX 3090 Performance Benchmarks (Shader Parameter Study)
 
 These measurements cover the shadow pass only, not scene analysis, image previews, model loading, or generative refinement. They are not complete-workflow timings or total VRAM requirements.
@@ -156,6 +154,8 @@ These measurements cover the shadow pass only, not scene analysis, image preview
 │ 2048 × 2048 │ Balanced (Default) │ 8       │ 16    │ 311.5 ms   │ 1.87 GB   │ 1,724 M/s    │
 └─────────────┴────────────────────┴─────────┴───────┴────────────┴───────────┴──────────────┘
 ```
+
+**Performance note:** Removing unnecessary diagnostic previews, intermediate output branches, and extra decodes can reduce workflow execution time. Hiding a preview alone does not stop its computation. Compatible quantized models can reduce memory use and offloading; speed gains depend on the GPU, format, and loader.
 
 ---
 
@@ -350,9 +350,6 @@ V1 includes fixed-image relighting, additive and subject-replacement modes, Mari
 │ Broader Model Support        │ Priority           │ Adapt and validate additional model    │
 │                              │                    │ families: conditioning, sampling and   │
 │                              │                    │ refinement.                            │
-│ Workflow Efficiency          │ Priority           │ Streamline previews, intermediate      │
-│                              │                    │ outputs and memory use; evaluate       │
-│                              │                    │ compatible quantized models.           │
 ├──────────────────────────────┼────────────────────┼────────────────────────────────────────┤
 │ Temporal Light Keyframing    │ Research Horizon   │ C-stand interpolation for video.       │
 │ Video Attention Integration  │ Research Horizon   │ 32-bit linear plates into Wan / LTX.   │
